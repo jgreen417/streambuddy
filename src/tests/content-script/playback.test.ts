@@ -199,7 +199,7 @@ describe("playback engine", () => {
 		const { video, tick, engine } = setup()
 		await engine.start()
 		tick()
-		document.dispatchEvent(new KeyboardEvent("keydown", { key: ">", shiftKey: true }))
+		window.dispatchEvent(new KeyboardEvent("keydown", { key: ">", shiftKey: true }))
 		expect(video.playbackRate).toBe(1.25)
 		// a new episode starts at 1x
 		video.currentTime = 0

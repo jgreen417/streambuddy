@@ -52,7 +52,8 @@ export class PlaybackEngine {
 		}
 		document.addEventListener("pointerdown", touch, true)
 		document.addEventListener("keydown", touch, true)
-		document.addEventListener("keydown", (event) => this.onKey(event), true)
+		// on window, in the capture phase, so players that swallow keystrokes don't see these first
+		window.addEventListener("keydown", (event) => this.onKey(event), true)
 		document.addEventListener("pointermove", () => this.overlay.flashSpeed(), { passive: true })
 		document.addEventListener("fullscreenchange", () => this.overlay.attach())
 		this.timer = setInterval(() => this.tick(), TICK_MS)
@@ -269,7 +270,10 @@ export class PlaybackEngine {
 		if (!this.video || !this.settings().speedControl || this.rate === null) return
 		const target = event.target as HTMLElement | null
 		if (target?.isContentEditable || /^(input|textarea|select)$/i.test(target?.tagName ?? "")) return
-		const step = event.key === ">" ? SPEED_STEP : event.key === "<" ? -SPEED_STEP : 0
+		// ">" / "<" on most layouts; some keyboards and tools report Shift with "." / ","
+		const faster = event.key === ">" || (event.shiftKey && event.code === "Period")
+		const slower = event.key === "<" || (event.shiftKey && event.code === "Comma")
+		const step = faster ? SPEED_STEP : slower ? -SPEED_STEP : 0
 		if (!step) return
 		event.preventDefault()
 		event.stopPropagation()

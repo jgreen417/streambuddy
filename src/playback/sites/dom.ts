@@ -26,16 +26,20 @@ export function parseEpisodeNumber(text: string | null | undefined): number | nu
 	return numbers?.length ? Number(numbers.at(-1)) : null
 }
 
-// the largest playing-capable video on the page: players keep previews and ad slots as extra <video>s
+// the feature itself: players keep previews, ad slots and idents as extra <video>s, often at the same size.
+// Prefer what's playing, then the longest, then the largest.
 export function mainVideo(root: ParentNode = document): HTMLVideoElement | null {
 	let best: HTMLVideoElement | null = null
-	let bestArea = 0
+	let bestScore = -1
 	for (const video of Array.from(root.querySelectorAll("video"))) {
+		if (video.readyState === 0) continue
 		const rect = video.getBoundingClientRect()
-		const area = rect.width * rect.height
-		if (video.readyState > 0 && area > bestArea) {
+		if (rect.width * rect.height === 0) continue
+		const duration = Number.isFinite(video.duration) ? video.duration : 0
+		const score = (video.paused ? 0 : 1e9) + duration * 1e3 + rect.width * rect.height * 1e-6
+		if (score > bestScore) {
 			best = video
-			bestArea = area
+			bestScore = score
 		}
 	}
 	return best

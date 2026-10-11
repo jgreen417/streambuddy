@@ -2,6 +2,8 @@ import type { SiteAdapter, SkipKind } from "../types"
 import { $, buttonWithText, mainVideo, parseClock, parseEpisodeNumber } from "./dom"
 
 const player = () => $(".dv-player-fullscreen") ?? $("#dv-web-player")
+const episodeInfo = () =>
+	($(".atvwebplayersdk-episode-info") ?? $(".atvwebplayersdk-subtitle-text"))?.textContent?.trim() || null
 
 function skipButton(kind: SkipKind): HTMLElement | null {
 	switch (kind) {
@@ -32,11 +34,11 @@ export const prime: SiteAdapter = {
 	},
 	adRemaining: () => parseClock($(".atvwebplayersdk-ad-timer-remaining-time")?.textContent),
 	adStrategy: "seek",
+	// "S5 E3 Every One of You Sons of Bitches" (older players used a subtitle element)
 	episodeKey: () => {
 		const title = $(".atvwebplayersdk-title-text")?.textContent?.trim()
-		const subtitle = $(".atvwebplayersdk-subtitle-text")?.textContent?.trim()
-		return title ? `${title}|${subtitle ?? ""}` : null
+		return title ? `${title}|${episodeInfo() ?? ""}` : null
 	},
-	episodeNumber: () => parseEpisodeNumber($(".atvwebplayersdk-subtitle-text")?.textContent),
+	episodeNumber: () => parseEpisodeNumber(episodeInfo()),
 	showTitle: () => $(".atvwebplayersdk-title-text")?.textContent?.trim() || null,
 }

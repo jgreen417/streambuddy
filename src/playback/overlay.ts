@@ -22,7 +22,8 @@ button:hover { background: rgba(255, 255, 255, 0.18); }
 button:focus-visible { outline: 2px solid #b7c9df; outline-offset: 2px; }
 button.quiet { background: transparent; color: #aab3bc; }
 button.quiet:hover { color: #e8eaed; background: rgba(255, 255, 255, 0.08); }
-.speed { position: absolute; right: 32px; top: 28px; padding: 4px; gap: 2px; opacity: 0;
+/* top centre: players keep their own buttons in the top corners */
+.speed { position: absolute; left: 50%; transform: translateX(-50%); top: 20px; padding: 4px; gap: 2px; opacity: 0;
 	transition: opacity 0.2s ease; }
 .speed.show, .speed:hover, .speed:focus-within { opacity: 1; }
 .speed .value { min-width: 52px; text-align: center; font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
