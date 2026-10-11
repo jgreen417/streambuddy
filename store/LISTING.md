@@ -103,3 +103,50 @@ Then tick all three certifications: data isn't sold, isn't used for unrelated pu
 ## Reviewer notes (test instructions field)
 
 > To see ratings, the extension needs a free TMDb API key, which the welcome page explains how to get. A Letterboxd username is optional. A test key can be supplied on request. Ratings appear on title cards on netflix.com, primevideo.com and play.hbomax.com once signed in to those services.
+
+---
+
+# Firefox Add-ons (addons.mozilla.org) listing
+
+Submit at https://addons.mozilla.org/developers/addon/submit/ and choose "On this site".
+
+**Files to upload:**
+1. **Add-on:** `release/firefox-1.0.0.zip`. Build it with `npm run build:release:firefox`.
+2. **Source code:** when asked "Do you need to submit source code?", answer **Yes**, because the add-on is bundled by Vite. Upload `release/streambuddy-source.zip`, made with `npm run build:source` from a clean, committed checkout.
+
+**Compatibility:** Firefox (desktop) and Firefox for Android.
+
+**Name:** streamBuddy
+
+**Add-on URL:** `streambuddy`
+
+**Summary** (250 max):
+> Letterboxd and IMDb ratings on Netflix, Prime Video and HBO Max, with your Letterboxd friends' scores, seen and watchlist marks, episode ratings, and skip-intro controls. Free, open source, no tracking.
+
+**Description:** reuse the Chrome description above. AMO supports basic Markdown, so the capitals headings can become `**bold**`.
+
+**Categories** (up to 2): Photos, Music & Videos · Search Tools
+
+**Tags:** letterboxd, imdb, netflix, ratings, movies
+
+**Support email:** your own (a separate address is fine). **Support site:** https://github.com/jgreen417/streambuddy/issues
+
+**Licence:** GNU General Public License v3.0
+
+**Privacy policy:** AMO asks for the policy text itself, not a link. Paste the contents of `PRIVACY.md`.
+
+**Notes to reviewer:**
+> streamBuddy is built from the uploaded source with Vite. To reproduce the package:
+>
+> 1. Node.js 24 and npm 11 (built with Node 24.21.0, npm 11.19.0).
+> 2. `npm ci`
+> 3. `npm run build:release:firefox`
+> 4. The unpacked add-on is in `release/firefox/` and the zip is `release/firefox-1.0.0.zip`.
+>
+> No API keys are needed to build; `.env` is not used for release builds. To see ratings while testing, enter a free TMDb key on the welcome page that opens on install. A Letterboxd username is optional (any public profile works). Ratings appear on title cards on netflix.com, primevideo.com and play.hbomax.com once signed in.
+>
+> Permissions: `webRequest`/`webRequestBlocking` change the user agent on Firefox for Android only, so streaming sites serve their desktop player. This is inherited from Streaming enhanced, which streamBuddy is built on. Data collection: website content (title names sent to TMDb, Letterboxd and IMDb to look up ratings) and authentication info (the user's own TMDb key and Letterboxd username, sent only to those services). Nothing goes to the developer.
+>
+> The single linter warning (innerHTML) is in Vue's runtime (`runtime-dom.esm-bundler.js`), not in streamBuddy's code.
+
+**Before submitting, test in Firefox:** load `release/firefox/manifest.json` via `about:debugging` → This Firefox → Load Temporary Add-on. Then check badges on Netflix, Prime Video and HBO Max, the welcome page, and the popup.

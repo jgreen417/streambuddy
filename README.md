@@ -30,10 +30,14 @@ Both values stay in your browser. See [PRIVACY.md](PRIVACY.md).
 
 ## Building
 
+Requires Node.js 24 and npm 11.
+
 ```bash
 npm install
 npm run build:chrome   # dist/chrome: your own unpacked copy; reads TMDB_TOKEN and LETTERBOXD_USERNAME from .env
-npm run build:release  # release/chrome and a store zip with no personal keys baked in
+npm run build:release          # release/chrome and the Chrome Web Store zip, no personal keys baked in
+npm run build:release:firefox  # release/firefox and the Firefox Add-ons zip
+npm run build:source           # release/streambuddy-source.zip, the source upload Firefox reviewers ask for
 npm test
 ```
 

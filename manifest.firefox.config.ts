@@ -1,9 +1,10 @@
 import { defineManifest } from "@crxjs/vite-plugin"
+import process from "node:process"
 import ManifestConfig from "./manifest.config.ts"
 
 export default defineManifest((env) => ({
 	...ManifestConfig,
-	author: "Marvin Krebber",
+	author: "Josh Green",
 	icons: {
 		16: "src/assets/Logo/NetflixAmazon Auto-Skip.svg",
 		48: "src/assets/Logo/NetflixAmazon Auto-Skip.svg",
@@ -13,10 +14,12 @@ export default defineManifest((env) => ({
 	},
 	browser_specific_settings: {
 		gecko: {
-			id: "NetflixPrime@Autoskip.io",
+			// permanent: Firefox identifies the add-on by this, so it must never change after the first upload
+			id: "streambuddy@jgreen417",
 			strict_min_version: "140.0",
 			data_collection_permissions: {
-				required: ["websiteContent"],
+				// title names go to TMDb, Letterboxd and IMDb; the user's TMDb key and Letterboxd username go to those sites
+				required: ["websiteContent", "authenticationInfo"],
 			},
 		},
 		gecko_android: {
@@ -31,6 +34,10 @@ export default defineManifest((env) => ({
 	},
 	permissions: [
 		"storage",
+		"activeTab",
+		// alarms only drives the sideloaded copy's reload-on-rebuild check
+		...(process.env.RELEASE ? [] : ["alarms"]),
+		// Firefox for Android: send a desktop user agent so streaming sites serve their full player
 		"webRequest",
 		"webRequestBlocking",
 		"*://*.disneyplus.com/*",

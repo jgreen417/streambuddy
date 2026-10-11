@@ -8,7 +8,8 @@ import chalk from "chalk"
 
 const IS_DEV = process.env.NODE_ENV === "development"
 const browser = "firefox"
-const outDir = "dist"
+// a store release builds to its own folder so it never replaces the sideloaded copy in dist/
+const outDir = process.env.OUT_DIR || "dist"
 const browserOutDir = `${outDir}/${browser}`
 const outFileName = `${browser}-${packageJson.version}.zip`
 
