@@ -1,0 +1,12 @@
+streamBuddy
+Copyright (C) 2026 Josh Green
+
+streamBuddy is a modified version of "Streaming enhanced" (Netflix-Prime-Auto-Skip),
+Copyright (C) Marvin Krebber (Dreamlinerm), https://github.com/Dreamlinerm/Netflix-Prime-Auto-Skip
+
+streamBuddy began from Streaming enhanced version 1.1.108 in October 2026. It was then
+substantially modified: Letterboxd and IMDb ratings, the Letterboxd profile integration,
+title-page and episode ratings, watch stats, onboarding, a new interface and new branding.
+
+Both projects are licensed under the GNU General Public License version 3. See License.
+This program comes with ABSOLUTELY NO WARRANTY.

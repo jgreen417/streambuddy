@@ -1,0 +1,46 @@
+import { defineManifest } from "@crxjs/vite-plugin"
+import ManifestConfig from "./manifest.config.ts"
+
+export default defineManifest((env) => ({
+	...ManifestConfig,
+	author: "Marvin Krebber",
+	icons: {
+		16: "src/assets/Logo/NetflixAmazon Auto-Skip.svg",
+		48: "src/assets/Logo/NetflixAmazon Auto-Skip.svg",
+		96: "src/assets/Logo/NetflixAmazon Auto-Skip.svg",
+		128: "src/assets/Logo/NetflixAmazon Auto-Skip.svg",
+		400: "src/assets/Logo/NetflixAmazon Auto-Skip.svg",
+	},
+	browser_specific_settings: {
+		gecko: {
+			id: "NetflixPrime@Autoskip.io",
+			strict_min_version: "140.0",
+			data_collection_permissions: {
+				required: ["websiteContent"],
+			},
+		},
+		gecko_android: {
+			strict_min_version: "142.0",
+		},
+	},
+	manifest_version: 3,
+	background: {
+		scripts: ["src/background/index.ts"],
+		type: "module",
+		persistent: false,
+	},
+	permissions: [
+		"storage",
+		"webRequest",
+		"webRequestBlocking",
+		"*://*.disneyplus.com/*",
+		"*://*.starplus.com/*",
+		"*://*.primevideo.com/*",
+		"*://*.amazon.com/*",
+		"*://*.amazon.co.jp/*",
+		"*://*.amazon.de/*",
+		"*://*.amazon.co.uk/*",
+		"*://*.max.com/*",
+		"*://*.hbomax.com/*",
+	],
+}))

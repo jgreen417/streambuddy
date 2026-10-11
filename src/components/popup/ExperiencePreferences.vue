@@ -1,0 +1,326 @@
+<script setup lang="ts">
+import { computed, ref, watch, useId } from "vue"
+import type { settingsType } from "@/stores/storeTypes"
+import { streamingServices, type StreamingService } from "@/constants/streamingServices"
+import { getServiceState, setServiceState, getRatingMode, setRatingMode, type RatingMode } from "@/utils/preferences"
+import { SCORE_BANDS } from "@/utils/ratings"
+import PopupToggle from "./PopupToggle.vue"
+import { useAccount } from "./useAccount"
+const props = defineProps<{
+	settings: settingsType
+	service: StreamingService | null
+	expanded?: boolean
+	fixedService?: boolean
+}>()
+const selection = ref<StreamingService | "">(props.service ?? "")
+watch(
+	() => props.service,
+	(value) => {
+		selection.value = value ?? ""
+	},
+)
+const names: Record<StreamingService, string> = {
+	Netflix: "Netflix",
+	Amazon: "Prime Video",
+	HBO: "HBO Max",
+	Disney: "Disney+",
+	Paramount: "Paramount+",
+	Crunchyroll: "Crunchyroll",
+}
+const targets = computed(() => (selection.value ? [selection.value] : [...streamingServices]))
+const supportsPages = computed(() => !selection.value || ["Netflix", "HBO", "Amazon"].includes(selection.value))
+const scope = computed(() => (selection.value ? names[selection.value] : "All 6 services"))
+const has = (key: string) =>
+	targets.value.some(
+		(service) => typeof (props.settings[service] as unknown as Record<string, unknown>)[key] === "boolean",
+	)
+function preference(keys: string[]) {
+	return computed({
+		get: () => getServiceState(props.settings, targets.value, keys),
+		set: (value) => setServiceState(props.settings, targets.value, keys, value === true),
+	})
+}
+const cards = preference(["showRating"])
+const intros = preference(["skipIntro", "skipRecap"])
+const introOnly = preference(["skipIntro"])
+const recaps = preference(["skipRecap"])
+const credits = preference(["skipCredits"])
+const stay = preference(["watchCredits"])
+const ads = preference(["skipAd"])
+const speed = preference(["speedSlider"])
+const cardsInactive = computed(() => cards.value !== true)
+const cardDependency = computed(() =>
+	cardsInactive.value ? "Turn on card ratings for the selected services." : undefined,
+)
+const mode = computed({
+	get: () => getRatingMode(props.settings, supportsPages.value),
+	set: (value) => setRatingMode(props.settings, value, supportsPages.value),
+})
+const id = useId()
+const bands = SCORE_BANDS.letterboxd.map((score, index) => ({
+	value: index + 1,
+	label: `Letterboxd ${score.toFixed(1)}/5 · IMDb ${SCORE_BANDS.imdb[index].toFixed(1)}/10`,
+}))
+const { username } = useAccount()
+function openAccount() {
+	browser.tabs.create({ url: browser.runtime.getURL("src/ui/options-page/index.html#/options-page/Account") })
+}
+const updateMode = (event: Event) => {
+	mode.value = (event.target as HTMLInputElement).value as RatingMode
+}
+</script>
+<template>
+	<div class="sb-preferences">
+		<label
+			v-if="!fixedService"
+			class="sb-scope"
+			:for="`${id}-scope`"
+		>
+			<span>Service preferences</span>
+			<select
+				:id="`${id}-scope`"
+				v-model="selection"
+			>
+				<option value="">All 6 services</option>
+				<option
+					v-for="service in streamingServices"
+					:key="service"
+					:value="service"
+				>
+					{{ names[service] }}
+				</option>
+			</select>
+		</label>
+		<p
+			v-if="fixedService"
+			class="sb-scope"
+		>
+			Service preferences: {{ scope }}
+		</p>
+		<p class="sb-help sb-scope-note">Playback &amp; cards: {{ scope }}. Others are global.</p>
+		<div class="sb-label">Quick controls</div>
+		<div class="sb-group">
+			<PopupToggle
+				:model-value="intros === true"
+				:mixed="intros === 'mixed'"
+				:label="has('skipRecap') ? 'Skip intros & recaps' : 'Skip intros'"
+				@update:model-value="intros = $event"
+			/>
+			<PopupToggle
+				v-if="has('skipAd')"
+				:model-value="ads === true"
+				:mixed="ads === 'mixed'"
+				label="Skip ads"
+				@update:model-value="ads = $event"
+			/>
+			<PopupToggle
+				:model-value="cards === true"
+				:mixed="cards === 'mixed'"
+				label="Ratings on title cards"
+				@update:model-value="cards = $event"
+			/>
+		</div>
+		<details
+			class="sb-disclosure"
+			:open="expanded"
+		>
+			<summary>
+				<span>
+					Ratings & discovery
+					<small>{{ cardsInactive ? "Card effects paused" : `Low ratings: ${mode}` }}</small>
+				</span>
+			</summary>
+			<div class="sb-disclosure-body">
+				<p
+					v-if="supportsPages"
+					class="sb-help"
+				>
+					Title-page, episode and search features support Netflix, HBO Max and Prime Video.
+				</p>
+				<PopupToggle
+					v-model="settings.Video.showYear"
+					label="Release year"
+				/>
+				<template v-if="supportsPages">
+					<PopupToggle
+						v-model="settings.General.detailRatings"
+						label="Ratings on title pages"
+					/>
+					<PopupToggle
+						v-model="settings.General.episodeRatings"
+						label="Episode ratings"
+						description="IMDb scores beside individual episodes."
+					/>
+					<PopupToggle
+						v-model="settings.General.highlightBestInRow"
+						label="Highlight best-rated in each row"
+						:disabled="cardsInactive"
+						:description="cardDependency"
+					/>
+					<PopupToggle
+						v-model="settings.General.searchSort"
+						label="Search sort button"
+						description="Choose rating order on a search page."
+					/>
+				</template>
+				<fieldset
+					class="sb-filter"
+					:disabled="cardsInactive"
+				>
+					<legend>Low-rated titles</legend>
+					<p
+						v-if="cardDependency"
+						class="sb-help"
+					>
+						{{ cardDependency }}
+					</p>
+					<div class="sb-mode">
+						<label
+							v-for="option in supportsPages ? ['off', 'dim', 'hide'] : ['off', 'dim']"
+							:key="option"
+						>
+							<input
+								type="radio"
+								:name="`${id}-mode`"
+								:value="option"
+								:checked="mode === option"
+								@change="updateMode"
+							/>
+							<span>{{ option === "off" ? "Off" : option === "dim" ? "Dim" : "Hide" }}</span>
+						</label>
+					</div>
+					<label
+						v-if="mode !== 'off'"
+						class="sb-cutoff"
+					>
+						Below
+						<select v-model.number="settings.General.dimBelowBand">
+							<option
+								v-for="band in bands"
+								:key="band.value"
+								:value="band.value"
+							>
+								{{ band.label }}
+							</option>
+						</select>
+					</label>
+					<p class="sb-help">Unrated titles stay visible. TMDb uses its cutoff in advanced settings.</p>
+				</fieldset>
+			</div>
+		</details>
+		<details
+			class="sb-disclosure"
+			:open="expanded"
+		>
+			<summary>
+				<span>
+					Letterboxd
+					<small>{{ username ? `Profile: ${username}` : "Personal ratings & watchlist" }}</small>
+				</span>
+			</summary>
+			<div class="sb-disclosure-body">
+				<slot name="profile" />
+				<template v-if="username">
+					<PopupToggle
+						v-model="settings.General.friendsRatings"
+						label="Friends’ ratings"
+					/>
+					<PopupToggle
+						v-model="settings.General.markWatched"
+						label="Seen & watchlist card marks"
+						:disabled="cardsInactive"
+						:description="cardDependency"
+					/>
+					<template v-if="supportsPages">
+						<PopupToggle
+							v-model="settings.General.fadeWatched"
+							label="Fade watched films"
+							:disabled="cardsInactive"
+							:description="cardDependency"
+						/>
+						<PopupToggle
+							v-model="settings.General.letterboxdActions"
+							label="Watchlist button on title pages"
+							:disabled="!settings.General.detailRatings"
+							:description="
+								!settings.General.detailRatings
+									? 'Turn on title-page ratings to use this.'
+									: 'Confirms the film before using your signed-in account.'
+							"
+						/>
+						<PopupToggle
+							v-model="settings.General.rateOnCredits"
+							label="Rating prompt near the end"
+							description="Opens Letterboxd during a film’s final 90 seconds."
+						/>
+					</template>
+				</template>
+				<p
+					v-else
+					class="sb-help"
+				>
+					Add your Letterboxd username to see friends’ ratings and mark films you’ve seen.
+					<button
+						type="button"
+						class="sb-link"
+						@click="openAccount"
+					>
+						Add username
+					</button>
+				</p>
+			</div>
+		</details>
+		<details
+			class="sb-disclosure"
+			:open="expanded"
+		>
+			<summary>
+				<span>
+					Playback preferences
+					<small>
+						{{
+							credits === "mixed" ? "Episode advance: mixed" : credits ? "Episode advance on" : "Episode advance off"
+						}}
+					</small>
+				</span>
+			</summary>
+			<div class="sb-disclosure-body">
+				<PopupToggle
+					:model-value="introOnly === true"
+					:mixed="introOnly === 'mixed'"
+					label="Skip intros"
+					@update:model-value="introOnly = $event"
+				/>
+				<PopupToggle
+					v-if="has('skipRecap')"
+					:model-value="recaps === true"
+					:mixed="recaps === 'mixed'"
+					label="Skip recaps"
+					@update:model-value="recaps = $event"
+				/>
+				<PopupToggle
+					v-if="has('skipCredits')"
+					:model-value="credits === true"
+					:mixed="credits === 'mixed'"
+					label="Advance to the next episode"
+					description="Uses the service’s next-episode control when it appears."
+					@update:model-value="credits = $event"
+				/>
+				<PopupToggle
+					v-if="has('watchCredits')"
+					:model-value="stay === true"
+					:mixed="stay === 'mixed'"
+					label="Stay for credits"
+					description="Turns off automatic episode advancement."
+					@update:model-value="stay = $event"
+				/>
+				<PopupToggle
+					:model-value="speed === true"
+					:mixed="speed === 'mixed'"
+					label="Speed control"
+					@update:model-value="speed = $event"
+				/>
+			</div>
+		</details>
+	</div>
+</template>
