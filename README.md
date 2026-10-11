@@ -37,6 +37,10 @@ npm run build:release  # release/chrome and a store zip with no personal keys ba
 npm test
 ```
 
+## Support
+
+streamBuddy is free. If it saves you from a bad film night, you can [buy me a coffee on Ko-fi](https://ko-fi.com/joshgreen48454).
+
 ## Credits and licence
 
 streamBuddy is built on [Streaming enhanced](https://github.com/Dreamlinerm/Netflix-Prime-Auto-Skip) by Marvin Krebber (Dreamlinerm), and like the original it is licensed under the [GNU GPL v3](License). See [NOTICE](NOTICE) for details of the original work and what changed.

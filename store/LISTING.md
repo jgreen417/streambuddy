@@ -44,7 +44,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > PRIVATE BY DESIGN
 > No account, no server, no tracking. streamBuddy talks directly to TMDb, Letterboxd and IMDb from your browser and never sends your data anywhere else.
 >
-> streamBuddy is free and open source (GPL-3.0), built on the Streaming enhanced extension. It is an independent project, not affiliated with or endorsed by Letterboxd, IMDb, Netflix, Amazon or Warner Bros. Discovery. This product uses the TMDb API but is not endorsed or certified by TMDb.
+> streamBuddy is free and open source (GPL-3.0), built on the Streaming enhanced extension. If it helps you pick better films, you can support it at ko-fi.com/joshgreen48454. It is an independent project, not affiliated with or endorsed by Letterboxd, IMDb, Netflix, Amazon or Warner Bros. Discovery. This product uses the TMDb API but is not endorsed or certified by TMDb.
 
 **Graphics:**
 
