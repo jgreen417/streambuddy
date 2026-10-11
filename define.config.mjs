@@ -7,7 +7,8 @@ const changelog = fs.readFileSync("./CHANGELOG.md", "utf-8")
 const jsn = (value) => JSON.stringify(value)
 
 // identifies this build; the background reloads the sideloaded extension when dist/ holds a newer one
-export const BUILD_ID = String(Date.now())
+// store builds use the version instead, so the package is reproducible from source
+export const BUILD_ID = process.env.RELEASE ? packageJson.version : String(Date.now())
 
 // Don't forget to add your added variables to vite-env.d.ts also!
 
