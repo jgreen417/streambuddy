@@ -250,10 +250,12 @@
 					></Switch>
 				</td>
 				<td class="other">
-					<Switch
-						v-model="settings.Crunchyroll.showRating"
-						class="ml-auto"
-					></Switch>
+					<span
+						class="unsupported"
+						title="Ratings aren’t available on Crunchyroll"
+					>
+						—
+					</span>
 				</td>
 				<td class="other">
 					<Switch
@@ -551,6 +553,9 @@ p {
 	} */
 	.featureTable tr td:nth-of-type(2) label {
 		margin-right: unset;
+	}
+	.unsupported {
+		color: #8a929b;
 	}
 	.other {
 		display: none;

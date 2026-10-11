@@ -66,7 +66,7 @@ export default {
 	options_page: "src/ui/options-page/index.html",
 	// alarms only drives the sideloaded copy's reload-on-rebuild check; store builds don't need it
 	permissions: env.RELEASE ? ["storage", "activeTab"] : ["storage", "activeTab", "alarms"],
-	host_permissions: ["https://api.myanimelist.net/*", "https://letterboxd.com/*", "https://caching.graphql.imdb.com/*"],
+	host_permissions: ["https://letterboxd.com/*", "https://caching.graphql.imdb.com/*"],
 	icons: {
 		16: "src/assets/Logo/NetflixAmazon Auto-Skip--16.png",
 		48: "src/assets/Logo/NetflixAmazon Auto-Skip--48.png",

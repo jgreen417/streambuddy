@@ -221,11 +221,10 @@ onMessage("letterboxdProfile", async (message: { data: { force?: boolean } }) =>
 	syncLetterboxdProfile(!!message.data?.force),
 )
 
-type FetchRequestType = "tmdb" | "mal" | "noAuth"
+type FetchRequestType = "tmdb" | "noAuth"
 // API keys only ever go to the API they belong to, whatever URL a content script asks for
 const AUTH_HOSTS: Partial<Record<FetchRequestType, string>> = {
 	tmdb: "api.themoviedb.org",
-	mal: "api.myanimelist.net",
 }
 
 // onMessage
@@ -236,11 +235,6 @@ onMessage("fetch", async (message: { data: { url: string; type: FetchRequestType
 		if (data.type === "noAuth") {
 			headers = {
 				accept: "application/json",
-			}
-		} else if (data.type === "mal") {
-			headers = {
-				accept: "application/json",
-				"X-MAL-CLIENT-ID": __MAL_CLIENT_ID__,
 			}
 		} else if (data.type === "tmdb") {
 			const { tmdbToken } = await getAccount()

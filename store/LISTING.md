@@ -81,7 +81,6 @@ Tip: in Dia, set the window to 1280×800, or capture larger and scale down. Avoi
 | `activeTab` | Lets the toolbar popup see which streaming service the current tab is on, so it can show that service's settings. |
 | Host: `letterboxd.com` | Fetches public film pages for ratings and, if the user enters a username, their public diary, watchlist and friends' ratings. Adds to the watchlist only when the user clicks and confirms. |
 | Host: `caching.graphql.imdb.com` | Fetches IMDb ratings for series and episodes. |
-| Host: `api.myanimelist.net` | Fetches ratings for anime on Crunchyroll. |
 | Content scripts on Netflix, Prime Video/Amazon, HBO Max, Disney+, Paramount+ and Crunchyroll | Reads title names to place rating badges, and finds the player's skip buttons and ad markers to skip intros and ads. Prime Video is hosted on Amazon's domains, so those are included. |
 
 **Remote code:** No. All code is in the package. Nothing is fetched and run with eval.

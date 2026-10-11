@@ -9,7 +9,7 @@
 		"chrome": "web-ext run --source-dir dist/chrome/ -t chromium",
 		"build": "npm run build:chrome && npm run build:firefox && tsx scripts/zip.ts",
 		"build:chrome": "cross-env SOURCE_DATE_EPOCH=1234567890 NODE_ENV=production vite build -c vite.chrome.config.ts",
-		"build:release": "cross-env RELEASE=1 TMDB_TOKEN= LETTERBOXD_USERNAME= MAL_CLIENT_ID= OUT_DIR=release npm run build:chrome",
+		"build:release": "cross-env RELEASE=1 TMDB_TOKEN= LETTERBOXD_USERNAME= OUT_DIR=release npm run build:chrome",
 		"build:firefox": "cross-env SOURCE_DATE_EPOCH=1234567890 NODE_ENV=production vite build -c vite.firefox.config.ts",
 		"dev": "concurrently \"npm run dev:chrome\" \"npm run dev:firefox\"",
 		"dev:chrome": "cross-env NODE_ENV=development vite build --mode development --watch  -c vite.chrome.config.ts",

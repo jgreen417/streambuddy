@@ -26,7 +26,6 @@ streamBuddy contacts these services directly from your browser, only to show rat
 - **The Movie Database (api.themoviedb.org):** the titles shown on the streaming page, with your TMDb key, to identify each film or show.
 - **Letterboxd (letterboxd.com):** requests for film pages, and for your public profile, diary, watchlist and friends' ratings if you've entered a username. When you choose "Add to watchlist", it acts through the Letterboxd account you're signed in to, and only after you confirm.
 - **IMDb (caching.graphql.imdb.com):** IMDb IDs, to fetch series and episode ratings.
-- **MyAnimeList (api.myanimelist.net):** anime titles, for Crunchyroll ratings.
 
 These requests go straight from your browser to those services, under their own privacy policies. streamBuddy doesn't send your browsing, watch history or any identifier to the developer or anyone else.
 

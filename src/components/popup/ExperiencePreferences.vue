@@ -114,6 +114,7 @@ const updateMode = (event: Event) => {
 				@update:model-value="ads = $event"
 			/>
 			<PopupToggle
+				v-if="has('showRating')"
 				:model-value="cards === true"
 				:mixed="cards === 'mixed'"
 				label="Ratings on title cards"

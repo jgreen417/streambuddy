@@ -13,10 +13,16 @@ describe("preference edits", () => {
 	})
 	it("includes Crunchyroll in explicitly selected bulk edits", () => {
 		const settings = fresh()
-		settings.Crunchyroll.showRating = false
-		expect(getServiceState(settings, ["Netflix", "Crunchyroll"], ["showRating"])).toBe("mixed")
-		setServiceState(settings, ["Netflix", "Crunchyroll"], ["showRating"], true)
-		expect(settings.Crunchyroll.showRating).toBe(true)
+		settings.Crunchyroll.skipIntro = false
+		expect(getServiceState(settings, ["Netflix", "Crunchyroll"], ["skipIntro"])).toBe("mixed")
+		setServiceState(settings, ["Netflix", "Crunchyroll"], ["skipIntro"], true)
+		expect(settings.Crunchyroll.skipIntro).toBe(true)
+	})
+	it("ignores services without a setting, like Crunchyroll ratings", () => {
+		const settings = fresh()
+		expect(getServiceState(settings, ["Netflix", "Crunchyroll"], ["showRating"])).toBe(true)
+		setServiceState(settings, ["Crunchyroll"], ["showRating"], true)
+		expect("showRating" in settings.Crunchyroll).toBe(false)
 	})
 	it("changes only selected services and mutually exclusive credit preferences", () => {
 		const settings = fresh()

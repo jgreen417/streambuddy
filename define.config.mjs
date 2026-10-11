@@ -21,7 +21,6 @@ export const defineViteConfig = {
 	__CHANGELOG__: jsn(changelog),
 	__GITHUB_URL__: jsn(packageJson.repository.url),
 	__TMDB_TOKEN__: jsn(process.env.TMDB_TOKEN || ""),
-	__MAL_CLIENT_ID__: jsn(process.env.MAL_CLIENT_ID || ""),
 	// whose friends' ratings to show on Letterboxd badges (optional)
 	__LETTERBOXD_USERNAME__: jsn(process.env.LETTERBOXD_USERNAME || ""),
 	__BUILD_ID__: jsn(BUILD_ID),
