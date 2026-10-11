@@ -20,5 +20,7 @@ export const netflix: SiteAdapter = {
 	episodeKey: () => /\/watch\/(\d+)/.exec(location.pathname)?.[1] ?? null,
 	// <div data-uia="video-title"><h4>Show</h4><span>E5</span><span>Episode name</span></div>
 	episodeNumber: () => parseEpisodeNumber($('[data-uia="video-title"] span')?.textContent),
+	// Netflix has its own speed menu (up to 1.5×)
+	hasNativeSpeedControl: () => true,
 	showTitle: () => $('[data-uia="video-title"] h4')?.textContent?.trim() || $('[data-uia="video-title"]')?.textContent?.trim() || null,
 }

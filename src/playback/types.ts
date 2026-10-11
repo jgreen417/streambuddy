@@ -21,6 +21,9 @@ export type SiteAdapter = {
 	episodeNumber(): number | null
 	// the series (or film) title, used for per-show rules
 	showTitle(): string | null
+	// true when the player already has its own speed menu: streamBuddy then only remembers the speed and
+	// adds shortcuts, instead of drawing a second control
+	hasNativeSpeedControl?(): boolean
 }
 
 export type PlaybackSettings = {

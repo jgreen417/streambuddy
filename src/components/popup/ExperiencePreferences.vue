@@ -317,7 +317,7 @@ const updateMode = (event: Event) => {
 					:model-value="speed === true"
 					:mixed="speed === 'mixed'"
 					label="Speed control"
-					description="A speed pill in the player. Shift + < or > to adjust."
+					description="Remembers your speed per service. Shift + < or > to adjust; Prime Video and HBO Max also get a speed pill."
 					@update:model-value="speed = $event"
 				/>
 				<PopupToggle

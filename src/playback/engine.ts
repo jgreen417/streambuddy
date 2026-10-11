@@ -1,4 +1,4 @@
-import { PlayerOverlay, formatSaved } from "./overlay"
+import { PlayerOverlay, formatRate, formatSaved } from "./overlay"
 import { isExcepted, loadRules, onRulesChanged, saveRules, withException } from "./rules"
 import { SKIP_LABELS, type PlaybackSettings, type SiteAdapter, type SkipKind, type SkipRules } from "./types"
 import { addSavedSeconds, type SavedLog } from "@/utils/stats"
@@ -224,7 +224,7 @@ export class PlaybackEngine {
 
 	// #region speed
 	private handleSpeed(settings: PlaybackSettings) {
-		if (!settings.speedControl || this.rate === null) {
+		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.()) {
 			this.overlay.removeSpeed()
 			return
 		}
@@ -256,6 +256,11 @@ export class PlaybackEngine {
 		this.rate = Math.min(SPEED_MAX, Math.max(SPEED_MIN, Math.round(rate * 100) / 100))
 		saveRate(this.site.service, this.rate)
 		if (apply) this.applyRate()
+		if (this.site.hasNativeSpeedControl?.()) {
+			// no pill to show the change on, so say it once
+			if (apply) this.overlay.showNotice(`Speed ${formatRate(this.rate)}×`, [], 1500)
+			return
+		}
 		this.renderedRate = this.rate
 		this.overlay.renderSpeed(this.rate, SPEED_PRESETS, (value) => this.chooseRate(value))
 		this.overlay.flashSpeed()
