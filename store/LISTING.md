@@ -17,10 +17,10 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 > See what's actually worth watching without leaving Netflix, Prime Video or HBO Max.
 >
-> streamBuddy adds a small, colour-coded score to every title: the Letterboxd average for films and the IMDb rating for series. Colours are tuned to how each site's ratings are spread, so green really means great.
+> streamBuddy adds small, colour-coded scores to supported title cards: the Letterboxd average for films and the IMDb rating for series, where a matching rating is available.
 >
 > CONNECT YOUR LETTERBOXD (optional)
-> • Friends' ratings on every film, and who rated it
+> • Friends' ratings on matched films, and who rated them
 > • Your own stars on films you've logged, with watchlisted films marked
 > • Add to your Letterboxd watchlist from a title page
 > • A reminder to rate a film as the credits roll
@@ -33,7 +33,8 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > • Watched films can fade back so new ones stand out
 >
 > WATCH WITHOUT THE FIDDLY BITS
-> • Skips intros, recaps, credits, ads and "Still watching?", with a notice and one-tap Undo
+> • Optional automatic skipping of supported intro, recap and credits controls, with a notice and one-tap Undo
+> • Optional handling of "Still watching?" prompts; available controls vary by service and title
 > • "Not for this show" keeps a theme song you love; optionally hear episode 1's intro
 > • Speed that sticks: remembered per service and kept on the next episode, with Shift + < / > shortcuts and a speed pill on Prime Video and HBO Max
 > • Optional pause after a few episodes autoplay in a row
@@ -46,7 +47,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > Enter your Letterboxd username (optional) and a free TMDb key. A built-in guide shows how to get one. Both stay in your browser.
 >
 > PRIVATE BY DESIGN
-> No account, no server, no tracking. streamBuddy talks directly to TMDb, Letterboxd and IMDb from your browser and never sends your data anywhere else.
+> No streamBuddy account, no developer server and no analytics. Ratings requests go directly to TMDb, Letterboxd and IMDb. Settings, your optional Letterboxd username and your TMDb key use your browser's sync storage; watch-time stats stay on your device.
 >
 > streamBuddy is free and open source (GPL-3.0). It started from the Streaming enhanced extension by Dreamlinerm. If it helps you pick better films, you can support it at ko-fi.com/joshgreen48454. It is an independent project, not affiliated with or endorsed by Letterboxd, IMDb, Netflix, Amazon or Warner Bros. Discovery. This product uses the TMDb API but is not endorsed or certified by TMDb.
 
@@ -90,9 +91,14 @@ Tip: in Dia, set the window to 1280×800, or capture larger and scale down. Avoi
 **Remote code:** No. All code is in the package. Nothing is fetched and run with eval.
 
 **Data usage** (tick these boxes):
+- **Personally identifiable information:** yes. The optional Letterboxd username is stored in browser sync storage and used to request that public profile from Letterboxd.
 - **Website content:** yes. Title names on streaming pages are sent to TMDb, Letterboxd and IMDb to look up ratings.
 - **Authentication information:** yes. The user's own TMDb key is stored and sent only to api.themoviedb.org.
-- Everything else (personal info, health, financial, location, communications, web history, user activity): no. Watch-time stats stay on the device and are never transmitted.
+- **Web history:** yes. The extension keeps a local record of recently displayed streaming titles and their URLs for its Stats tab, and reads the current streaming tab to select service settings. It does not read general browser history.
+- **User activity:** yes. Watch time by day and service is recorded locally for the Stats tab. It is never sent to the developer.
+- Everything else (health, financial, location, communications): no.
+
+Local processing and browser sync storage still count as data handling for Chrome Web Store disclosure. See https://developer.chrome.com/docs/webstore/program-policies/user-data-faq.
 
 Then tick all three certifications: data isn't sold, isn't used for unrelated purposes, and isn't used for creditworthiness.
 

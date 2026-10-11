@@ -14,7 +14,8 @@ All of the following stays in your browser's extension storage. "Synced" items t
 | Your Letterboxd username and TMDb key | Synced | To look up ratings and your Letterboxd profile |
 | A cache of title lookups and ratings | This device | So ratings load instantly and sites aren't asked twice |
 | A copy of your public Letterboxd diary and watchlist | This device | To mark films you've seen or watchlisted |
-| Watch time per day and service, and titles you've recently seen on screen | This device, last 120 days | For the Stats tab |
+| Watch time per day and service, and estimated time saved by skipping | This device, last 120 days | For the Stats tab |
+| Recently displayed titles and their streaming-page URLs | This device, last 7 days, up to 25 titles | For the Stats tab |
 | Titles you choose to hide | This device | To hide them |
 
 Uninstalling streamBuddy deletes all of it. You can also erase it with "Reset" on the Backup page in settings.
@@ -31,10 +32,12 @@ These requests go straight from your browser to those services, under their own 
 
 ## What streamBuddy doesn't do
 
-- It doesn't sell or share data.
-- It doesn't use data for advertising, credit or anything unrelated to showing ratings.
+- It doesn't sell data or share it for advertising. The service requests and browser sync described above support its features.
+- It doesn't use data for advertising, credit or anything unrelated to its ratings, playback, watchlist and local statistics features.
 - It runs only on Netflix, Prime Video (including Amazon's sites, where Prime Video is hosted) and HBO Max. On those pages it reads title names and the player's controls, to show ratings and to skip intros or ads.
 - It doesn't collect your name, email, payment details or passwords.
+
+streamBuddy's use and transfer of information adheres to the Chrome Web Store User Data Policy, including its Limited Use requirements. The developer does not receive or read extension user data. Data is transferred only to the services described above to provide the features you use, and through your browser account's sync when enabled.
 
 ## Contact
 
