@@ -11,29 +11,23 @@ describe("preference edits", () => {
 		expect(settings.Netflix.skipRecap).toBe(false)
 		expect(getServiceState(settings, ["Netflix"], ["skipIntro"])).toBe(true)
 	})
-	it("includes Crunchyroll in explicitly selected bulk edits", () => {
+	it("edits several services at once and reports mixed values", () => {
 		const settings = fresh()
-		settings.Crunchyroll.skipIntro = false
-		expect(getServiceState(settings, ["Netflix", "Crunchyroll"], ["skipIntro"])).toBe("mixed")
-		setServiceState(settings, ["Netflix", "Crunchyroll"], ["skipIntro"], true)
-		expect(settings.Crunchyroll.skipIntro).toBe(true)
+		settings.HBO.skipIntro = false
+		expect(getServiceState(settings, ["Netflix", "HBO"], ["skipIntro"])).toBe("mixed")
+		setServiceState(settings, ["Netflix", "HBO"], ["skipIntro"], true)
+		expect(settings.HBO.skipIntro).toBe(true)
 	})
-	it("ignores services without a setting, like Crunchyroll ratings", () => {
+	it("changes only the selected services", () => {
 		const settings = fresh()
-		expect(getServiceState(settings, ["Netflix", "Crunchyroll"], ["showRating"])).toBe(true)
-		setServiceState(settings, ["Crunchyroll"], ["showRating"], true)
-		expect("showRating" in settings.Crunchyroll).toBe(false)
-	})
-	it("changes only selected services and mutually exclusive credit preferences", () => {
-		const settings = fresh()
-		settings.Netflix.watchCredits = true
-		settings.Netflix.skipCredits = false
-		setServiceState(settings, ["Netflix"], ["skipCredits"], true)
-		expect(settings.Netflix.watchCredits).toBe(false)
-		expect(settings.Amazon.watchCredits).toBe(false)
-		setServiceState(settings, ["Netflix"], ["watchCredits"], true)
+		setServiceState(settings, ["Netflix"], ["skipCredits"], false)
 		expect(settings.Netflix.skipCredits).toBe(false)
 		expect(settings.Amazon.skipCredits).toBe(true)
+	})
+	it("ignores settings a service doesn't have", () => {
+		const settings = fresh()
+		setServiceState(settings, ["HBO"], ["hideGames"], true)
+		expect("hideGames" in settings.HBO).toBe(false)
 	})
 	it("reads legacy combined cutoff flags without normalizing them", () => {
 		const settings = fresh()

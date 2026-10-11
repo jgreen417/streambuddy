@@ -23,13 +23,10 @@ const names: Record<StreamingService, string> = {
 	Netflix: "Netflix",
 	Amazon: "Prime Video",
 	HBO: "HBO Max",
-	Disney: "Disney+",
-	Paramount: "Paramount+",
-	Crunchyroll: "Crunchyroll",
 }
 const targets = computed(() => (selection.value ? [selection.value] : [...streamingServices]))
-const supportsPages = computed(() => !selection.value || ["Netflix", "HBO", "Amazon"].includes(selection.value))
-const scope = computed(() => (selection.value ? names[selection.value] : "All 6 services"))
+const supportsPages = computed(() => true)
+const scope = computed(() => (selection.value ? names[selection.value] : "All services"))
 const has = (key: string) =>
 	targets.value.some(
 		(service) => typeof (props.settings[service] as unknown as Record<string, unknown>)[key] === "boolean",
@@ -45,9 +42,16 @@ const intros = preference(["skipIntro", "skipRecap"])
 const introOnly = preference(["skipIntro"])
 const recaps = preference(["skipRecap"])
 const credits = preference(["skipCredits"])
-const stay = preference(["watchCredits"])
+const stillWatching = preference(["skipStillWatching"])
 const ads = preference(["skipAd"])
-const speed = preference(["speedSlider"])
+const speed = preference(["speedControl"])
+const pauseOptions = [
+	{ value: 0, label: "Never" },
+	{ value: 2, label: "After 2 episodes" },
+	{ value: 3, label: "After 3 episodes" },
+	{ value: 4, label: "After 4 episodes" },
+	{ value: 6, label: "After 6 episodes" },
+]
 const cardsInactive = computed(() => cards.value !== true)
 const cardDependency = computed(() =>
 	cardsInactive.value ? "Turn on card ratings for the selected services." : undefined,
@@ -81,7 +85,7 @@ const updateMode = (event: Event) => {
 				:id="`${id}-scope`"
 				v-model="selection"
 			>
-				<option value="">All 6 services</option>
+				<option value="">All services</option>
 				<option
 					v-for="service in streamingServices"
 					:key="service"
@@ -136,12 +140,8 @@ const updateMode = (event: Event) => {
 					v-if="supportsPages"
 					class="sb-help"
 				>
-					Title-page, episode and search features support Netflix, HBO Max and Prime Video.
+					Title pages, episodes and search work on Netflix, HBO Max and Prime Video.
 				</p>
-				<PopupToggle
-					v-model="settings.Video.showYear"
-					label="Release year"
-				/>
 				<template v-if="supportsPages">
 					<PopupToggle
 						v-model="settings.General.detailRatings"
@@ -205,7 +205,7 @@ const updateMode = (event: Event) => {
 							</option>
 						</select>
 					</label>
-					<p class="sb-help">Unrated titles stay visible. TMDb uses its cutoff in advanced settings.</p>
+					<p class="sb-help">Unrated titles stay visible.</p>
 				</fieldset>
 			</div>
 		</details>
@@ -308,19 +308,41 @@ const updateMode = (event: Event) => {
 					@update:model-value="credits = $event"
 				/>
 				<PopupToggle
-					v-if="has('watchCredits')"
-					:model-value="stay === true"
-					:mixed="stay === 'mixed'"
-					label="Stay for credits"
-					description="Turns off automatic episode advancement."
-					@update:model-value="stay = $event"
+					:model-value="stillWatching === true"
+					:mixed="stillWatching === 'mixed'"
+					label="Answer “Still watching?”"
+					@update:model-value="stillWatching = $event"
 				/>
 				<PopupToggle
 					:model-value="speed === true"
 					:mixed="speed === 'mixed'"
 					label="Speed control"
+					description="A speed pill in the player. Shift + < or > to adjust."
 					@update:model-value="speed = $event"
 				/>
+				<PopupToggle
+					v-model="settings.General.keepFirstIntro"
+					label="Play intros on episode 1"
+					description="Hear the theme once, then skip it."
+				/>
+				<PopupToggle
+					v-model="settings.General.skipNotices"
+					label="Skip notices"
+					description="A short notice with Undo each time something is skipped."
+				/>
+				<label class="sb-cutoff">
+					Pause autoplay
+					<select v-model.number="settings.General.pauseAfter">
+						<option
+							v-for="option in pauseOptions"
+							:key="option.value"
+							:value="option.value"
+						>
+							{{ option.label }}
+						</option>
+					</select>
+				</label>
+				<p class="sb-help">Counts episodes that play in a row while you don’t touch anything.</p>
 			</div>
 		</details>
 	</div>

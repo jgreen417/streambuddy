@@ -37,11 +37,7 @@ export default defineManifest((env) => ({
 		"activeTab",
 		// alarms only drives the sideloaded copy's reload-on-rebuild check
 		...(process.env.RELEASE ? [] : ["alarms"]),
-		// Firefox for Android: send a desktop user agent so streaming sites serve their full player
-		"webRequest",
-		"webRequestBlocking",
-		"*://*.disneyplus.com/*",
-		"*://*.starplus.com/*",
+		"*://*.netflix.com/*",
 		"*://*.primevideo.com/*",
 		"*://*.amazon.com/*",
 		"*://*.amazon.co.jp/*",

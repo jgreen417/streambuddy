@@ -33,7 +33,7 @@ These requests go straight from your browser to those services, under their own 
 
 - It doesn't sell or share data.
 - It doesn't use data for advertising, credit or anything unrelated to showing ratings.
-- It runs only on the supported streaming sites: Netflix, Prime Video (including Amazon's sites, where Prime Video is hosted), HBO Max, Disney+, Paramount+ and Crunchyroll. On those pages it reads title names and the player's controls, to show ratings and skip intros or ads.
+- It runs only on Netflix, Prime Video (including Amazon's sites, where Prime Video is hosted) and HBO Max. On those pages it reads title names and the player's controls, to show ratings and to skip intros or ads.
 - It doesn't collect your name, email, payment details or passwords.
 
 ## Contact

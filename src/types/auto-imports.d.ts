@@ -21,6 +21,7 @@ declare global {
   const TransientLookupError: typeof import('../utils/ratings').TransientLookupError
   const acceptHMRUpdate: typeof import('pinia').acceptHMRUpdate
   const addLetterboxdWatchlist: typeof import('../utils/letterboxd-actions').addLetterboxdWatchlist
+  const addSavedSeconds: typeof import('../utils/stats').addSavedSeconds
   const addWatchSeconds: typeof import('../utils/stats').addWatchSeconds
   const appRouter: typeof import('../utils/router/index').appRouter
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
@@ -165,6 +166,7 @@ declare global {
   const shallowReadonly: typeof import('vue').shallowReadonly
   const shallowRef: typeof import('vue').shallowRef
   const storeToRefs: typeof import('pinia').storeToRefs
+  const sumLastDays: typeof import('../utils/stats').sumLastDays
   const summarizeWatchLog: typeof import('../utils/stats').summarizeWatchLog
   const syncRef: typeof import('@vueuse/core').syncRef
   const syncRefs: typeof import('@vueuse/core').syncRefs
@@ -389,10 +391,10 @@ declare global {
   export type { Component, Slot, Slots, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, ShallowRef, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
   import('vue')
   // @ts-ignore
-  export type { BooleanObject, MediaType, HiddenTitleEntry, HiddenTitles } from '../stores/options.store'
+  export type { BooleanObject, MediaType } from '../stores/options.store'
   import('../stores/options.store')
   // @ts-ignore
-  export type { settingsType, Nullable, CrunchyListElement, CrunchyList } from '../stores/storeTypes'
+  export type { settingsType } from '../stores/storeTypes'
   import('../stores/storeTypes')
   // @ts-ignore
   export type { Account, CheckResult } from '../utils/account'
@@ -413,7 +415,7 @@ declare global {
   export type { RowPresentation } from '../utils/row-presentation'
   import('../utils/row-presentation')
   // @ts-ignore
-  export type { WatchLog, SeenTitle, SeenTop, WatchSummary } from '../utils/stats'
+  export type { WatchLog, SeenTitle, SeenTop, WatchSummary, SavedLog } from '../utils/stats'
   import('../utils/stats')
 }
 
@@ -425,7 +427,6 @@ declare module 'vue' {
     readonly CreditsRatingPrompt: UnwrapRef<typeof import('../utils/letterboxd-actions')['CreditsRatingPrompt']>
     readonly DetailRatings: UnwrapRef<typeof import('../utils/page-features')['DetailRatings']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
-    readonly HiddenTitlesPromise: UnwrapRef<typeof import('../stores/options.store')['HiddenTitlesPromise']>
     readonly PLATFORM_NAMES: UnwrapRef<typeof import('../utils/stats')['PLATFORM_NAMES']>
     readonly RowPresentation: UnwrapRef<typeof import('../utils/row-presentation')['RowPresentation']>
     readonly SCORE_BANDS: UnwrapRef<typeof import('../utils/ratings')['SCORE_BANDS']>
@@ -435,6 +436,7 @@ declare module 'vue' {
     readonly TransientLookupError: UnwrapRef<typeof import('../utils/ratings')['TransientLookupError']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
     readonly addLetterboxdWatchlist: UnwrapRef<typeof import('../utils/letterboxd-actions')['addLetterboxdWatchlist']>
+    readonly addSavedSeconds: UnwrapRef<typeof import('../utils/stats')['addSavedSeconds']>
     readonly addWatchSeconds: UnwrapRef<typeof import('../utils/stats')['addWatchSeconds']>
     readonly appRouter: UnwrapRef<typeof import('../utils/router/index')['appRouter']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
@@ -463,7 +465,6 @@ declare module 'vue' {
     readonly createSharedComposable: UnwrapRef<typeof import('@vueuse/core')['createSharedComposable']>
     readonly createTemplatePromise: UnwrapRef<typeof import('@vueuse/core')['createTemplatePromise']>
     readonly createUnrefFn: UnwrapRef<typeof import('@vueuse/core')['createUnrefFn']>
-    readonly crunchyListStore: UnwrapRef<typeof import('../stores/options.store')['crunchyListStore']>
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>
     readonly debouncedRef: UnwrapRef<typeof import('@vueuse/core')['debouncedRef']>
     readonly debouncedWatch: UnwrapRef<typeof import('@vueuse/core')['debouncedWatch']>
@@ -480,7 +481,6 @@ declare module 'vue' {
     readonly fetchLetterboxdGuess: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdGuess']>
     readonly fetchLetterboxdProfile: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdProfile']>
     readonly fetchLetterboxdRating: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdRating']>
-    readonly fetchPosterInfo: UnwrapRef<typeof import('../utils/tmdb')['fetchPosterInfo']>
     readonly formatDuration: UnwrapRef<typeof import('../utils/stats')['formatDuration']>
     readonly getAccount: UnwrapRef<typeof import('../utils/account')['getAccount']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
@@ -578,6 +578,7 @@ declare module 'vue' {
     readonly shallowReadonly: UnwrapRef<typeof import('vue')['shallowReadonly']>
     readonly shallowRef: UnwrapRef<typeof import('vue')['shallowRef']>
     readonly storeToRefs: UnwrapRef<typeof import('pinia')['storeToRefs']>
+    readonly sumLastDays: UnwrapRef<typeof import('../utils/stats')['sumLastDays']>
     readonly summarizeWatchLog: UnwrapRef<typeof import('../utils/stats')['summarizeWatchLog']>
     readonly syncRef: UnwrapRef<typeof import('@vueuse/core')['syncRef']>
     readonly syncRefs: UnwrapRef<typeof import('@vueuse/core')['syncRefs']>
@@ -673,7 +674,6 @@ declare module 'vue' {
     readonly useFullscreen: UnwrapRef<typeof import('@vueuse/core')['useFullscreen']>
     readonly useGamepad: UnwrapRef<typeof import('@vueuse/core')['useGamepad']>
     readonly useGeolocation: UnwrapRef<typeof import('@vueuse/core')['useGeolocation']>
-    readonly useHiddenTitlesStore: UnwrapRef<typeof import('../stores/options.store')['useHiddenTitlesStore']>
     readonly useI18n: UnwrapRef<typeof import('vue-i18n')['useI18n']>
     readonly useId: UnwrapRef<typeof import('vue')['useId']>
     readonly useIdle: UnwrapRef<typeof import('@vueuse/core')['useIdle']>

@@ -1,94 +1,29 @@
+// Per-service options. Every service has the same playback switches so the popup can edit several at once.
+type ServicePlayback = {
+	skipIntro: boolean
+	skipRecap: boolean
+	skipCredits: boolean
+	skipStillWatching: boolean
+	skipAd: boolean
+	speedControl: boolean
+	showRating: boolean
+}
 export type settingsType = {
-	Amazon: {
-		skipIntro: boolean
-		skipCredits: boolean
-		watchCredits: boolean
-		selfAd: boolean
-		skipAd: boolean
-		speedSlider: boolean
-		filterPaid: boolean
-		showRating: boolean
-		xray: boolean
-		improveUI: boolean
-		hideTitles: boolean
+	Netflix: ServicePlayback & {
+		// hide the mobile-games rows that fill the Netflix homepage
+		hideGames: boolean
 	}
-	Netflix: {
-		skipIntro: boolean
-		skipRecap: boolean
-		skipCredits: boolean
-		watchCredits: boolean
-		skipBlocked: boolean
-		skipAd: boolean
-		speedSlider: boolean
-		profile: boolean
-		showRating: boolean
-		removeGames: boolean
-		hideTitles: boolean
+	Amazon: ServicePlayback & {
+		// hide titles that need renting, buying or an add-on subscription
+		hidePaid: boolean
 	}
-	Disney: {
-		skipIntro: boolean
-		skipCredits: boolean
-		watchCredits: boolean
-		skipAd: boolean
-		speedSlider: boolean
-		showRating: boolean
-		hideTitles: boolean
-	}
-	Crunchyroll: {
-		skipIntro: boolean
-		skipCredits: boolean
-		skipAfterCredits: boolean
-		speedSlider: boolean
-		releaseCalendar: boolean
-		profile: boolean
-		bigPlayer: boolean
-		filterQueued: boolean
-		dubLanguage: string
-		filterDuplicates: boolean
-	}
-	HBO: {
-		skipIntro: boolean
-		skipCredits: boolean
-		watchCredits: boolean
-		speedSlider: boolean
-		showRating: boolean
-	}
-	Paramount: {
-		skipIntro: boolean
-		skipCredits: boolean
-		watchCredits: boolean
-		speedSlider: boolean
-		showRating: boolean
-		skipAd: boolean
-	}
+	HBO: ServicePlayback
 	Video: {
-		playOnFullScreen: boolean
-		epilepsy: boolean
-		userAgent: boolean
-		doubleClick: boolean
-		scrollVolume: boolean
-		showYear: boolean
 		dimLowRatings: boolean
 	}
-	Statistics: {
-		AmazonAdTimeSkipped: number
-		NetflixAdTimeSkipped: number
-		DisneyAdTimeSkipped: number
-		ParamountAdTimeSkipped: number
-		IntroTimeSkipped: number
-		RecapTimeSkipped: number
-		SegmentsSkipped: number
-	}
 	General: {
-		Crunchyroll_profilePicture: null | string
-		profileName: null | string
-		profilePicture: null | string
-		sliderSteps: number
-		sliderMin: number
-		sliderMax: number
+		// last time the rating cache was pruned
 		GCdate: string
-		Crunchyroll_skipTimeout: number
-		RatingThresholds: Array<{ color: string; value: number }>
 		friendsRatings: boolean
 		// with dimLowRatings on, dim titles in a colour band below this one (1 = below orange ... 4 = below green)
 		dimBelowBand: number
@@ -102,111 +37,35 @@ export type settingsType = {
 		searchSort: boolean
 		letterboxdActions: boolean
 		rateOnCredits: boolean
+		// a notice with Undo whenever something is skipped
+		skipNotices: boolean
+		// let the first episode of a season play its intro
+		keepFirstIntro: boolean
+		// pause when this many episodes autoplay in a row without the viewer touching anything; 0 = off
+		pauseAfter: number
 	}
 }
-enum RatingColors {
-	Red = "red",
-	Grey = "grey",
-	Yellow = "rgb(245, 197, 24)", // #f5c
-	Green = "rgb(0, 166, 0)",
+
+const playbackDefaults: ServicePlayback = {
+	skipIntro: true,
+	skipRecap: true,
+	skipCredits: true,
+	skipStillWatching: true,
+	skipAd: true,
+	speedControl: true,
+	showRating: true,
 }
 
 // Default settings
-export const defaultSettings = {
-	Amazon: {
-		skipIntro: true,
-		skipCredits: true,
-		watchCredits: false,
-		selfAd: true,
-		skipAd: true,
-		speedSlider: true,
-		filterPaid: false,
-		showRating: true,
-		xray: true,
-		improveUI: true,
-		hideTitles: true,
-	},
-	Netflix: {
-		skipIntro: true,
-		skipRecap: true,
-		skipCredits: true,
-		watchCredits: false,
-		skipBlocked: true,
-		skipAd: true,
-		speedSlider: true,
-		profile: true,
-		showRating: true,
-		removeGames: true,
-		hideTitles: true,
-	},
-	Disney: {
-		skipIntro: true,
-		skipCredits: true,
-		watchCredits: false,
-		skipAd: true,
-		speedSlider: true,
-		showRating: true,
-		hideTitles: true,
-	},
-	Crunchyroll: {
-		skipIntro: true,
-		skipCredits: true,
-		skipAfterCredits: false,
-		speedSlider: true,
-		releaseCalendar: true,
-		profile: true,
-		bigPlayer: true,
-		filterQueued: true,
-		dubLanguage: "none",
-		filterDuplicates: true,
-	},
-	HBO: {
-		skipIntro: true,
-		skipCredits: true,
-		watchCredits: false,
-		speedSlider: true,
-		showRating: true,
-	},
-	Paramount: {
-		skipIntro: true,
-		skipCredits: true,
-		watchCredits: false,
-		speedSlider: true,
-		showRating: true,
-		skipAd: true,
-	},
+export const defaultSettings: settingsType = {
+	Netflix: { ...playbackDefaults, hideGames: true },
+	Amazon: { ...playbackDefaults, hidePaid: false },
+	HBO: { ...playbackDefaults },
 	Video: {
-		playOnFullScreen: true,
-		epilepsy: false,
-		userAgent: true,
-		doubleClick: true,
-		scrollVolume: true,
-		showYear: false,
 		dimLowRatings: false,
 	},
-	Statistics: {
-		AmazonAdTimeSkipped: 0,
-		NetflixAdTimeSkipped: 0,
-		DisneyAdTimeSkipped: 0,
-		ParamountAdTimeSkipped: 0,
-		IntroTimeSkipped: 0,
-		RecapTimeSkipped: 0,
-		SegmentsSkipped: 0,
-	},
 	General: {
-		Crunchyroll_profilePicture: "",
-		profileName: "",
-		profilePicture: "",
-		sliderSteps: 1,
-		sliderMin: 5,
-		sliderMax: 20,
 		GCdate: "2024-01-01",
-		Crunchyroll_skipTimeout: 0,
-		RatingThresholds: [
-			{ color: RatingColors.Red, value: 5.5 },
-			{ color: RatingColors.Yellow, value: 7 },
-			{ color: RatingColors.Green, value: 10 },
-		],
 		friendsRatings: true,
 		dimBelowBand: 1,
 		markWatched: true,
@@ -218,9 +77,8 @@ export const defaultSettings = {
 		searchSort: true,
 		letterboxdActions: true,
 		rateOnCredits: true,
+		skipNotices: true,
+		keepFirstIntro: false,
+		pauseAfter: 0,
 	},
 }
-
-export type Nullable<T> = T | null | undefined
-export type CrunchyListElement = { href: Nullable<string>; name: Nullable<string>; time: string }
-export type CrunchyList = Array<CrunchyListElement>

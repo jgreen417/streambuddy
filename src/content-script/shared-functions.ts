@@ -11,6 +11,7 @@ import {
 } from "@/utils/ratings"
 import { pickBestMatch } from "@/utils/tmdb"
 import { getAccount, onAccountChanged } from "@/utils/account"
+import type { StreamingService } from "@/constants/streamingServices"
 import { RowPresentation, normalizeRowScore, isBelowRatingCutoff } from "@/utils/row-presentation"
 import {
 	DetailRatings,
@@ -32,72 +33,40 @@ console.log("shared-functions loaded")
 // Global Variables
 
 const { data: settings, promise } = useBrowserSyncStorage<settingsType>("settings", defaultSettings)
-const { data: hiddenTitles, promise: hiddenTitlesPromise } = useBrowserLocalStorage<HiddenTitles>(
-	"hiddenTitles",
-	{},
-	false,
-)
 export const date = new Date()
 const today = date.toISOString().split("T")[0]
 
 const ua = navigator.userAgent
-const isMobile = /mobile|streamingEnhanced/i.test(ua)
+const isMobile = /mobile/i.test(ua)
 let url = globalThis.location.href
 const hostname = globalThis.location.hostname
 const title = document.title
 let isPrimeVideo = /amazon|primevideo/i.test(hostname) && (/video/i.test(title) || /video/i.test(url))
 let isNetflix = /netflix/i.test(hostname)
-let isDisney = /disneyplus|starplus/i.test(hostname)
-let isHotstar = /hotstar|jiostar|jiocinema/i.test(hostname)
 let isHBO = /max.com/i.test(hostname)
-let isParamount = /paramount/i.test(hostname) || /paramountplus/i.test(hostname)
 const htmlLang = document.documentElement.lang
 
-const AmazonVideoClass = ".dv-player-fullscreen video"
 let DBCache: DBCacheType = {}
 
 export enum Platforms {
 	Netflix = "netflix",
 	Amazon = "amazon",
-	StarPlus = "starplus",
-	Disney = "disney",
-	Hotstar = "hotstar",
-	Crunchyroll = "crunchyroll",
 	HBO = "hbo",
-	Paramount = "paramount",
 }
 
 let activePlatform: Platforms | null = null
 export async function startSharedFunctions(platform: Platforms) {
 	activePlatform = platform
 	startWatchTimer(platform)
-	if (platform != Platforms.Crunchyroll) loadLetterboxdProfile()
+	loadLetterboxdProfile()
 	if (platform == Platforms.Amazon) isPrimeVideo = true
 	if (platform == Platforms.Netflix) isNetflix = true
-	if (platform == Platforms.Disney) isDisney = true
-	if (platform == Platforms.Hotstar) isHotstar = true
 	if (platform == Platforms.HBO) isHBO = true
-	if (platform == Platforms.Paramount) isParamount = true
 
 	await promise
-	if (isNetflix || isPrimeVideo) {
-		await hiddenTitlesPromise
-		console.log("hiddenTitles", hiddenTitles.value)
-	}
-	if (settings.value.Video.playOnFullScreen) startPlayOnFullScreen()
 	getDBCache()
-	if (isNetflix || isPrimeVideo || isHBO) startPageFeatures()
+	startPageFeatures()
 }
-export function getCurrentEpisodeNumber(title: string | null | undefined) {
-	if (!title) return null
-
-	// Works across "Season 2, Ep. 1", "Staffel 2, F. 1", etc.
-	const nums = title.match(/\d+/g)?.map(Number) ?? []
-	if (nums.length === 0) return null
-	// usually [season, episode] -> take last number
-	return nums.at(-1)
-}
-
 type MovieInfo = {
 	id: number
 	title: string
@@ -135,17 +104,7 @@ async function getDBCache() {
 		}
 		DBCache = {}
 	}
-	if (isNetflix) {
-		if (settings.value.Netflix?.showRating || settings.value.Netflix?.hideTitles)
-			startShowRatingInterval(settings.value.Netflix?.showRating, settings.value.Netflix?.hideTitles)
-	} else if (isDisney || isHotstar) {
-		if (settings.value.Disney?.showRating || settings.value.Disney?.hideTitles)
-			startShowRatingInterval(settings.value.Disney?.showRating, settings.value.Disney?.hideTitles)
-	} else if (isPrimeVideo) {
-		if (settings.value.Amazon?.showRating || settings.value.Amazon?.hideTitles)
-			startShowRatingInterval(settings.value.Amazon?.showRating, settings.value.Amazon?.hideTitles)
-	} else if (isHBO && settings.value.HBO?.showRating) startShowRatingInterval()
-	else if (isParamount && settings.value.Paramount?.showRating) startShowRatingInterval()
+	if (ratingsEnabled()) startShowRatingInterval()
 	if (getDiffInDays(settings.value.General.GCdate, date) >= GCdiff) garbageCollection()
 
 	browser.storage.onChanged.addListener(function (changes, areaName) {
@@ -183,102 +142,6 @@ async function garbageCollection() {
 	settings.value.General.GCdate = today
 	setDBCache()
 }
-// #region exported functions
-// parse string time to seconds e.g. 1:30 -> 90
-export function parseAdTime(adTimeText: string | null) {
-	if (!adTimeText) return false
-	const adTime: number =
-		Number.parseInt(/:\d+/.exec(adTimeText ?? "")?.[0].substring(1) ?? "") +
-		Number.parseInt(/\d+/.exec(adTimeText ?? "")?.[0] ?? "") * 60
-	if (Number.isNaN(adTime)) return false
-	return adTime
-}
-
-export function createSlider(
-	video: HTMLVideoElement,
-	videoSpeed: Ref<number>,
-	position: HTMLElement,
-	sliderStyle: string,
-	speedStyle: string,
-	divStyle = "",
-	cleanupTarget: HTMLElement | null | undefined = null,
-) {
-	videoSpeed.value = videoSpeed.value || video.playbackRate
-
-	const slider = document.createElement("input")
-	slider.id = "videoSpeedSlider"
-	slider.type = "range"
-	slider.min = settings.value.General.sliderMin.toString()
-	slider.max = settings.value.General.sliderMax.toString()
-	slider.value = (videoSpeed.value * 10).toString()
-	slider.step = settings.value.General.sliderSteps.toString()
-	slider.style.cssText = sliderStyle
-
-	const speed = document.createElement("p")
-	speed.id = "videoSpeed"
-	speed.textContent = videoSpeed.value ? videoSpeed.value.toFixed(1) + "x" : "1.0x"
-	watch(videoSpeed, (newValue) => {
-		speed.textContent = newValue.toFixed(1) + "x"
-		slider.value = (newValue * 10).toString()
-	})
-	speed.style.cssText = speedStyle
-	if (divStyle) {
-		const div = document.createElement("div")
-		div.style.cssText = divStyle
-		div.appendChild(slider)
-		div.appendChild(speed)
-		position.prepend(div)
-	} else position.prepend(slider, speed)
-
-	// removes slider if the target element is removed from the DOM
-	if (cleanupTarget) {
-		const cleanup = () => {
-			if (divStyle) {
-				slider.parentElement?.remove()
-			} else {
-				slider.remove()
-				speed.remove()
-			}
-		}
-		const cleanupObserver = new MutationObserver(() => {
-			if (!cleanupTarget.isConnected) {
-				cleanup()
-				cleanupObserver.disconnect()
-			}
-		})
-		cleanupObserver.observe(document.body ?? document.documentElement, { childList: true, subtree: true })
-		if (!cleanupTarget.isConnected) {
-			cleanup()
-			cleanupObserver.disconnect()
-		}
-	}
-
-	if (videoSpeed.value) video.playbackRate = videoSpeed.value
-	speed.onclick = function (event) {
-		event.stopPropagation()
-		event.preventDefault()
-		event.stopImmediatePropagation()
-		slider.style.display = slider.style.display === "block" ? "none" : "block"
-	}
-	slider.onclick = function (event) {
-		event.stopPropagation()
-		event.preventDefault()
-		event.stopImmediatePropagation()
-	}
-	slider.oninput = function (event) {
-		event.stopPropagation()
-		event.preventDefault()
-		event.stopImmediatePropagation()
-		const sliderValue = Number.parseFloat(slider.value)
-		speed.textContent = (sliderValue / 10).toFixed(1) + "x"
-		video.playbackRate = sliderValue / 10
-		videoSpeed.value = sliderValue / 10
-	}
-
-	return { slider, speed }
-}
-// #endregion
-
 // #region startSharedFuncs
 type TMDBMovie = {
 	adult: boolean
@@ -465,7 +328,7 @@ function refreshRowPresentation() {
 					data.source === "tmdb" ? data.score : (data.rating ?? 0),
 					settings.value.General.dimBelowBand,
 					getRatingVoteCount(data),
-					settings.value.General.RatingThresholds[0].value,
+					TMDB_LOW_RATING,
 				)
 			)
 		},
@@ -724,32 +587,22 @@ function getPersonalStatus(data: MovieInfo): { watched?: number; watchlist: bool
 	return { watched: letterboxdProfile.watched[slug], watchlist: watchlistSlugs.has(slug) }
 }
 
-// show rating depending on page
-const uuidRegex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/g
-function showRating() {
-	if (isDisney) {
-		url = globalThis.location.href
-		// disable search and suggested movies
-		if (url.includes("search")) return false
-		if (url.includes("entity")) {
-			const SelectedTab = document.querySelector('[aria-selected="true"]')
-			return (
-				uuidRegex.test(SelectedTab?.id?.split("_control")?.[0] ?? "") &&
-				SelectedTab?.getAttribute("aria-label") != "EXTRAS"
-			)
-		}
-		return true
-	} else if (isPrimeVideo) {
-		// suggested movies
-		if (globalThis.location.href.includes("detail")) {
-			return document.querySelector('[data-testid="btf-related-tab"]')?.getAttribute("tabIndex") == "0"
-		}
-		return true
-	} else return true
+// which service the tab is on, and whether its card ratings are switched on
+function currentService(): StreamingService | null {
+	return isNetflix ? "Netflix" : isPrimeVideo ? "Amazon" : isHBO ? "HBO" : null
 }
-// hideTitles is used to manually hide shows from the page
-async function startShowRatingInterval(optionShowRating = true, optionHideTitles = false) {
-	if (showRating()) addRating(optionShowRating, optionHideTitles)
+function ratingsEnabled() {
+	const service = currentService()
+	return !!service && settings.value[service].showRating
+}
+// Prime's detail pages also list extras and trailers; only rate the "related" tab there
+function showRating() {
+	if (isPrimeVideo && globalThis.location.href.includes("detail"))
+		return document.querySelector('[data-testid="btf-related-tab"]')?.getAttribute("tabIndex") == "0"
+	return true
+}
+async function startShowRatingInterval() {
+	if (showRating()) addRating()
 	// New cards get rated on the next frame after they appear instead of on the next 1s tick. Player pages mutate
 	// constantly and have no cards, so they're ignored; the interval stays as a safety net and to stop when switched off.
 	let stopped = false
@@ -759,7 +612,7 @@ async function startShowRatingInterval(optionShowRating = true, optionHideTitles
 		tickScheduled = true
 		setTimeout(() => {
 			tickScheduled = false
-			if (!stopped && showRating()) addRating(optionShowRating, optionHideTitles)
+			if (!stopped && showRating()) addRating()
 		}, 16)
 	}
 	const observer = new MutationObserver(scheduleTick)
@@ -767,24 +620,7 @@ async function startShowRatingInterval(optionShowRating = true, optionHideTitles
 	globalThis.addEventListener("scroll", scheduleTick, { passive: true, capture: true })
 	const RatingInterval = setInterval(function () {
 		refreshRowPresentation()
-		if (isNetflix) {
-			optionShowRating = settings.value.Netflix?.showRating
-			optionHideTitles = settings.value.Netflix?.hideTitles
-		} else if (isDisney || isHotstar) {
-			optionShowRating = settings.value.Disney?.showRating
-			optionHideTitles = settings.value.Disney?.hideTitles
-		} else if (isPrimeVideo) {
-			optionShowRating = settings.value.Amazon?.showRating
-			optionHideTitles = settings.value.Amazon?.hideTitles
-		}
-
-		if (
-			(isNetflix && !(settings.value.Netflix?.showRating || settings.value.Netflix?.hideTitles)) ||
-			(isPrimeVideo && !(settings.value.Amazon?.showRating || settings.value.Amazon?.hideTitles)) ||
-			((isDisney || isHotstar) && !(settings.value.Disney?.showRating || settings.value.Disney?.hideTitles)) ||
-			(isHBO && !settings.value.HBO?.showRating) ||
-			(isParamount && !settings.value.Paramount?.showRating)
-		) {
+		if (!ratingsEnabled()) {
 			console.log("stopped adding Rating")
 			clearInterval(RatingInterval)
 			stopped = true
@@ -792,7 +628,7 @@ async function startShowRatingInterval(optionShowRating = true, optionHideTitles
 			globalThis.removeEventListener("scroll", scheduleTick, { capture: true })
 			return
 		}
-		if (showRating()) addRating(optionShowRating, optionHideTitles)
+		if (showRating()) addRating()
 	}, 1000)
 }
 export function getDiffInDays(firstDate: string, secondDate: Date) {
@@ -851,17 +687,7 @@ function getAllTitleCardsTypes(): Array<NodeListOf<Element>> {
 				'a[data-uia="standard-card"]:not(.imdb), a[data-uia="progress-card"]:not(.imdb), a[data-uia="ranked-card"]:not(.imdb)',
 			),
 		]
-	else if (isDisney)
-		AllTitleCardsTypes = [document.querySelectorAll("a[data-testid='set-item']:not([href^='/browse/page']):not(.imdb)")]
-	else if (isHotstar)
-		AllTitleCardsTypes = [
-			document.querySelectorAll(
-				"[data-testid='tray-card-default']:not(.imdb), [data-testid='tray-horizontal-card-hover']:not(.imdb)",
-			),
-		]
 	else if (isHBO) AllTitleCardsTypes = [document.querySelectorAll("a[class*='StyledTileLinkNormal-']:not(.imdb)")]
-	else if (isParamount)
-		AllTitleCardsTypes = [document.querySelectorAll("a[href*='/shows']:not(.imdb), a[href*='/movies']:not(.imdb)")]
 	else if (isPrimeVideo)
 		AllTitleCardsTypes = [
 			document.querySelectorAll(
@@ -887,10 +713,10 @@ function isElementVisible(el: HTMLElement): boolean {
 	)
 }
 
-async function addRating(showRating: boolean, optionHideTitles: boolean) {
+async function addRating() {
 	url = globalThis.location.href
 	const AllTitleCardsTypes = getAllTitleCardsTypes()
-	// on disney there are multiple images for the same title so only use the first one
+	// a card can hold several images of the same title, so only use the first one
 	let lastTitle = ""
 	// for each is not going in order on chrome
 	let updateDBCache = false
@@ -899,7 +725,7 @@ async function addRating(showRating: boolean, optionHideTitles: boolean) {
 		for (let i = 0; i < titleCards.length; i++) {
 			const card = titleCards[i] as HTMLElement
 			// add seen class
-			if (isNetflix || isDisney || isHotstar || isHBO || isParamount) card.classList.add("imdb")
+			if (isNetflix || isHBO) card.classList.add("imdb")
 			else if (isPrimeVideo) {
 				if (type == 0) card?.closest("li")?.classList.add("imdb")
 				else if (type == 1) card?.classList.add("imdb")
@@ -907,31 +733,7 @@ async function addRating(showRating: boolean, optionHideTitles: boolean) {
 			const media_type = getMediaType(card)
 			const title = getCleanTitle(card, type)
 			if (!title) continue
-			if (optionHideTitles) {
-				if (hiddenTitles.value[title]) {
-					let item
-					if (isNetflix) item = (card.closest("[data-virtual-slot]") || card.parentElement) as HTMLElement
-					else if (isDisney) item = card.parentElement as HTMLElement
-					else if (isHotstar)
-						item = (card.closest("[data-testid='tray-card-default']") ||
-							card.closest("a") ||
-							card.parentElement) as HTMLElement
-					else if (isPrimeVideo) item = card.closest("li") as HTMLElement
-
-					if (item) {
-						if (item.style.display === "none") continue
-						item.style.display = "none"
-					}
-					settings.value.Statistics.SegmentsSkipped++
-					sendMessage("increaseBadge", {}, "background")
-					console.log("hidden Title", title)
-					continue
-				}
-				if (isDisney || isHotstar || isPrimeVideo) addHideTitleButton(card, title, media_type, type)
-			}
-
-			// for the static Pixar Disney, Starplus etc. cards
-			if (showRating && (!isDisney || !card?.classList.contains("_1p76x1y4"))) {
+			{
 				// sometimes more than one image is loaded for the same title
 				if (lastTitle != title && !title.includes("Netflix") && !title.includes("Prime Video")) {
 					lastTitle = title
@@ -945,7 +747,7 @@ async function addRating(showRating: boolean, optionHideTitles: boolean) {
 					}
 					// if element is not visible skip it
 					else if (!isElementVisible(card)) {
-						if (isNetflix || isDisney || isHotstar || isHBO || isParamount) card.classList.remove("imdb")
+						if (isNetflix || isHBO) card.classList.remove("imdb")
 						else if (isPrimeVideo) {
 							if (type == 0) card?.closest("li")?.classList.remove("imdb")
 							else if (type == 1) card?.classList.remove("imdb")
@@ -961,62 +763,11 @@ async function addRating(showRating: boolean, optionHideTitles: boolean) {
 	}
 	if (updateDBCache) scheduleCacheSave()
 }
-function addHideTitleButton(card: HTMLElement, title: string, mediaType: MediaType, cardType = 0) {
-	let target: HTMLElement
-	if (isHotstar) {
-		// For Hotstar, always target the outermost card container to avoid breaking internal layout
-		target = (card.closest("[data-testid='tray-card-default']") ||
-			card.closest("[data-testid='tray-horizontal-card-hover']") ||
-			card) as HTMLElement
-	} else if (isPrimeVideo) {
-		target = (cardType == 0 ? card?.querySelector('[data-testid="packshot"]') : card) as HTMLElement
-	} else {
-		target = card.parentElement as HTMLElement
-	}
-	if (!target || target.querySelector(".sb-hide-title")) return
-	if (isPrimeVideo && getComputedStyle(target).position === "static") target.style.position = "relative"
-
-	const button = document.createElement("button")
-	installPageFeatureStyle()
-	button.type = "button"
-	button.className = "sb-hide-title"
-	button.textContent = "×"
-	button.setAttribute("aria-label", `Hide ${title}`)
-	button.title = `Hide ${title}. Restore it in Hidden titles.`
-	button.onclick = function (event) {
-		// stop propagation
-		event.stopPropagation()
-		event.preventDefault()
-		const item = target
-		if (item) {
-			if (isDisney || isHotstar) item.style.display = "none"
-			else if (isPrimeVideo) {
-				const li = card.closest("li")
-				if (li) li.style.display = "none"
-			}
-		}
-		hiddenTitles.value[title] = {
-			platform: isPrimeVideo ? "Amazon" : "Disney",
-			mediaType,
-			posterPath: DBCache[title]?.poster_path ?? null,
-			dateAdded: today,
-		}
-	}
-	target.appendChild(button)
-}
 function getMediaType(card: HTMLElement): MediaType {
 	let media_type: MediaType = null
 	if (isNetflix) {
 		if (url.includes("genre/83")) media_type = "tv"
 		else if (url.includes("genre/34399")) media_type = "movie"
-	} else if (isDisney) {
-		if (url.includes("browse/series")) media_type = "tv"
-		else if (url.includes("browse/movies")) media_type = "movie"
-		else if (/(Staffel)|(Nummer)|(Season)|(Episod)|(Number)/g.test(title ?? "")) media_type = "tv"
-	} else if (isParamount) {
-		const href = card.getAttribute("href") || ""
-		if (href.includes("/shows/")) media_type = "tv"
-		else if (href.includes("/movies/")) media_type = "movie"
 	} else if (isHBO) {
 		const href = card.getAttribute("href") || ""
 		if (href.includes("show") || href.includes("series")) media_type = "tv"
@@ -1025,9 +776,6 @@ function getMediaType(card: HTMLElement): MediaType {
 		if (url.includes("video/tv")) media_type = "tv"
 		else if (url.includes("video/movie")) media_type = "movie"
 		else media_type = Amazon_getMediaType(card.dataset.cardEntityType ?? "")
-	} else if (isHotstar) {
-		if (url.includes("/movies/")) media_type = "movie"
-		else if (url.includes("/tv-shows/")) media_type = "tv"
 	}
 	return media_type
 }
@@ -1036,35 +784,6 @@ function getCleanTitle(card: HTMLElement, type: number): string | undefined {
 	let title: string | undefined
 	if (isNetflix) {
 		title = card?.getAttribute("aria-label")?.split(" (")[0]
-	} else if (isDisney) {
-		const prompt = card.querySelector('div[data-testid="hero-carousel-prompt"]')
-		if (prompt?.textContent)
-			title = Disney_fixTitle(card?.getAttribute("aria-label")?.replace(" " + prompt.textContent, ""))
-		else title = Disney_fixTitle(card?.getAttribute("aria-label") ?? undefined)
-		// no section Extras on disney shows
-		if (url.includes("entity")) {
-			const SelectedTabId = document.querySelector('[aria-selected="true"]')?.id.split("_control")[0]
-			if (SelectedTabId != card.closest('div[role="tabpanel"]')?.id) title = ""
-		}
-	} else if (isHotstar) {
-		const rawTitle =
-			card?.querySelector("[data-testid='action']")?.getAttribute("aria-label") ||
-			card?.querySelector("a")?.getAttribute("aria-label") ||
-			card?.getAttribute("aria-label") ||
-			card?.getAttribute("alt") ||
-			card.querySelector("img")?.getAttribute("alt") ||
-			card.querySelector("[data-testid='card-hover-title-cutout'] img")?.getAttribute("alt") ||
-			card.querySelector("span")?.textContent ||
-			""
-		// Cleaning: Remove "S1 E1", trailing numbers like " 2", and split by comma
-		title = rawTitle
-			.replaceAll(/(S\d+\sE\d+)/g, "")
-			.split(",")[0]
-			.replace(/\s\d+$/, "") // Remove trailing number (e.g., "Harry Potter 2" -> "Harry Potter")
-			.trim()
-
-		if (!title || ["show", "movie", "live", "episode", "special", "free"].includes(title.toLowerCase()))
-			title = undefined
 	} else if (isPrimeVideo) {
 		// detail means not live shows
 		if (card.querySelector("a")?.href?.includes("detail")) {
@@ -1083,79 +802,9 @@ function getCleanTitle(card: HTMLElement, type: number): string | undefined {
 			title =
 				HBO_fixTitle(card.getAttribute("aria-label")) ?? card.querySelector("p[class*='md_strong-']")?.textContent ?? ""
 		}
-	} else if (isParamount) title = card.getAttribute("title") ?? ""
+	}
 	return title
 }
-const Brands = String.raw`Hulu Original Series|Disney\+ Original|STAR (?:Original|Generic)|ZDF Enterprises`
-const Badge = String.raw`New(?: (?:Episode|Movie|Series))? Badge|`
-export const DISNEY_TITLE_RE_EN = new RegExp(
-	[
-		String.raw`^`,
-		// sometimes there is a "Number 1 " or "Number 2 " badge in the title, but it is not consistent
-		String.raw`(?:Number\s+\d+\s+)?`,
-		// sometimes there is a "Disney+ Original" or "STAR Original" badge in the title, but it is not consistent
-		// starting the non capturing group
-		String.raw`(?:(?:`,
-		String.raw`Catch Up on the Series|`,
-		Badge,
-		Brands,
-		String.raw`)\s+)*`,
-		// ending the non capturing group
-		String.raw`\s*`,
-		// The title is captured in a non-greedy way until we reach one of the following keywords that indicate additional info, or the end of the string
-		String.raw`(?<title>[\s\S]+?)`,
-		// lookahead for keywords that indicate end of title and start of additional info, e.g. Season
-		String.raw`(?=`,
-		// these keywords indicate that the title has ended and additional info has started, such as season number, release date, rating, etc.
-		String.raw`\s+(?:`,
-		String.raw`Season\b|New Episode\b|Rated\b|Released\b|Coming\b|Prepare\b|Catch Up on the Series|`,
-		Badge,
-		String.raw`Select for details on this title\.|`,
-		String.raw`\d+\s+hour\b|\d+\s+minutes remaining\b|`,
-		Brands,
-		// or the end of the string
-		String.raw`)`,
-		String.raw`|$`,
-		String.raw`)`,
-	].join(""),
-)
-
-export const DISNEY_TITLE_RE_DE = new RegExp(
-	[
-		String.raw`^`,
-		// ranking badge
-		String.raw`(?:Nummer\s+\d+\s+)?`,
-		// provider / brand badges (can appear multiple times, sometimes both before and after "Label: ...")
-		String.raw`(?:(?:${Brands})\s+)*`,
-		// label badge (can appear multiple times, and may appear before the actual title)
-		String.raw`(?:Label:\s+(?:Neuer Film|Neue Serie|Neue Folge|Neu)\s+)*`,
-		String.raw`\s*`,
-		// Sometimes the UI contains countdown-only tiles like "Nur noch 60 Sekunden ...".
-		String.raw`(?!Nur\s+noch\s+\d+\s+Sekunden\b)`,
-		// capture the title until we reach one of the known metadata / CTA markers
-		String.raw`(?<title>[\s\S]+?)`,
-		String.raw`(?=`,
-		String.raw`\s+(?:`,
-		// typical UI strings
-		String.raw`Jetzt\s+aufholen\b|Altersfreigabe:|Erscheinungsjahr:|Genre:|Label:|`,
-		String.raw`Ab\b|ab\b|Neue Folge\b|Mach\s+dich\s+bereit\b|`,
-		String.raw`Für\s+Details\s+zu\s+diesem\s+Titel\s+auswählen\.|`,
-		String.raw`Staffel\b|Folge\b|Noch\b|\d+\s*Stunde\b|\d+\s*Stunden\b|\d+\s*Minuten\b|`,
-		Brands,
-		String.raw`)`,
-		String.raw`|$`,
-		String.raw`)`,
-	].join(""),
-	"u",
-)
-export function Disney_fixTitle(title: string | undefined): string | undefined {
-	// else (htmlLang == "en" || htmlLang == "en-US" || htmlLang == "en-GB")
-	const regex = htmlLang == "de" ? DISNEY_TITLE_RE_DE : DISNEY_TITLE_RE_EN
-	return title?.match(regex)?.groups?.title?.trim()
-}
-// HBO tile labels wrap each part in bidi isolation marks: "⁦⁨⁨Freddy vs. Jason⁩⁩. ⁨6 of 20⁩. ⁨Just Added⁩⁩⁩"
-// or "⁦⁨⁨Mad Max⁩⁩. ⁨Row 1 of 5, Column 2 of 6⁩⁩". The title is whatever comes before the first
-// closing mark (U+2069), so this works whatever the position suffix says.
 export function HBO_fixTitle(label: string | null | undefined): string | undefined {
 	if (!label) return undefined
 	const firstPart = label.includes("\u2069") ? label.slice(0, label.indexOf("\u2069")) : label
@@ -1179,29 +828,17 @@ function Amazon_fixTitle(title: string | undefined) {
 	)
 }
 
-export function getColorForRating(rating: number, lowVoteCount: boolean) {
-	// I want a color gradient from red to green with yellow in the middle
-	// the ratings are between 0 and 10
-	// the average rating is 6.5
-	// https://distributionofthings.com/imdb-movie-ratings/
-	if (!rating || lowVoteCount) return "grey"
-	for (const threshold of settings.value.General.RatingThresholds) {
-		if (rating <= threshold.value) {
-			return threshold.color
-		}
-	}
-}
-export function getIsTransparent(rating: number, lowVoteCount: boolean) {
-	if (!settings.value.Video?.dimLowRatings) return false
-	if ((!rating || rating <= settings.value.General.RatingThresholds[0].value) && !lowVoteCount) return true
-	return false
+// TMDb is only the fallback: colour it on the IMDb scale (both are out of 10), grey when too few people voted
+const TMDB_LOW_RATING = 5.5
+function getTmdbColor(rating: number, lowVoteCount: boolean) {
+	return !rating || lowVoteCount ? "grey" : getScoreColor("imdb", rating)
 }
 // Letterboxd and IMDb dim by colour band (the cut-off is picked in the popup); TMDb keeps the old threshold
 function isDimmed(data: MovieInfo, lowVoteCount: boolean) {
 	if (!settings.value.Video?.dimLowRatings) return false
 	if (data?.source !== "tmdb" && data?.rating)
 		return getScoreBand(data.source, data.rating) < settings.value.General.dimBelowBand
-	return getIsTransparent(data?.score, lowVoteCount)
+	return !lowVoteCount && (!data?.score || data.score <= TMDB_LOW_RATING)
 }
 function getTMDBUrl(id: string | number, media_type: string) {
 	return `https://www.themoviedb.org/${media_type}/${id}`
@@ -1271,26 +908,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	}
 	let div: HTMLElement
 	if (data?.id) {
-		if (isHotstar) {
-			div = document.createElement("div")
-			div.style.cursor = "pointer"
-			div.setAttribute("role", "link")
-			div.tabIndex = 0
-			const openRating = () =>
-				window.open(data.rating_url ?? getTMDBUrl(data.id, data.media_type), "_blank", "noopener,noreferrer")
-			div.addEventListener("keydown", (event) => {
-				if (event.key === "Enter") {
-					event.stopPropagation()
-					event.preventDefault()
-					openRating()
-				}
-			})
-			div.onclick = (event) => {
-				event.stopPropagation()
-				event.preventDefault()
-				openRating()
-			}
-		} else {
+		{
 			const a = document.createElement("a")
 			a.href = data.rating_url ?? getTMDBUrl(data.id, data.media_type)
 			a.target = "_blank"
@@ -1313,9 +931,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	div.classList.add("sb-card-rating")
 	// which streamBuddy build drew this badge (handy for checking that a rebuild was picked up)
 	div.dataset.sbBuild = __BUILD_ID__
-	let zIndexValue = "2"
-	if (isDisney) zIndexValue = ""
-	else if (isPrimeVideo) zIndexValue = "3"
+	const zIndexValue = isPrimeVideo ? "3" : "2"
 	// dark glass pill, numbers stacked and right-aligned
 	Object.assign(div.style, {
 		position: "absolute",
@@ -1345,11 +961,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 
 	requestAnimationFrame(() => (div.style.opacity = "1"))
 	{
-		let releaseDate = ""
-		if (settings.value.Video?.showYear && data?.release_date) {
-			releaseDate = new Date(data?.release_date)?.getFullYear() + "-"
-		}
-		fillBadge(div, data, releaseDate, getColorForRating(score, vote_count < 50))
+		fillBadge(div, data, "", getTmdbColor(score, vote_count < 50))
 		if (data.source !== "tmdb" && data.rating && activePlatform) {
 			const personal = getPersonalStatus(data)
 			queueSeenTitle(
@@ -1404,30 +1016,6 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		position.appendChild(div)
 		if (isDimmed(data, vote_count < 50)) position.appendChild(greyOverlay)
 		// card.style.opacity = getTransparencyForRating(data?.score, vote_count < 50)
-	} else if (isParamount) {
-		card.style.position = "unset"
-		card.appendChild(div)
-		if (isDimmed(data, vote_count < 50)) card.appendChild(greyOverlay)
-		// card.style.opacity = getTransparencyForRating(data?.score, vote_count < 50)
-	} else if (isDisney) {
-		const parentDiv = card?.closest("div")
-		if (parentDiv) {
-			if (card.nextElementSibling && !card.nextElementSibling.classList.contains("sb-hide-title")) {
-				div.style.top = card.offsetHeight + "px"
-				div.style.bottom = ""
-			}
-			parentDiv.style.position = "relative"
-			parentDiv.appendChild(div)
-			if (isDimmed(data, vote_count < 50)) parentDiv.appendChild(greyOverlay)
-			// parentDiv.style.opacity = getTransparencyForRating(data?.score, vote_count < 50)
-		}
-	} else if (isHotstar) {
-		const targetContainer = card // card is the outermost container from getAllTitleCardsTypes
-		if (targetContainer && !targetContainer.querySelector("#rating")) {
-			div.style.zIndex = "10"
-			targetContainer.appendChild(div)
-			if (isDimmed(data, vote_count < 50)) targetContainer.appendChild(greyOverlay)
-		}
 	} else if (isPrimeVideo) {
 		let position: HTMLElement = card
 		if (card.dataset.cardTitle) position = card?.firstChild?.firstChild as HTMLElement
@@ -1463,10 +1051,8 @@ let lastVideoTime = -1
 function isOnPlayerPage() {
 	const path = globalThis.location.pathname
 	if (isNetflix) return path.startsWith("/watch")
-	if (isPrimeVideo) return !!document.querySelector(AmazonVideoClass)
+	if (isPrimeVideo) return !!document.querySelector(".dv-player-fullscreen video")
 	if (isHBO) return path.includes("/video/watch")
-	if (isDisney || isHotstar) return /\/(video|play|watch)\//.test(path)
-	if (isParamount) return path.includes("/video/")
 	return false
 }
 function getPlayingVideo() {
@@ -1522,24 +1108,4 @@ async function flushSeenTitles() {
 }
 // #endregion
 
-function OnFullScreenChange() {
-	let video: HTMLVideoElement
-	if (isDisney)
-		video = Array.from(document.querySelectorAll("video")).find((v) => v.checkVisibility()) as HTMLVideoElement
-	else if (isNetflix || isHotstar || isHBO || isParamount) video = document.querySelector("video") as HTMLVideoElement
-	else video = document.querySelector(AmazonVideoClass) as HTMLVideoElement
-	if (document.fullscreenElement && video) {
-		video.play()
-		console.log("auto-played on fullscreen")
-		settings.value.Statistics.SegmentsSkipped++
-		sendMessage("increaseBadge", {}, "background")
-	}
-}
-async function startPlayOnFullScreen() {
-	if (settings.value.Video?.playOnFullScreen) {
-		addEventListener("fullscreenchange", OnFullScreenChange)
-	} else {
-		removeEventListener("fullscreenchange", OnFullScreenChange)
-	}
-}
 // #endregion

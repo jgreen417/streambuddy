@@ -32,8 +32,12 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > • Ratings and sort-by-rating on search pages
 > • Watched films can fade back so new ones stand out
 >
-> PLAYBACK
-> • Skip intros, recaps, credits and ads, and adjust playback speed
+> WATCH WITHOUT THE FIDDLY BITS
+> • Skips intros, recaps, credits, ads and "Still watching?", with a notice and one-tap Undo
+> • "Not for this show" keeps a theme song you love; optionally hear episode 1's intro
+> • A speed pill in the player (Shift + < / >), remembered per service
+> • Optional pause after a few episodes autoplay in a row
+> • Hides Netflix's mobile-games rows, and optionally Prime titles that cost extra
 >
 > STATS
 > • Weekly watch time by service, plus watchlist films that are streaming now
@@ -44,7 +48,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > PRIVATE BY DESIGN
 > No account, no server, no tracking. streamBuddy talks directly to TMDb, Letterboxd and IMDb from your browser and never sends your data anywhere else.
 >
-> streamBuddy is free and open source (GPL-3.0), built on the Streaming enhanced extension. If it helps you pick better films, you can support it at ko-fi.com/joshgreen48454. It is an independent project, not affiliated with or endorsed by Letterboxd, IMDb, Netflix, Amazon or Warner Bros. Discovery. This product uses the TMDb API but is not endorsed or certified by TMDb.
+> streamBuddy is free and open source (GPL-3.0). It started from the Streaming enhanced extension by Dreamlinerm. If it helps you pick better films, you can support it at ko-fi.com/joshgreen48454. It is an independent project, not affiliated with or endorsed by Letterboxd, IMDb, Netflix, Amazon or Warner Bros. Discovery. This product uses the TMDb API but is not endorsed or certified by TMDb.
 
 **Graphics:**
 
@@ -81,7 +85,7 @@ Tip: in Dia, set the window to 1280×800, or capture larger and scale down. Avoi
 | `activeTab` | Lets the toolbar popup see which streaming service the current tab is on, so it can show that service's settings. |
 | Host: `letterboxd.com` | Fetches public film pages for ratings and, if the user enters a username, their public diary, watchlist and friends' ratings. Adds to the watchlist only when the user clicks and confirms. |
 | Host: `caching.graphql.imdb.com` | Fetches IMDb ratings for series and episodes. |
-| Content scripts on Netflix, Prime Video/Amazon, HBO Max, Disney+, Paramount+ and Crunchyroll | Reads title names to place rating badges, and finds the player's skip buttons and ad markers to skip intros and ads. Prime Video is hosted on Amazon's domains, so those are included. |
+| Content scripts on Netflix, Prime Video/Amazon and HBO Max | Reads title names to place rating badges, and finds the player's skip buttons and ad timer to skip intros, credits and ads. Prime Video is hosted on Amazon's domains, so those are included. |
 
 **Remote code:** No. All code is in the package. Nothing is fetched and run with eval.
 
@@ -145,7 +149,7 @@ Submit at https://addons.mozilla.org/developers/addon/submit/ and choose "On thi
 >
 > No API keys are needed to build; `.env` is not used for release builds. To see ratings while testing, enter a free TMDb key on the welcome page that opens on install. A Letterboxd username is optional (any public profile works). Ratings appear on title cards on netflix.com, primevideo.com and play.hbomax.com once signed in.
 >
-> Permissions: `webRequest`/`webRequestBlocking` change the user agent on Firefox for Android only, so streaming sites serve their desktop player. This is inherited from Streaming enhanced, which streamBuddy is built on. Data collection: website content (title names sent to TMDb, Letterboxd and IMDb to look up ratings) and authentication info (the user's own TMDb key and Letterboxd username, sent only to those services). Nothing goes to the developer.
+> Permissions: storage and activeTab, plus host access to letterboxd.com and caching.graphql.imdb.com for ratings, and content scripts on Netflix, Prime Video and HBO Max. Data collection: website content (title names sent to TMDb, Letterboxd and IMDb to look up ratings) and authentication info (the user's own TMDb key and Letterboxd username, sent only to those services). Nothing goes to the developer.
 >
 > The single linter warning (innerHTML) is in Vue's runtime (`runtime-dom.esm-bundler.js`), not in streamBuddy's code.
 

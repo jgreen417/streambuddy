@@ -18,12 +18,7 @@ export type SeenTop = Record<string, SeenTitle>
 export const PLATFORM_NAMES: Record<string, string> = {
 	netflix: "Netflix",
 	amazon: "Prime Video",
-	disney: "Disney+",
-	starplus: "Star+",
-	hotstar: "Hotstar",
 	hbo: "HBO Max",
-	paramount: "Paramount+",
-	crunchyroll: "Crunchyroll",
 }
 
 const WATCH_LOG_DAYS = 120
@@ -154,4 +149,14 @@ export function recentSeenTitles(titles: SeenTop, now: Date): SeenTitle[] {
 	const cutoff = localDateKey(daysAgo(now, SEEN_DAYS - 1))
 	const today = localDateKey(now)
 	return Object.values(titles).filter((title) => title.seen >= cutoff && title.seen <= today)
+}
+
+// time saved by skipping, same shape as WatchLog but keyed by what was skipped: { "2026-10-12": { intro: 85, ad: 60 } }
+export type SavedLog = WatchLog
+export const addSavedSeconds = addWatchSeconds
+export function sumLastDays(log: WatchLog, now: Date, days: number): number {
+	const cutoff = localDateKey(daysAgo(now, days - 1))
+	return Object.entries(log)
+		.filter(([date]) => date >= cutoff)
+		.reduce((total, [, day]) => total + sumDay(day), 0)
 }

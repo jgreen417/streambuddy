@@ -61,49 +61,13 @@ watch(
 					<div>Viewing preferences</div>
 				</RouterLink>
 				<RouterLink
-					v-for="service in [
-						{ route: 'Netflix', name: 'Netflix' },
-						{ route: 'Amazon', name: 'Prime Video' },
-						{ route: 'Disney', name: 'Disney+' },
-						{ route: 'HBO', name: 'HBO Max' },
-						{ route: 'Paramount', name: 'Paramount+' },
-						{ route: 'Crunchyroll', name: 'Crunchyroll' },
-					]"
-					:key="service.route"
-					:to="`/options-page/${service.route}`"
+					to="/options-page/Playback"
 					class="menuButton flex"
-					:class="{ 'is-active': hash.endsWith(service.route) }"
+					:class="{ 'is-active': hash.endsWith('Playback') }"
 					draggable="false"
 				>
 					<i-mdi-play-circle-outline class="icon" />
-					<div>{{ service.name }}</div>
-				</RouterLink>
-				<RouterLink
-					to="/options-page/SharedSettings"
-					class="menuButton flex"
-					:class="{ 'is-active': hash.endsWith('SharedSettings') }"
-					draggable="false"
-				>
-					<i-mdi-cog-outline class="icon" />
-					<div>Advanced settings</div>
-				</RouterLink>
-				<RouterLink
-					to="/options-page/HiddenTitles"
-					class="menuButton flex"
-					:class="{ 'is-active': hash.endsWith('HiddenTitles') }"
-					draggable="false"
-				>
-					<i-mdi-eye-off-outline class="icon" />
-					<div>{{ $t("hiddenTitlesNav") }}</div>
-				</RouterLink>
-				<RouterLink
-					to="/options-page/Statistics"
-					class="menuButton flex"
-					:class="{ 'is-active': hash.endsWith('Statistics') }"
-					draggable="false"
-				>
-					<i-mdi-chart-bar class="icon" />
-					<div>{{ $t("statistics") }}</div>
+					<div>Playback</div>
 				</RouterLink>
 				<RouterLink
 					to="/options-page/Backup"

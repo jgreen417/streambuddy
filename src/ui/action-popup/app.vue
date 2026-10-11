@@ -9,10 +9,7 @@ import { DONATE_URL } from "@/constants/links"
 const SERVICES: Array<{ pattern: RegExp; service: StreamingService; name: string }> = [
 	{ pattern: /(^|\.)(amazon|primevideo)\./i, service: "Amazon", name: "Prime Video" },
 	{ pattern: /(^|\.)netflix\./i, service: "Netflix", name: "Netflix" },
-	{ pattern: /(^|\.)(disneyplus|starplus|hotstar|jiostar|jiocinema)\./i, service: "Disney", name: "Disney+" },
 	{ pattern: /(^|\.)(hbo)?max\.com$/i, service: "HBO", name: "HBO Max" },
-	{ pattern: /(^|\.)paramountplus\./i, service: "Paramount", name: "Paramount+" },
-	{ pattern: /(^|\.)crunchyroll\.com$/i, service: "Crunchyroll", name: "Crunchyroll" },
 ]
 
 const tab = ref<"settings" | "stats">("settings")
@@ -160,9 +157,9 @@ function navigateTabs(event: KeyboardEvent) {
 		<footer class="sb-footer">
 			<button
 				type="button"
-				@click="openSettings('/options-page/HiddenTitles')"
+				@click="openSettings('/options-page/Playback')"
 			>
-				Hidden titles
+				Playback & rules
 			</button>
 			<a
 				v-if="DONATE_URL"

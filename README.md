@@ -18,7 +18,11 @@ streamBuddy puts a small score on every title card. Films show their Letterboxd 
 - **Episode ratings.** IMDb ratings for every episode of the season you're viewing.
 - **Find the good stuff.** Best-in-row highlights, an optional cut-off that hides low-rated titles, and sort-by-rating on search pages.
 - **Stats.** Weekly watch time by service, plus watchlist films that are streaming now.
-- **Playback controls.** Skip intros, recaps, credits and ads, and adjust speed, inherited from Streaming enhanced.
+- **Skips you can trust.** Intros, recaps, credits, ads and "Still watching?" are handled for you, each with a small notice and one-tap Undo.
+- **Your rules.** Choose "Not for this show" to keep a theme song you love, or let the first episode of a season play its intro.
+- **Speed that sticks.** A speed pill in the player, Shift + < and > shortcuts, remembered per service and kept through ads and new episodes.
+- **Autoplay limit.** Optionally pause after a few episodes play in a row without you touching anything.
+- **Cleaner pages.** Hide Netflix's mobile-games rows and, optionally, Prime Video titles you'd have to pay extra for.
 
 ## Setup
 
@@ -47,6 +51,6 @@ streamBuddy is free. If it saves you from a bad film night, you can [buy me a co
 
 ## Credits and licence
 
-streamBuddy is built on [Streaming enhanced](https://github.com/Dreamlinerm/Netflix-Prime-Auto-Skip) by Marvin Krebber (Dreamlinerm), and like the original it is licensed under the [GNU GPL v3](License). See [NOTICE](NOTICE) for details of the original work and what changed.
+streamBuddy started from [Streaming enhanced](https://github.com/Dreamlinerm/Netflix-Prime-Auto-Skip) by Marvin Krebber (Dreamlinerm), and like it is licensed under the [GNU GPL v3](License). The rating-card lookup, settings shell and build setup still come from Streaming enhanced; see [NOTICE](NOTICE) for what was kept and what changed.
 
 This product uses the TMDb API but is not endorsed or certified by TMDb. streamBuddy is an independent project and is not affiliated with or endorsed by Letterboxd, IMDb, Netflix, Amazon or Warner Bros. Discovery. Ratings belong to their respective sites.

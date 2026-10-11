@@ -27,8 +27,6 @@ export function setServiceState(
 		for (const key of keys) {
 			if (typeof entry[key] !== "boolean") continue
 			entry[key] = value
-			if (value && key === "skipCredits" && "watchCredits" in entry) entry.watchCredits = false
-			if (value && key === "watchCredits" && "skipCredits" in entry) entry.skipCredits = false
 		}
 	}
 }

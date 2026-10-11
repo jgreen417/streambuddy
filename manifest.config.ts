@@ -27,10 +27,6 @@ export default {
 	},
 	content_scripts: [
 		{
-			js: ["src/content-script/crunchyroll.ts"],
-			matches: ["*://*.crunchyroll.com/*"],
-		},
-		{
 			js: ["src/content-script/amazon.ts"],
 			matches: [
 				"*://*.primevideo.com/*",
@@ -45,22 +41,8 @@ export default {
 			matches: ["*://*.netflix.com/*", "*://*.netflix.ca/*", "*://*.netflix.com.au/*"],
 		},
 		{
-			js: ["src/content-script/disney.ts"],
-			matches: [
-				"*://*.disneyplus.com/*",
-				"*://*.hotstar.com/*",
-				"*://*.starplus.com/*",
-				"*://*.jiostar.com/*",
-				"*://*.jiocinema.com/*",
-			],
-		},
-		{
 			js: ["src/content-script/max.ts"],
 			matches: ["*://*.max.com/*", "*://*.hbomax.com/*"],
-		},
-		{
-			js: ["src/content-script/paramount.ts"],
-			matches: ["*://*.paramountplus.com/*"],
 		},
 	],
 	options_page: "src/ui/options-page/index.html",

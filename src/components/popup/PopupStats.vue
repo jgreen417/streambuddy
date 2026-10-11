@@ -10,6 +10,8 @@ import {
 	PLATFORM_NAMES,
 	summarizeWatchLog,
 	recentSeenTitles,
+	sumLastDays,
+	type SavedLog,
 	type SeenTop,
 	type WatchLog,
 } from "@/utils/stats"
@@ -18,17 +20,13 @@ const SERVICE_COLORS: Record<string, string> = {
 	netflix: "#e50914",
 	amazon: "#1f9cf0",
 	hbo: "#7b5cff",
-	disney: "#3d5afe",
-	starplus: "#3d5afe",
-	hotstar: "#3d5afe",
-	paramount: "#2ec4b6",
-	crunchyroll: "#f78b24",
 }
 
 const { settings } = storeToRefs(useOptionsStore())
 const watchLog = ref<WatchLog>({})
 const seenTop = ref<SeenTop>({})
 const watchlistSeen = ref<SeenTop>({})
+const savedLog = ref<SavedLog>({})
 const loading = ref(true)
 const error = ref(false)
 const settingsFailed = ref(false)
@@ -42,7 +40,8 @@ async function loadStats() {
 			settingsFailed.value = true
 			throw new Error("Settings unavailable")
 		}
-		const result = await browser.storage.local.get(["watchLog", "seenTop", "watchlistSeen"])
+		const result = await browser.storage.local.get(["watchLog", "seenTop", "watchlistSeen", "savedLog"])
+		savedLog.value = (result.savedLog as SavedLog) ?? {}
 		watchLog.value = (result.watchLog as WatchLog) ?? {}
 		seenTop.value = (result.seenTop as SeenTop) ?? {}
 		watchlistSeen.value = (result.watchlistSeen as SeenTop) ?? {}
@@ -60,17 +59,8 @@ const maxDay = computed(() => Math.max(...summary.value.days.map((day) => day.se
 const weekDelta = computed(() => summary.value.thisWeek - summary.value.lastWeek)
 const servicesTotal = computed(() => summary.value.byService.reduce((sum, service) => sum + service.seconds, 0))
 
-const timeSaved = computed(() => {
-	const stats = settings.value.Statistics
-	return (
-		stats.AmazonAdTimeSkipped +
-		stats.NetflixAdTimeSkipped +
-		stats.DisneyAdTimeSkipped +
-		stats.ParamountAdTimeSkipped +
-		stats.IntroTimeSkipped +
-		stats.RecapTimeSkipped
-	)
-})
+// intros, recaps, credits and ads skipped in the last 7 days
+const timeSaved = computed(() => sumLastDays(savedLog.value, new Date(), 7))
 
 // films logged since they were spotted aren't recommendations any more
 const topUnwatched = (titles: SeenTop, count: number) =>
@@ -176,7 +166,7 @@ const formatRating = (title: { source: string; rating: number }) =>
 		<div class="sb-tiles">
 			<div class="sb-tile">
 				<div class="sb-tile-value">{{ formatDuration(timeSaved) }}</div>
-				<div class="sb-tile-label">saved by skipping</div>
+				<div class="sb-tile-label">saved by skipping this week</div>
 			</div>
 			<div class="sb-tile">
 				<template v-if="summary.biggestNight">

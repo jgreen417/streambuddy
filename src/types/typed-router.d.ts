@@ -38,41 +38,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/action-popup/Amazon': RouteRecordInfo<
-      '/action-popup/Amazon',
-      '/action-popup/Amazon',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/action-popup/Crunchyroll': RouteRecordInfo<
-      '/action-popup/Crunchyroll',
-      '/action-popup/Crunchyroll',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/action-popup/Netflix': RouteRecordInfo<
-      '/action-popup/Netflix',
-      '/action-popup/Netflix',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/action-popup/SharedOptions': RouteRecordInfo<
-      '/action-popup/SharedOptions',
-      '/action-popup/SharedOptions',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/action-popup/Statistics': RouteRecordInfo<
-      '/action-popup/Statistics',
-      '/action-popup/Statistics',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
     '/options-page/': RouteRecordInfo<
       '/options-page/',
       '/options-page',
@@ -83,13 +48,6 @@ declare module 'vue-router/auto-routes' {
     '/options-page/Account': RouteRecordInfo<
       '/options-page/Account',
       '/options-page/Account',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/options-page/Amazon': RouteRecordInfo<
-      '/options-page/Amazon',
-      '/options-page/Amazon',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -108,27 +66,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/options-page/Crunchyroll': RouteRecordInfo<
-      '/options-page/Crunchyroll',
-      '/options-page/Crunchyroll',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/options-page/disabledSettings': RouteRecordInfo<
-      '/options-page/disabledSettings',
-      '/options-page/disabledSettings',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/options-page/Disney': RouteRecordInfo<
-      '/options-page/Disney',
-      '/options-page/Disney',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
     '/options-page/Experience': RouteRecordInfo<
       '/options-page/Experience',
       '/options-page/Experience',
@@ -143,20 +80,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/options-page/HBO': RouteRecordInfo<
-      '/options-page/HBO',
-      '/options-page/HBO',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/options-page/HiddenTitles': RouteRecordInfo<
-      '/options-page/HiddenTitles',
-      '/options-page/HiddenTitles',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
     '/options-page/install': RouteRecordInfo<
       '/options-page/install',
       '/options-page/install',
@@ -164,30 +87,9 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/options-page/Netflix': RouteRecordInfo<
-      '/options-page/Netflix',
-      '/options-page/Netflix',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/options-page/Paramount': RouteRecordInfo<
-      '/options-page/Paramount',
-      '/options-page/Paramount',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/options-page/SharedSettings': RouteRecordInfo<
-      '/options-page/SharedSettings',
-      '/options-page/SharedSettings',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/options-page/Statistics': RouteRecordInfo<
-      '/options-page/Statistics',
-      '/options-page/Statistics',
+    '/options-page/Playback': RouteRecordInfo<
+      '/options-page/Playback',
+      '/options-page/Playback',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -213,46 +115,6 @@ declare module 'vue-router/auto-routes' {
       pathParamNames:
         | never
     }
-    'src/ui/action-popup/pages/Amazon.vue': {
-      routes:
-        | '/action-popup/Amazon'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/ui/action-popup/pages/Crunchyroll.vue': {
-      routes:
-        | '/action-popup/Crunchyroll'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/ui/action-popup/pages/Netflix.vue': {
-      routes:
-        | '/action-popup/Netflix'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/ui/action-popup/pages/SharedOptions.vue': {
-      routes:
-        | '/action-popup/SharedOptions'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/ui/action-popup/pages/Statistics.vue': {
-      routes:
-        | '/action-popup/Statistics'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
     'src/ui/options-page/pages/index.vue': {
       routes:
         | '/options-page/'
@@ -264,14 +126,6 @@ declare module 'vue-router/auto-routes' {
     'src/ui/options-page/pages/Account.vue': {
       routes:
         | '/options-page/Account'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/ui/options-page/pages/Amazon.vue': {
-      routes:
-        | '/options-page/Amazon'
       views:
         | never
       pathParamNames:
@@ -293,30 +147,6 @@ declare module 'vue-router/auto-routes' {
       pathParamNames:
         | never
     }
-    'src/ui/options-page/pages/Crunchyroll.vue': {
-      routes:
-        | '/options-page/Crunchyroll'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/ui/options-page/pages/disabledSettings.vue': {
-      routes:
-        | '/options-page/disabledSettings'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/ui/options-page/pages/Disney.vue': {
-      routes:
-        | '/options-page/Disney'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
     'src/ui/options-page/pages/Experience.vue': {
       routes:
         | '/options-page/Experience'
@@ -333,22 +163,6 @@ declare module 'vue-router/auto-routes' {
       pathParamNames:
         | never
     }
-    'src/ui/options-page/pages/HBO.vue': {
-      routes:
-        | '/options-page/HBO'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/ui/options-page/pages/HiddenTitles.vue': {
-      routes:
-        | '/options-page/HiddenTitles'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
     'src/ui/options-page/pages/install.vue': {
       routes:
         | '/options-page/install'
@@ -357,33 +171,9 @@ declare module 'vue-router/auto-routes' {
       pathParamNames:
         | never
     }
-    'src/ui/options-page/pages/Netflix.vue': {
+    'src/ui/options-page/pages/Playback.vue': {
       routes:
-        | '/options-page/Netflix'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/ui/options-page/pages/Paramount.vue': {
-      routes:
-        | '/options-page/Paramount'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/ui/options-page/pages/SharedSettings.vue': {
-      routes:
-        | '/options-page/SharedSettings'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/ui/options-page/pages/Statistics.vue': {
-      routes:
-        | '/options-page/Statistics'
+        | '/options-page/Playback'
       views:
         | never
       pathParamNames:
