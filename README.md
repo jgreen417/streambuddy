@@ -20,7 +20,7 @@ streamBuddy puts a small score on every title card. Films show their Letterboxd 
 - **Stats.** Weekly watch time by service, plus watchlist films that are streaming now.
 - **Skips you can trust.** Intros, recaps, credits, ads and "Still watching?" are handled for you, each with a small notice and one-tap Undo.
 - **Your rules.** Choose "Not for this show" to keep a theme song you love, or let the first episode of a season play its intro.
-- **Speed that sticks.** A speed pill in the player, Shift + < and > shortcuts, remembered per service and kept through ads and new episodes.
+- **Speed that sticks.** Remembered per service and kept through ads and new episodes, with Shift + < and > shortcuts. Prime Video and HBO Max, which have no speed menu, get a speed pill.
 - **Autoplay limit.** Optionally pause after a few episodes play in a row without you touching anything.
 - **Cleaner pages.** Hide Netflix's mobile-games rows and, optionally, Prime Video titles you'd have to pay extra for.
 

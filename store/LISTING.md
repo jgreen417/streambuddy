@@ -35,7 +35,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > WATCH WITHOUT THE FIDDLY BITS
 > • Skips intros, recaps, credits, ads and "Still watching?", with a notice and one-tap Undo
 > • "Not for this show" keeps a theme song you love; optionally hear episode 1's intro
-> • A speed pill in the player (Shift + < / >), remembered per service
+> • Speed that sticks: remembered per service and kept on the next episode, with Shift + < / > shortcuts and a speed pill on Prime Video and HBO Max
 > • Optional pause after a few episodes autoplay in a row
 > • Hides Netflix's mobile-games rows, and optionally Prime titles that cost extra
 >
