@@ -16,8 +16,12 @@ The screenshot is a crop of the live Netflix catalogue, resized to 1280×800. It
 
 Verification: 110 tests passed; Chrome release build succeeded; ZIP integrity passed; no embedded development TMDb credential or Letterboxd username found.
 
-## Remaining step
+## Submission status
 
-The dashboard reports that the publisher contact email must be added and verified in Settings before the item can be submitted. The item is still a draft and has not been submitted for review.
+Submitted for Chrome Web Store review on 12 October 2026. The dashboard confirmed **Pending review** and displayed "Your extension was submitted for review". Automatic publishing after approval is enabled.
+
+The user approved `joshmdg04@gmail.com` as the public publisher contact and completed its verification. The account is declared non-trader.
+
+Local confirmation screenshot: `release/chrome-submission-receipt.png` (not included in the extension ZIP).
 
 Firefox submission is deferred until further testing.
