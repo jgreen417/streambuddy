@@ -6,8 +6,8 @@ import { getServiceState, setServiceState, getRatingMode, setRatingMode, type Ra
 import { SCORE_BANDS } from "@/utils/ratings"
 import PopupToggle from "./PopupToggle.vue"
 import { useAccount } from "./useAccount"
+const settings = defineModel<settingsType>("settings", { required: true })
 const props = defineProps<{
-	settings: settingsType
 	service: StreamingService | null
 	expanded?: boolean
 	fixedService?: boolean
@@ -29,12 +29,12 @@ const supportsPages = computed(() => true)
 const scope = computed(() => (selection.value ? names[selection.value] : "All services"))
 const has = (key: string) =>
 	targets.value.some(
-		(service) => typeof (props.settings[service] as unknown as Record<string, unknown>)[key] === "boolean",
+		(service) => typeof (settings.value[service] as unknown as Record<string, unknown>)[key] === "boolean",
 	)
 function preference(keys: string[]) {
 	return computed({
-		get: () => getServiceState(props.settings, targets.value, keys),
-		set: (value) => setServiceState(props.settings, targets.value, keys, value === true),
+		get: () => getServiceState(settings.value, targets.value, keys),
+		set: (value) => setServiceState(settings.value, targets.value, keys, value === true),
 	})
 }
 const cards = preference(["showRating"])
@@ -57,8 +57,8 @@ const cardDependency = computed(() =>
 	cardsInactive.value ? "Turn on card ratings for the selected services." : undefined,
 )
 const mode = computed({
-	get: () => getRatingMode(props.settings, supportsPages.value),
-	set: (value) => setRatingMode(props.settings, value, supportsPages.value),
+	get: () => getRatingMode(settings.value, supportsPages.value),
+	set: (value) => setRatingMode(settings.value, value, supportsPages.value),
 })
 const id = useId()
 const bands = SCORE_BANDS.letterboxd.map((score, index) => ({
