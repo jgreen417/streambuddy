@@ -73,8 +73,9 @@ export function readDetailContext(site: FeatureSite, path = location.pathname): 
 			!!document.querySelector('[data-testid="generic-show-page-rail-episodes-tabbed-content_rail"]')
 		const title = series
 			? clean(document.title.split(/\s*[•·]\s*/)[0])
-			: clean(button?.getAttribute("aria-label"))
-					.replace(/^Watch\s+/i, "")
+			: // "Watch Dune", or "Watch again: Dune" once it's been seen
+				clean(button?.getAttribute("aria-label"))
+					.replace(/^(?:Watch(?:\s+again)?|Resume|Continue(?:\s+watching)?)\s*:?\s+/i, "")
 					.trim()
 		if (!title) return null
 		return {

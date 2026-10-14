@@ -41,6 +41,10 @@ describe("page adapters", () => {
 		document.body.innerHTML = `<div data-testid="details-hero-container"><button data-testid="play_button" aria-label="\u2068Watch Dune: Part Two\u2069"></button></div>`
 		expect(readDetailContext("hbo", "/movie/dune")?.title).toBe("Dune: Part Two")
 	})
+	it("reads the HBO film title once it has been watched", () => {
+		document.body.innerHTML = `<div data-testid="details-hero-container"><button data-testid="play_button" aria-label="\u2066\u2068Watch again: Freddy vs. Jason\u2069\u2069"></button></div>`
+		expect(readDetailContext("hbo", "/movie/freddy")?.title).toBe("Freddy vs. Jason")
+	})
 })
 
 describe("detail rendering", () => {
