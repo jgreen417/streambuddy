@@ -2,7 +2,7 @@
 	"displayName": "streamBuddy",
 	"description": "Letterboxd and IMDb ratings on Netflix, Prime Video and HBO Max, with friends' scores, your watchlist and skip-intro controls.",
 	"name": "streambuddy",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"scripts": {
 		"web-ext": "web-ext run",
 		"firefox": "web-ext run --keep-profile-changes --firefox-profile=test2",
@@ -25,7 +25,6 @@
 		"typecheck": "vue-tsc --noEmit"
 	},
 	"dependencies": {
-		"@ckpack/vue-color": "^1.6.0",
 		"@tailwindcss/vite": "^4.3.3",
 		"marked": "^18.0.9",
 		"pinia": "^4.0.2",
@@ -41,7 +40,6 @@
 		"@iconify-json/mdi": "^1.2.3",
 		"@iconify-json/ph": "^1.2.2",
 		"@intlify/unplugin-vue-i18n": "^11.2.4",
-		"@parvineyvazov/json-translator": "^4.1.0",
 		"@types/eslint": "^9.6.1",
 		"@types/node": "^26.2.0",
 		"@types/webextension-polyfill": "^0.12.5",
@@ -63,7 +61,6 @@
 		"jsdom": "^30.0.1",
 		"prettier": "^3.9.6",
 		"tailwindcss": "^4.3.3",
-		"terser": "^5.49.2",
 		"tsx": "^4.23.11",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.66.0",

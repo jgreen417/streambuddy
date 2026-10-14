@@ -1,5 +1,9 @@
 # Changelog
 
+# streamBuddy 1.0.1
+
+- Housekeeping: removed leftovers from Streaming enhanced, renamed the icon files and updated dependencies. Nothing changes in how streamBuddy works.
+
 # streamBuddy 1.0.0
 
 First release of streamBuddy, which started from Streaming enhanced 1.1.108 by Dreamlinerm.

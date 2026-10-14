@@ -6,11 +6,11 @@ export default defineManifest((env) => ({
 	...ManifestConfig,
 	author: "Josh Green",
 	icons: {
-		16: "src/assets/Logo/NetflixAmazon Auto-Skip.svg",
-		48: "src/assets/Logo/NetflixAmazon Auto-Skip.svg",
-		96: "src/assets/Logo/NetflixAmazon Auto-Skip.svg",
-		128: "src/assets/Logo/NetflixAmazon Auto-Skip.svg",
-		400: "src/assets/Logo/NetflixAmazon Auto-Skip.svg",
+		16: "src/assets/Logo/icon.svg",
+		48: "src/assets/Logo/icon.svg",
+		96: "src/assets/Logo/icon.svg",
+		128: "src/assets/Logo/icon.svg",
+		400: "src/assets/Logo/icon.svg",
 	},
 	browser_specific_settings: {
 		gecko: {

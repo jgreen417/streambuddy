@@ -55,7 +55,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 | Asset | Size | Status |
 |---|---|---|
-| Store icon | 128×128 PNG | Ready: `src/assets/Logo/NetflixAmazon Auto-Skip--128.png` |
+| Store icon | 128×128 PNG | Ready: `src/assets/Logo/icon-128.png` |
 | Screenshots (1–5) | 1280×800 PNG | Ready: `store/screenshots/netflix-ratings.png`; additional shot ideas below |
 | Small promo tile | 440×280 PNG | Ready: `store/promo-small.png` |
 | Marquee promo tile (optional) | 1400×560 PNG | Ready: `store/promo-marquee.png` |
