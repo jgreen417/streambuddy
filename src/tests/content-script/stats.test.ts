@@ -6,6 +6,7 @@ import {
 	localDateKey,
 	mergeSeenTitles,
 	summarizeWatchLog,
+	watchTick,
 	type SeenTitle,
 	type WatchLog,
 } from "../../utils/stats"
@@ -20,6 +21,24 @@ describe("addWatchSeconds", () => {
 		log = addWatchSeconds(log, now, "netflix", 15)
 		log = addWatchSeconds(log, now, "hbo", 30)
 		expect(log).toEqual({ [day(0)]: { netflix: 115, hbo: 30 } })
+	})
+})
+
+describe("watchTick", () => {
+	it("counts ticks while the video advances and stops when it pauses", () => {
+		const state = { pendingSeconds: 0, lastVideoTime: -1 }
+		watchTick(state, 10, 15)
+		watchTick(state, 25, 15)
+		watchTick(state, 25, 15)
+		expect(state.pendingSeconds).toBe(30)
+	})
+
+	it("doesn't count when nothing is playing and restarts cleanly afterwards", () => {
+		const state = { pendingSeconds: 0, lastVideoTime: -1 }
+		watchTick(state, undefined, 15)
+		expect(state).toEqual({ pendingSeconds: 0, lastVideoTime: -1 })
+		watchTick(state, 300, 15)
+		expect(state.pendingSeconds).toBe(15)
 	})
 })
 

@@ -28,6 +28,8 @@ import {
 	type SeenTitle,
 	type SeenTop,
 	type WatchLog,
+	type WatchTimerState,
+	watchTick,
 } from "@/utils/stats"
 console.log("shared-functions loaded")
 // Global Variables
@@ -1046,12 +1048,12 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 // Watch time only counts on player pages while the video is actually advancing,
 // so autoplaying previews on the browse pages and paused players don't add up.
 const WATCH_TICK_SECONDS = 15
-let pendingWatchSeconds = 0
-let lastVideoTime = -1
+const watchState: WatchTimerState = { pendingSeconds: 0, lastVideoTime: -1 }
 function isOnPlayerPage() {
 	const path = globalThis.location.pathname
 	if (isNetflix) return path.startsWith("/watch")
-	if (isPrimeVideo) return !!document.querySelector(".dv-player-fullscreen video")
+	// the same two player roots the playback engine looks for; newer players only have #dv-web-player
+	if (isPrimeVideo) return !!document.querySelector(".dv-player-fullscreen video, #dv-web-player video")
 	if (isHBO) return path.includes("/video/watch")
 	return false
 }
@@ -1064,18 +1066,19 @@ function getPlayingVideo() {
 	return best
 }
 function startWatchTimer(platform: Platforms) {
+	// saved every tick rather than in batches: a tab closed mid-batch used to lose up to a minute,
+	// and pagehide can't be relied on to finish an async storage write
 	setInterval(() => {
 		const video = isOnPlayerPage() ? getPlayingVideo() : undefined
-		if (video && Math.abs(video.currentTime - lastVideoTime) > 1) pendingWatchSeconds += WATCH_TICK_SECONDS
-		lastVideoTime = video?.currentTime ?? -1
-		if (pendingWatchSeconds >= 60) flushWatchTime(platform)
+		watchTick(watchState, video?.currentTime, WATCH_TICK_SECONDS)
+		flushWatchTime(platform)
 	}, WATCH_TICK_SECONDS * 1000)
 	globalThis.addEventListener("pagehide", () => flushWatchTime(platform))
 }
 async function flushWatchTime(platform: Platforms) {
-	if (!pendingWatchSeconds) return
-	const seconds = pendingWatchSeconds
-	pendingWatchSeconds = 0
+	if (!watchState.pendingSeconds) return
+	const seconds = watchState.pendingSeconds
+	watchState.pendingSeconds = 0
 	const { watchLog } = await browser.storage.local.get("watchLog")
 	await browser.storage.local.set({
 		watchLog: addWatchSeconds((watchLog as WatchLog) ?? {}, new Date(), platform, seconds),
