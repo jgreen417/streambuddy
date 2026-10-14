@@ -29,14 +29,15 @@
 	prefersdark: true;
 	color-scheme: dark;
 
-	/* streamBuddy palette (matches the popup) */
-	--color-primary: #15191d;
-	--color-primary-content: #e8eaed;
-	--color-secondary: #e8eaed;
-	--color-secondary-content: #0b0d10;
-	--color-accent: #00e054;
-	--color-neutral: #111418;
-	--color-base-100: #0b0d10;
+	/* streamBuddy "Buddy" palette (matches the popup) */
+	--color-primary: #262220;
+	--color-primary-content: #fbf4ec;
+	--color-secondary: #fbf4ec;
+	--color-secondary-content: #1b1918;
+	--color-accent: #ff7a45;
+	--color-accent-content: #1b1918;
+	--color-neutral: #151312;
+	--color-base-100: #1b1918;
 	--color-error: #ff5861;
 	--color-error-content: #fff;
 }
@@ -80,7 +81,7 @@ h3 {
 ::-webkit-scrollbar {
 	width: 8px;
 	height: 8px;
-	background-color: #212121;
+	background-color: #1b1918;
 }
 ::-webkit-scrollbar-thumb {
 	background: grey;

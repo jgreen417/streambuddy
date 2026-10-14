@@ -148,7 +148,7 @@ const formatRating = (title: { source: string; rating: number }) =>
 				<span
 					v-for="service in summary.byService"
 					:key="service.platform"
-					:style="{ flex: service.seconds, background: SERVICE_COLORS[service.platform] ?? '#8a929b' }"
+					:style="{ flex: service.seconds, background: SERVICE_COLORS[service.platform] ?? '#a39b93' }"
 				></span>
 			</div>
 			<div class="sb-legend">
@@ -156,7 +156,7 @@ const formatRating = (title: { source: string; rating: number }) =>
 					v-for="service in summary.byService"
 					:key="service.platform"
 				>
-					<i :style="{ background: SERVICE_COLORS[service.platform] ?? '#8a929b' }"></i>
+					<i :style="{ background: SERVICE_COLORS[service.platform] ?? '#a39b93' }"></i>
 					{{ PLATFORM_NAMES[service.platform] ?? service.platform }}
 					{{ Math.round((service.seconds / servicesTotal) * 100) }}%
 				</span>
@@ -197,7 +197,7 @@ const formatRating = (title: { source: string; rating: number }) =>
 					</div>
 					<span
 						class="sb-pill"
-						:style="{ color: getScoreColor(title.source, title.rating) }"
+						:style="{ background: getScoreColor(title.source, title.rating) }"
 					>
 						{{ formatRating(title) }}
 					</span>
@@ -225,7 +225,7 @@ const formatRating = (title: { source: string; rating: number }) =>
 				</div>
 				<span
 					class="sb-pill"
-					:style="{ color: getScoreColor(title.source, title.rating) }"
+					:style="{ background: getScoreColor(title.source, title.rating) }"
 				>
 					{{ formatRating(title) }}
 				</span>

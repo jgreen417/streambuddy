@@ -50,11 +50,11 @@ export default {
 	permissions: env.RELEASE ? ["storage", "activeTab"] : ["storage", "activeTab", "alarms"],
 	host_permissions: ["https://letterboxd.com/*", "https://caching.graphql.imdb.com/*"],
 	icons: {
-		16: "src/assets/Logo/NetflixAmazon Auto-Skip--16.png",
-		48: "src/assets/Logo/NetflixAmazon Auto-Skip--48.png",
-		96: "src/assets/Logo/NetflixAmazon Auto-Skip--96.png",
-		128: "src/assets/Logo/NetflixAmazon Auto-Skip--128.png",
-		400: "src/assets/Logo/NetflixAmazon Auto-Skip--400.png",
+		16: "src/assets/Logo/icon-16.png",
+		48: "src/assets/Logo/icon-48.png",
+		96: "src/assets/Logo/icon-96.png",
+		128: "src/assets/Logo/icon-128.png",
+		400: "src/assets/Logo/icon-400.png",
 	},
 	homepage_url: "https://github.com/jgreen417/streambuddy",
 } as ManifestV3Export

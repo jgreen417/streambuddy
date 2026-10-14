@@ -45,6 +45,19 @@ npm run build:source           # release/streambuddy-source.zip, the source uplo
 npm test
 ```
 
+## Development
+
+```bash
+npm run dev:chrome   # rebuilds dist/chrome on every change; load it unpacked from chrome://extensions
+npm run dev:firefox  # same for dist/firefox
+npm run lint
+npm run typecheck
+npm run test:coverage
+```
+
+Content scripts live in `src/content-script` (one per service, with shared logic in `shared-functions.ts`), skip and speed handling in `src/playback`, and the popup and options pages in `src/ui`. Settings are a Pinia store in `src/stores/options.store.ts`, and translations are in `src/locales`.
+
+
 ## Support
 
 streamBuddy is free. If it saves you from a bad film night, you can [buy me a coffee on Ko-fi](https://ko-fi.com/joshgreen48454).

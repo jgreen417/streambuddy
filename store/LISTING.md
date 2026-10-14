@@ -6,8 +6,8 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 **Name** (from the manifest): streamBuddy
 
-**Summary** (132 max, currently 126):
-> Letterboxd and IMDb ratings on Netflix, Prime Video and HBO Max, with friends' scores, your watchlist and skip-intro controls.
+**Summary** (132 max, currently 132):
+> Your friends' Letterboxd ratings on every poster, plus Letterboxd and IMDb scores on Netflix, Prime Video and HBO Max. Skips intros.
 
 **Category:** Entertainment
 
@@ -15,12 +15,12 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 **Description:**
 
-> See what's actually worth watching without leaving Netflix, Prime Video or HBO Max.
+> Watch what your friends loved. streamBuddy puts your Letterboxd friends' ratings, and your own, right on the posters on Netflix, Prime Video and HBO Max.
 >
-> streamBuddy adds small, colour-coded scores to supported title cards: the Letterboxd average for films and the IMDb rating for series, where a matching rating is available.
+> Every supported title card gets a small colour-coded chip: the Letterboxd average for films and the IMDb rating for series, where a matching rating is available. Connect your Letterboxd and the same chip shows how your friends rated it and whether you've seen it or saved it for later.
 >
-> CONNECT YOUR LETTERBOXD (optional)
-> • Friends' ratings on matched films, and who rated them
+> YOUR FRIENDS, ON THE POSTER (connect Letterboxd, optional)
+> • Friends' average rating on matched films, and who rated them
 > • Your own stars on films you've logged, with watchlisted films marked
 > • Add to your Letterboxd watchlist from a title page
 > • A reminder to rate a film as the credits roll
@@ -55,10 +55,10 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 | Asset | Size | Status |
 |---|---|---|
-| Store icon | 128×128 PNG | Ready: `src/assets/Logo/NetflixAmazon Auto-Skip--128.png` |
-| Screenshots (1–5) | 1280×800 PNG | Ready: `store/screenshots/netflix-ratings.png`; additional shot ideas below |
-| Small promo tile | 440×280 PNG | Ready: `store/promo-small.png` |
-| Marquee promo tile (optional) | 1400×560 PNG | Ready: `store/promo-marquee.png` |
+| Store icon | 128×128 PNG | Ready: `src/assets/Logo/icon-128.png` (96×96 mark with 16px transparent padding, as the store asks) |
+| Screenshots (1–5) | 1280×800 PNG | Retake needed: `store/screenshots/netflix-ratings.png` still shows the old badge; shot list below |
+| Small promo tile | 440×280 PNG | Ready: `store/promo-small.png` (source: `promo-small.svg`, set in Bricolage Grotesque) |
+| Marquee promo tile (optional) | 1400×560 PNG | Ready: `store/promo-marquee.png` (source: `promo-marquee.svg`) |
 
 **Screenshot list** (1280×800, in this order):
 1. Netflix home rows with badges, including a friends line, a "✓ you" mark and a best-in-row ring
@@ -131,7 +131,7 @@ Submit at https://addons.mozilla.org/developers/addon/submit/ and choose "On thi
 **Add-on URL:** `streambuddy`
 
 **Summary** (250 max):
-> Letterboxd and IMDb ratings on Netflix, Prime Video and HBO Max, with your Letterboxd friends' scores, seen and watchlist marks, episode ratings, and skip-intro controls. Free, open source, no tracking.
+> Your friends' Letterboxd ratings on every poster, plus Letterboxd and IMDb scores on Netflix, Prime Video and HBO Max. Seen and watchlist marks, episode ratings and intro skipping. Free, open source, no tracking.
 
 **Description:** reuse the Chrome description above. AMO supports basic Markdown, so the capitals headings can become `**bold**`.
 

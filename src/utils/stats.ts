@@ -45,6 +45,14 @@ export function addWatchSeconds(log: WatchLog, now: Date, platform: string, seco
 	return next
 }
 
+export type WatchTimerState = { pendingSeconds: number; lastVideoTime: number }
+// One tick of the watch timer: it counts only if the playing video moved since the last tick,
+// so a paused or stalled player doesn't add up. currentTime is undefined when nothing is playing.
+export function watchTick(state: WatchTimerState, currentTime: number | undefined, tickSeconds: number) {
+	if (currentTime !== undefined && Math.abs(currentTime - state.lastVideoTime) > 1) state.pendingSeconds += tickSeconds
+	state.lastVideoTime = currentTime ?? -1
+}
+
 const sumDay = (day: Record<string, number> | undefined) => Object.values(day ?? {}).reduce((a, b) => a + b, 0)
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 

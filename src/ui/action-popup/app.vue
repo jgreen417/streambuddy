@@ -49,7 +49,7 @@ function navigateTabs(event: KeyboardEvent) {
 			/>
 			<div>
 				<div class="sb-wordmark">
-					stream
+					<span>stream</span>
 					<span>Buddy</span>
 				</div>
 				<div

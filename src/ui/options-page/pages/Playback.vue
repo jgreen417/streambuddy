@@ -25,13 +25,13 @@ async function remove(show: string, kind: SkipKind) {
 	<p class="description">
 		streamBuddy skips intros, recaps and credits, passes ads, keeps your speed and can pause long autoplay runs on
 		Netflix, Prime Video and HBO Max. Switch each one on or off in
-		<RouterLink to="/options-page/Experience">Viewing preferences</RouterLink>.
+		<RouterLink to="/options-page/Experience">Viewing preferences</RouterLink>
+		.
 	</p>
 
 	<h2>Shows you don’t skip</h2>
 	<p class="description">
-		When a skip notice appears, choose “Not for this show” to keep that part playing. Those exceptions are listed
-		here.
+		When a skip notice appears, choose “Not for this show” to keep that part playing. Those exceptions are listed here.
 	</p>
 	<ul
 		v-if="entries.length"
@@ -65,11 +65,19 @@ async function remove(show: string, kind: SkipKind) {
 	<table class="sb-keys">
 		<tbody>
 			<tr>
-				<td><kbd>Shift</kbd> + <kbd>&gt;</kbd></td>
+				<td>
+					<kbd>Shift</kbd>
+					+
+					<kbd>&gt;</kbd>
+				</td>
 				<td>Faster (0.25× steps, up to 4×)</td>
 			</tr>
 			<tr>
-				<td><kbd>Shift</kbd> + <kbd>&lt;</kbd></td>
+				<td>
+					<kbd>Shift</kbd>
+					+
+					<kbd>&lt;</kbd>
+				</td>
 				<td>Slower</td>
 			</tr>
 		</tbody>
@@ -98,34 +106,38 @@ h2 {
 	gap: 12px;
 	padding: 10px 12px;
 	border-radius: 10px;
-	background: rgba(255, 255, 255, 0.04);
-	border: 1px solid rgba(255, 255, 255, 0.08);
+	background: rgba(251, 244, 236, 0.04);
+	border: 1px solid rgba(251, 244, 236, 0.08);
 }
 .sb-rules strong {
-	color: #e8eaed;
+	color: #fbf4ec;
 	font-weight: 600;
 }
 .sb-rules button {
 	padding: 5px 12px;
 	border-radius: 999px;
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	background: rgba(255, 255, 255, 0.06);
-	color: #e8eaed;
+	border: 1px solid rgba(251, 244, 236, 0.12);
+	background: rgba(251, 244, 236, 0.06);
+	color: #fbf4ec;
 	font-size: 13px;
 	cursor: pointer;
 }
 .sb-rules button:hover {
-	background: rgba(255, 255, 255, 0.12);
+	background: rgba(251, 244, 236, 0.12);
 }
 .sb-empty {
-	color: #8a929b;
+	color: #a39b93;
 }
 kbd {
 	padding: 1px 6px;
 	border-radius: 4px;
-	border: 1px solid rgba(255, 255, 255, 0.18);
-	background: rgba(255, 255, 255, 0.06);
-	font: 600 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+	border: 1px solid rgba(251, 244, 236, 0.18);
+	background: rgba(251, 244, 236, 0.06);
+	font:
+		600 12px/1.6 ui-monospace,
+		SFMono-Regular,
+		Menlo,
+		monospace;
 }
 .sb-keys td {
 	padding: 6px 16px 6px 0;
