@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue"
-import {
-	checkLetterboxdUsername,
-	checkTmdbToken,
-	cleanUsername,
-	saveAccount,
-	type CheckResult,
-} from "@/utils/account"
+import { checkLetterboxdUsername, checkTmdbToken, cleanUsername, saveAccount, type CheckResult } from "@/utils/account"
 import { useAccount } from "@/components/popup/useAccount"
 
 const { account } = useAccount()
@@ -186,8 +180,8 @@ const messages: Record<string, Record<string, string>> = {
 .sb-step {
 	padding: 18px;
 	border-radius: 12px;
-	background: rgba(255, 255, 255, 0.04);
-	border: 1px solid rgba(255, 255, 255, 0.08);
+	background: rgba(251, 244, 236, 0.04);
+	border: 1px solid rgba(251, 244, 236, 0.08);
 }
 .sb-step-head {
 	display: flex;
@@ -198,16 +192,16 @@ const messages: Record<string, Record<string, string>> = {
 	margin: 0 0 2px;
 	font-size: 15px;
 	font-weight: 600;
-	color: #e8eaed;
+	color: #fbf4ec;
 }
 .sb-step-head p {
 	margin: 0;
 	font-size: 13px;
 	line-height: 1.5;
-	color: #8a929b;
+	color: #a39b93;
 }
 .sb-step-head a {
-	color: #40bcf4;
+	color: #8ec5ff;
 	text-decoration: none;
 	white-space: nowrap;
 }
@@ -218,8 +212,8 @@ const messages: Record<string, Record<string, string>> = {
 	width: 24px;
 	height: 24px;
 	border-radius: 50%;
-	background: rgba(255, 255, 255, 0.1);
-	color: #e8eaed;
+	background: rgba(251, 244, 236, 0.1);
+	color: #fbf4ec;
 	font-size: 12px;
 	font-weight: 600;
 }
@@ -230,16 +224,16 @@ const messages: Record<string, Record<string, string>> = {
 	margin: 14px 0 0 36px;
 	padding: 4px;
 	border-radius: 8px;
-	background: #15191d;
-	border: 1px solid rgba(255, 255, 255, 0.1);
+	background: #262220;
+	border: 1px solid rgba(251, 244, 236, 0.1);
 }
 .sb-field:focus-within {
-	border-color: rgba(255, 255, 255, 0.28);
+	border-color: rgba(251, 244, 236, 0.28);
 }
 .sb-prefix {
 	padding-left: 8px;
 	font-size: 14px;
-	color: #8a929b;
+	color: #a39b93;
 }
 .sb-field input {
 	flex: 1;
@@ -247,7 +241,7 @@ const messages: Record<string, Record<string, string>> = {
 	padding: 6px 4px;
 	border: 0 !important;
 	background: transparent !important;
-	color: #e8eaed;
+	color: #fbf4ec;
 	font-size: 14px;
 	outline: none;
 }
@@ -256,8 +250,8 @@ const messages: Record<string, Record<string, string>> = {
 	padding: 6px 14px;
 	border-radius: 6px;
 	border: 0;
-	background: #e8eaed;
-	color: #0b0d10;
+	background: #ff7a45;
+	color: #1b1918;
 	font-size: 13px;
 	font-weight: 600;
 	cursor: pointer;
@@ -268,20 +262,20 @@ const messages: Record<string, Record<string, string>> = {
 }
 .sb-field button.sb-ghost {
 	background: transparent;
-	color: #8a929b;
+	color: #a39b93;
 	font-weight: 500;
 }
 .sb-field button:focus-visible {
-	outline: 2px solid #b7c9df;
+	outline: 2px solid #ffb38f;
 	outline-offset: 2px;
 }
 .sb-status {
 	margin: 8px 0 0 36px;
 	font-size: 13px;
-	color: #8a929b;
+	color: #a39b93;
 }
 .sb-status.is-ok {
-	color: #00e054;
+	color: #7ad9a0;
 }
 .sb-status.is-invalid {
 	color: #ff8a8a;
@@ -292,7 +286,7 @@ const messages: Record<string, Record<string, string>> = {
 .sb-fine {
 	margin: 10px 0 0 36px;
 	font-size: 12px;
-	color: #8a929b;
+	color: #a39b93;
 }
 .sr-only {
 	position: absolute;

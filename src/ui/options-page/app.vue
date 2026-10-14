@@ -32,7 +32,7 @@ watch(
 				/>
 				<div>
 					<div class="title">
-						stream
+						<span>stream</span>
 						<span>Buddy</span>
 					</div>
 					<p class="version">All settings · v{{ version }}</p>
@@ -146,22 +146,28 @@ watch(
 
 <style>
 @import "@/assets/base.css";
-/* streamBuddy: same quiet dark palette as the popup */
+/* streamBuddy: same "Buddy" palette and type as the popup */
 body {
-	background: #0b0d10;
-	color: #e8eaed;
-	font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI", sans-serif;
+	background: #1b1918;
+	color: #fbf4ec;
+	font-family:
+		"Bricolage Grotesque Variable",
+		"Bricolage Grotesque",
+		-apple-system,
+		BlinkMacSystemFont,
+		"Segoe UI",
+		sans-serif;
 	-webkit-font-smoothing: antialiased;
 }
 .sidenav {
 	@apply h-full px-3 gap-1;
 	min-width: 230px;
-	background: #0b0d10;
-	border-right: 1px solid rgba(255, 255, 255, 0.07);
+	background: #1b1918;
+	border-right: 1px solid rgba(251, 244, 236, 0.07);
 }
 .menuButton {
 	@apply rounded-lg m-0 px-3 py-2 no-underline whitespace-nowrap cursor-pointer select-none items-center gap-2;
-	color: #8a929b;
+	color: #a39b93;
 	font-size: 14px;
 	font-weight: 500;
 	transition:
@@ -169,8 +175,8 @@ body {
 		color 0.15s;
 }
 .menuButton:hover {
-	background-color: rgba(255, 255, 255, 0.05);
-	color: #e8eaed;
+	background-color: rgba(251, 244, 236, 0.05);
+	color: #fbf4ec;
 }
 .menuButton p,
 .menuButton div {
@@ -179,9 +185,9 @@ body {
 	font-weight: inherit;
 }
 .menuButton.is-active {
-	background-color: rgba(255, 255, 255, 0.1);
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-	color: #f1f3f5;
+	background-color: #fbf4ec;
+	color: #1b1918;
+	font-weight: 700;
 }
 .IconBox {
 	@apply flex items-center gap-3 px-2 pt-6 pb-5;
@@ -190,27 +196,27 @@ body {
 	@apply h-9 w-9 rounded-lg;
 }
 .title {
-	font-size: 14px;
-	font-weight: 600;
-	letter-spacing: -0.01em;
-	color: #e8eaed;
+	font-size: 17px;
+	font-weight: 800;
+	letter-spacing: -0.035em;
+	line-height: 1.1;
+	color: #fbf4ec;
 }
-.title span {
-	color: #8a929b;
-	font-weight: 500;
+.title span + span {
+	color: #ff7a45;
 }
 .version {
 	font-size: 12px;
-	color: #8a929b;
+	color: #a39b93;
 }
 .credit {
 	padding: 16px 8px 20px;
 	font-size: 12px;
 	line-height: 1.5;
-	color: #8a929b;
+	color: #a39b93;
 }
 .credit a {
-	color: #8a929b;
+	color: #a39b93;
 }
 .credit .links {
 	display: block;
@@ -219,12 +225,12 @@ body {
 .credit .support {
 	display: block;
 	margin-bottom: 8px;
-	color: #e8eaed;
+	color: #fbf4ec;
 	font-weight: 500;
 	text-decoration: none;
 }
 .credit .support:hover {
-	color: #00e054;
+	color: #ff7a45;
 }
 
 /* settings pages: calmer type, neutral buttons and inputs */
@@ -233,11 +239,11 @@ body {
 	line-height: 1.5;
 }
 .content h1 {
-	font-size: 20px;
-	font-weight: 600;
+	font-size: 22px;
+	font-weight: 800;
 	/* service-coloured headings (Netflix red #e60010) fail WCAG contrast on this background */
-	color: #e8eaed !important;
-	letter-spacing: -0.01em;
+	color: #fbf4ec !important;
+	letter-spacing: -0.03em;
 }
 .content h2,
 .content h3 {
@@ -253,38 +259,38 @@ body {
 .content th,
 .content td {
 	padding: 4px 8px;
-	border-color: rgba(255, 255, 255, 0.08) !important;
+	border-color: rgba(251, 244, 236, 0.08) !important;
 }
 .content table {
-	border-color: rgba(255, 255, 255, 0.08) !important;
+	border-color: rgba(251, 244, 236, 0.08) !important;
 }
 .content th {
 	font-weight: 500;
-	color: #8a929b;
+	color: #a39b93;
 }
 .content .description {
-	color: #8a929b;
+	color: #a39b93;
 }
 .content hr {
-	border-color: rgba(255, 255, 255, 0.07);
+	border-color: rgba(251, 244, 236, 0.07);
 }
 .content .btn {
 	font-size: 14px;
-	background: rgba(255, 255, 255, 0.07);
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	color: #e8eaed;
+	background: rgba(251, 244, 236, 0.07);
+	border: 1px solid rgba(251, 244, 236, 0.1);
+	color: #fbf4ec;
 	box-shadow: none;
 	font-weight: 500;
 }
 .content .btn:hover {
-	background: rgba(255, 255, 255, 0.12);
+	background: rgba(251, 244, 236, 0.12);
 }
 .content input:not([type="checkbox"]),
 .content select {
-	background: #15191d;
-	border: 1px solid rgba(255, 255, 255, 0.1);
+	background: #262220;
+	border: 1px solid rgba(251, 244, 236, 0.1);
 	border-radius: 6px;
-	color: #e8eaed;
+	color: #fbf4ec;
 }
 .content {
 	@apply min-w-[200px] min-h-[450px];
@@ -302,7 +308,7 @@ body {
 
 /* Keep every service identifiable when settings move to a small window. */
 .menuButton:focus-visible {
-	outline: 2px solid #b7c9df;
+	outline: 2px solid #ffb38f;
 	outline-offset: 2px;
 }
 @media (max-width: 900px), (max-height: 700px) {
@@ -314,7 +320,7 @@ body {
 		min-width: 0;
 		flex-shrink: 0;
 		border-right: 0;
-		border-bottom: 1px solid #ffffff12;
+		border-bottom: 1px solid #fbf4ec12;
 	}
 	.IconBox {
 		display: flex;

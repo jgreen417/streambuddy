@@ -1,3 +1,4 @@
+import "@fontsource-variable/bricolage-grotesque/opsz.css"
 import { i18n } from "@/utils/i18n"
 import { pinia } from "@/utils/pinia"
 import { appRouter } from "@/utils/router"

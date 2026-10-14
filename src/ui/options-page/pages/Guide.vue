@@ -3,8 +3,7 @@
 	<h1>Getting your free TMDb key</h1>
 	<p class="description">
 		streamBuddy uses The Movie Database (TMDb) to work out exactly which film or show each card is, so the right
-		Letterboxd or IMDb rating appears. TMDb gives every member a free key for personal use. It takes about two
-		minutes.
+		Letterboxd or IMDb rating appears. TMDb gives every member a free key for personal use. It takes about two minutes.
 	</p>
 	<ol class="sb-guide">
 		<li>
@@ -29,13 +28,20 @@
 			>
 				Settings → API
 			</a>
-			and choose to create a key for a <em>Developer</em> (personal) app. TMDb asks a few questions: describe it as
-			“Personal use with the streamBuddy browser extension”. Any website field can be
-			<code>https://letterboxd.com</code>.
+			and choose to create a key for a
+			<em>Developer</em>
+			(personal) app. TMDb asks a few questions: describe it as “Personal use with the streamBuddy browser extension”.
+			Any website field can be
+			<code>https://letterboxd.com</code>
+			.
 		</li>
 		<li>
 			<strong>Copy your key.</strong>
-			On the same page, copy the long <em>API Read Access Token</em>. The shorter <em>API Key</em> works too.
+			On the same page, copy the long
+			<em>API Read Access Token</em>
+			. The shorter
+			<em>API Key</em>
+			works too.
 		</li>
 		<li>
 			<strong>Paste it into streamBuddy.</strong>
@@ -78,12 +84,12 @@ h2 + p {
 }
 .sb-guide a,
 p a {
-	color: #40bcf4;
+	color: #8ec5ff;
 }
 code {
 	font-size: 13px;
 	padding: 1px 5px;
 	border-radius: 4px;
-	background: rgba(255, 255, 255, 0.08);
+	background: rgba(251, 244, 236, 0.08);
 }
 </style>
