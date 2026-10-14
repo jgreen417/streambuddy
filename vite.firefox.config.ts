@@ -87,7 +87,8 @@ const postBuildPlugin = () => {
 			for (const resource of manifest.web_accessible_resources) {
 				webacessibleRecources = [...webacessibleRecources, ...(resource.resources as string[])]
 			}
-			manifest.web_accessible_resources = webacessibleRecources
+			// each content script lists the shared chunks again; MV2 wants one flat list
+			manifest.web_accessible_resources = [...new Set(webacessibleRecources)]
 
 			// replace action with browser_action
 			manifest.browser_action = manifest.action
