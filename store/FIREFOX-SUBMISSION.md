@@ -6,7 +6,7 @@ Prepared 14 October 2026. Not yet submitted.
 - Add-on ID: `streambuddy@jgreen417` (permanent: AMO keys the listing to it, so it must never change)
 - Package: `release/firefox-1.0.0.zip`, built with `npm run build:release:firefox`
 - Source package: `release/streambuddy-source.zip`, built with `npm run build:source` (AMO requires source because the add-on is bundled by Vite)
-- Manifest: version 2 (the build converts the MV3 config, so host permissions are granted at install), Firefox 140+ desktop, 142+ Android
+- Manifest: version 2 (the build converts the MV3 config, so host permissions are granted at install), Firefox 140+ desktop only (Android left out until it's tested on a phone)
 
 ## Verification (14 October 2026)
 
@@ -60,10 +60,6 @@ Playback (each site)
 - [ ] Pause after N autoplayed episodes.
 - [ ] Netflix games rows and Prime paid titles are hidden when those options are on.
 
-Android (only if Android support stays in the manifest)
-
-- [ ] Install from AMO on Firefox for Android; the popup, options and rating badges work on the mobile sites.
-
 ## AMO listing fields
 
 Reuse `store/LISTING.md` for the name, summary, description and screenshots. AMO-specific fields:
@@ -85,6 +81,7 @@ Reuse `store/LISTING.md` for the name, summary, description and screenshots. AMO
 
 ## Decisions before submitting
 
-- Android: keep `gecko_android` (AMO lists it for Firefox for Android, untested so far) or remove it and ship desktop only.
+- Android: decided 14 October 2026 to ship desktop only. When uploading, untick Firefox for Android under compatibility. Leave `gecko_android` in the manifest: AMO decides platforms at upload, and without that key `web-ext lint` warns that Android 140 predates `data_collection_permissions`.
+
 - Reviewer credential: share the development TMDb token with Mozilla's reviewers, as was done for Google.
 - Distribution: listed on AMO (public) or self-distributed (signed file only).
