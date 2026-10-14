@@ -1,16 +1,22 @@
-/* streamBuddy popup: dark, quiet, hairline borders. Colour is reserved for the rating scale. */
+/* streamBuddy "Buddy" identity: warm couch-dark, popcorn text, tangerine for the brand and anything switched on.
+   Score colours stay reserved for the rating scale. */
 :root {
-	--sb-bg: #0b0d10;
-	--sb-surface: rgba(255, 255, 255, 0.06);
-	--sb-track: rgba(255, 255, 255, 0.06);
-	--sb-surface-raised: rgba(255, 255, 255, 0.1);
-	--sb-hairline: rgba(255, 255, 255, 0.07);
-	--sb-divider: rgba(255, 255, 255, 0.06);
-	--sb-text: #e8eaed;
-	--sb-text-2: #8a929b;
+	--sb-bg: #1b1918;
+	--sb-surface: rgba(251, 244, 236, 0.06);
+	--sb-track: rgba(251, 244, 236, 0.06);
+	--sb-surface-raised: rgba(251, 244, 236, 0.1);
+	--sb-hairline: rgba(251, 244, 236, 0.07);
+	--sb-divider: rgba(251, 244, 236, 0.06);
+	--sb-text: #fbf4ec;
+	--sb-text-2: #a39b93;
 	/* quiet text shares the secondary grey: #6b747d failed WCAG AA contrast (3.2-4.1:1) on the dark surfaces */
-	--sb-text-3: #8a929b;
-	--sb-up: #00e054;
+	--sb-text-3: #a39b93;
+	--sb-up: #7ad9a0;
+	--sb-accent: #ff7a45;
+	--sb-accent-ink: #1b1918;
+	--sb-sky: #8ec5ff;
+	--sb-font:
+		"Bricolage Grotesque Variable", "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 html,
 body {
@@ -23,13 +29,7 @@ body {
 	padding: 12px 14px 10px;
 	background: var(--sb-bg);
 	color: var(--sb-text);
-	font:
-		13px/1.35 -apple-system,
-		BlinkMacSystemFont,
-		"SF Pro Text",
-		Inter,
-		"Segoe UI",
-		sans-serif;
+	font: 13px/1.35 var(--sb-font);
 	-webkit-font-smoothing: antialiased;
 	user-select: none;
 }
@@ -45,16 +45,17 @@ body {
 .sb-header img {
 	width: 30px;
 	height: 30px;
-	border-radius: 7px;
+	border-radius: 8px;
 }
 .sb-wordmark {
-	font-size: 15px;
-	font-weight: 600;
-	letter-spacing: -0.01em;
+	font-size: 17px;
+	font-weight: 800;
+	letter-spacing: -0.035em;
+	line-height: 1.1;
 }
-.sb-wordmark span {
-	color: var(--sb-text-2);
-	font-weight: 500;
+/* two spans so the template's line breaks don't put a space inside the name */
+.sb-wordmark span + span {
+	color: var(--sb-accent);
 }
 .sb-context {
 	display: flex;
@@ -105,8 +106,7 @@ body {
 	left: 2px;
 	width: calc(50% - 2px);
 	border-radius: 6px;
-	background: var(--sb-surface-raised);
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+	background: var(--sb-text);
 	transition: transform 0.22s cubic-bezier(0.3, 0.7, 0.2, 1);
 }
 .sb-tabs[data-tab="stats"]::before {
@@ -125,7 +125,8 @@ body {
 	cursor: pointer;
 }
 .sb-tabs button.is-active {
-	color: var(--sb-text);
+	color: var(--sb-bg);
+	font-weight: 700;
 }
 .sb-label {
 	margin: 12px 2px 6px;
@@ -196,7 +197,7 @@ body {
 }
 .sb-choices button.is-active {
 	background: var(--sb-surface-raised);
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+	box-shadow: inset 0 0 0 1px rgba(251, 244, 236, 0.06);
 }
 .sb-choices button.is-active span {
 	opacity: 1;
@@ -231,14 +232,14 @@ body {
 		background 0.15s;
 }
 .sb-toggle[aria-checked="true"] {
-	background: var(--sb-text);
+	background: var(--sb-accent);
 }
 .sb-toggle[aria-checked="true"]::after {
 	left: 14px;
-	background: var(--sb-bg);
+	background: var(--sb-text);
 }
 .sb-toggle:focus-visible {
-	outline: 2px solid rgba(255, 255, 255, 0.4);
+	outline: 2px solid rgba(251, 244, 236, 0.4);
 	outline-offset: 2px;
 }
 .sb-footer {
@@ -268,9 +269,9 @@ body {
 /* Stats */
 .sb-big {
 	margin-top: 10px;
-	font-size: 30px;
-	font-weight: 600;
-	letter-spacing: -0.02em;
+	font-size: 32px;
+	font-weight: 800;
+	letter-spacing: -0.035em;
 	line-height: 1;
 	font-variant-numeric: tabular-nums;
 }
@@ -298,7 +299,7 @@ body {
 	background: var(--sb-surface-raised);
 }
 .sb-bars span.is-today {
-	background: var(--sb-text);
+	background: var(--sb-accent);
 }
 .sb-days {
 	display: flex;
@@ -346,8 +347,8 @@ body {
 	background: var(--sb-surface);
 }
 .sb-tile-value {
-	font-size: 17px;
-	font-weight: 600;
+	font-size: 18px;
+	font-weight: 750;
 	letter-spacing: -0.01em;
 }
 .sb-tile-label {
@@ -380,12 +381,12 @@ a.sb-title-row:hover {
 .sb-pill {
 	flex: none;
 	margin-left: auto;
-	padding: 3px 6px;
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	border-radius: 5px;
-	background: rgba(14, 17, 20, 0.82);
+	padding: 3px 8px;
+	border-radius: 999px;
+	background: var(--sb-surface-raised);
+	color: var(--sb-accent-ink);
 	font-size: 12px;
-	font-weight: 600;
+	font-weight: 750;
 	line-height: 1;
 	font-variant-numeric: tabular-nums;
 }
@@ -484,7 +485,7 @@ a.sb-title-row:hover {
 	margin: 8px -4px 0;
 	padding: 0 4px 4px;
 	scrollbar-width: thin;
-	scrollbar-color: #59626d transparent;
+	scrollbar-color: #5e5751 transparent;
 }
 .sb-footer {
 	margin-top: 8px;
@@ -561,11 +562,11 @@ a.sb-title-row:hover {
 }
 .sb-toggle-input:checked + .sb-toggle,
 .sb-toggle-input:indeterminate + .sb-toggle {
-	background: var(--sb-text);
+	background: var(--sb-accent);
 }
 .sb-toggle-input:checked + .sb-toggle::after {
 	left: 16px;
-	background: var(--sb-bg);
+	background: var(--sb-text);
 }
 .sb-toggle-input:indeterminate + .sb-toggle::after {
 	left: 10px;
@@ -573,13 +574,13 @@ a.sb-title-row:hover {
 	width: 12px;
 	height: 2px;
 	border-radius: 1px;
-	background: var(--sb-bg);
+	background: var(--sb-text);
 }
 .sb-toggle-input:disabled + .sb-toggle {
 	opacity: 0.4;
 }
 .sb-preference:has(.sb-toggle-input:focus-visible) {
-	outline: 2px solid #b7c9df;
+	outline: 2px solid #ffb38f;
 	outline-offset: -2px;
 	border-radius: 6px;
 }
@@ -643,9 +644,9 @@ a.sb-title-row:hover {
 	color: var(--sb-text-2);
 }
 .sb select {
-	background: #1b2027;
+	background: #262220;
 	color: var(--sb-text);
-	border: 1px solid #ffffff26;
+	border: 1px solid #fbf4ec26;
 	border-radius: 6px;
 	font: inherit;
 	min-height: 32px;
@@ -671,7 +672,7 @@ a.sb-title-row:hover {
 	gap: 3px;
 	padding: 3px;
 	border-radius: 8px;
-	background: #0b0d1080;
+	background: #1b191880;
 	margin-bottom: 8px;
 }
 .sb-mode label {
@@ -694,10 +695,10 @@ a.sb-title-row:hover {
 }
 .sb-mode input:checked + span {
 	background: var(--sb-surface-raised);
-	box-shadow: inset 0 0 0 1px #ffffff20;
+	box-shadow: inset 0 0 0 1px #fbf4ec20;
 }
 .sb-mode input:focus-visible + span {
-	outline: 2px solid #b7c9df;
+	outline: 2px solid #ffb38f;
 }
 .sb-filter:disabled .sb-mode {
 	opacity: 0.45;
@@ -736,7 +737,7 @@ a.sb-title-row:hover {
 	margin: 8px 0 0;
 }
 .sb :is(button, a, select, summary, [role="tabpanel"]):focus-visible {
-	outline: 2px solid #b7c9df;
+	outline: 2px solid #ffb38f;
 	outline-offset: 2px;
 }
 .sb-title-meta {
@@ -796,8 +797,8 @@ a.sb-title-row:hover {
 	margin-top: 12px;
 	padding: 10px 12px;
 	border-radius: 10px;
-	border: 1px solid rgba(64, 188, 244, 0.3);
-	background: rgba(64, 188, 244, 0.1);
+	border: 1px solid rgba(255, 122, 69, 0.35);
+	background: rgba(255, 122, 69, 0.1);
 	color: var(--sb-text-2);
 	font: inherit;
 	font-size: 12px;
@@ -813,14 +814,14 @@ a.sb-title-row:hover {
 }
 .sb-setup-banner > span:last-child {
 	margin-left: auto;
-	color: #40bcf4;
+	color: var(--sb-accent);
 	font-size: 15px;
 }
 .sb-setup-banner:hover {
-	background: rgba(64, 188, 244, 0.16);
+	background: rgba(255, 122, 69, 0.16);
 }
 .sb-setup-banner:focus-visible {
-	outline: 2px solid #b7c9df;
+	outline: 2px solid #ffb38f;
 	outline-offset: 2px;
 }
 .sb-footer a {

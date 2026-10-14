@@ -2,7 +2,9 @@
 
 # streamBuddy 1.0.1
 
-- Housekeeping: removed leftovers from Streaming enhanced, renamed the icon files and updated dependencies. Nothing changes in how streamBuddy works.
+- A new look: a new logo (two friends on the couch), a warm dark palette with tangerine highlights and the Bricolage Grotesque typeface in the popup and settings.
+- Rating badges are now a single cream chip: the score in a pill coloured by how it ranks, with friends' ratings (one dot per friend) and your own status beside it.
+- Housekeeping: removed leftovers from Streaming enhanced, renamed the icon files and updated dependencies.
 
 # streamBuddy 1.0.0
 

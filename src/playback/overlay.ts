@@ -5,9 +5,9 @@ const STYLE = `
 :host { all: initial; }
 .layer { position: absolute; inset: 0; pointer-events: none; z-index: 2147483000;
 	font: 500 14px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI", sans-serif;
-	color: #e8eaed; -webkit-font-smoothing: antialiased; }
+	color: #fbf4ec; -webkit-font-smoothing: antialiased; }
 .pill { pointer-events: auto; display: flex; align-items: center; gap: 10px;
-	background: rgba(14, 17, 20, 0.86); border: 1px solid rgba(255, 255, 255, 0.14);
+	background: rgba(27, 25, 24, 0.86); border: 1px solid rgba(251, 244, 236, 0.14);
 	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45); border-radius: 999px;
 	backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 .notice { position: absolute; left: 32px; bottom: 120px; max-width: min(560px, calc(100% - 64px));
@@ -15,23 +15,23 @@ const STYLE = `
 	transition: opacity 0.18s ease, transform 0.18s ease; }
 .notice.show { opacity: 1; transform: none; }
 .notice .text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.notice .dot { width: 8px; height: 8px; border-radius: 50%; background: #00e054; flex: none; }
+.notice .dot { width: 8px; height: 8px; border-radius: 50%; background: #ff7a45; flex: none; }
 button { all: unset; cursor: pointer; padding: 6px 12px; border-radius: 999px; font-weight: 600; font-size: 13px;
-	color: #e8eaed; background: rgba(255, 255, 255, 0.1); white-space: nowrap; }
-button:hover { background: rgba(255, 255, 255, 0.18); }
-button:focus-visible { outline: 2px solid #b7c9df; outline-offset: 2px; }
-button.quiet { background: transparent; color: #aab3bc; }
-button.quiet:hover { color: #e8eaed; background: rgba(255, 255, 255, 0.08); }
+	color: #fbf4ec; background: rgba(251, 244, 236, 0.1); white-space: nowrap; }
+button:hover { background: rgba(251, 244, 236, 0.18); }
+button:focus-visible { outline: 2px solid #ffb38f; outline-offset: 2px; }
+button.quiet { background: transparent; color: #cfc6bc; }
+button.quiet:hover { color: #fbf4ec; background: rgba(251, 244, 236, 0.08); }
 /* top centre: players keep their own buttons in the top corners */
 .speed { position: absolute; left: 50%; transform: translateX(-50%); top: 20px; padding: 4px; gap: 2px; opacity: 0;
 	transition: opacity 0.2s ease; }
 .speed.show, .speed:hover, .speed:focus-within { opacity: 1; }
 .speed .value { min-width: 52px; text-align: center; font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
-.speed .value.fast { color: #00e054; }
+.speed .value.fast { color: #7ad9a0; }
 .speed .presets { display: none; gap: 2px; }
 .speed.open .presets { display: flex; }
 .speed .presets button { padding: 6px 10px; }
-.speed .presets button[aria-pressed="true"] { background: #e8eaed; color: #0b0d10; }
+.speed .presets button[aria-pressed="true"] { background: #fbf4ec; color: #1b1918; }
 @media (prefers-reduced-motion: reduce) { .notice, .speed { transition: none; } }
 `
 

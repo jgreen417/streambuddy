@@ -24,8 +24,9 @@ function assertNotTransient(response: Response, source: string) {
 	if (!response.ok && response.status !== 404) throw new TransientLookupError(`${source} ${response.status}`)
 }
 
-// red, orange, yellow, light green, green
-export const SCORE_COLORS = ["#ff5c5c", "#ff9f43", "#ffd23f", "#9be15d", "#00e054"]
+// red, orange, yellow, light green, green: softened so a score reads as a pill of colour with dark text on it,
+// and still as coloured text on the dark panels
+export const SCORE_COLORS = ["#ff8a7a", "#ffb168", "#f2c94c", "#b5e07a", "#7ad9a0"]
 // Band edges picked so each colour covers a similar share of what's actually streaming
 // (popular titles on UK Netflix, Prime and HBO Max, Oct 2026): roughly 13/23/24/25/15%.
 // Letterboxd films: median 3.3, only 15% reach 4.0. IMDb TV runs much higher: median 8.0.

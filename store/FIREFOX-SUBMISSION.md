@@ -68,7 +68,7 @@ Android (only if Android support stays in the manifest)
 
 Reuse `store/LISTING.md` for the name, summary, description and screenshots. AMO-specific fields:
 
-- Summary: the manifest description (126 characters, within AMO's 250).
+- Summary: the manifest description (132 characters, within AMO's 250).
 - Categories: Photos, Music & Videos (desktop); Entertainment on Android if kept.
 - License: GNU GPL v3.0.
 - Privacy policy: paste `PRIVACY.md`, since AMO hosts the text rather than taking a link.

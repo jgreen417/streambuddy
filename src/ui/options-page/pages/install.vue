@@ -11,8 +11,8 @@ const { account } = useAccount()
 		/>
 		<h1>Welcome to streamBuddy</h1>
 		<p class="description">
-			Letterboxd scores on films and IMDb scores on series, right on Netflix, Prime Video and HBO Max. Two quick
-			steps and you’re set.
+			Letterboxd scores on films and IMDb scores on series, right on Netflix, Prime Video and HBO Max. Two quick steps
+			and you’re set.
 		</p>
 	</div>
 	<AccountSetup />
@@ -50,12 +50,12 @@ const { account } = useAccount()
 	border-radius: 10px;
 	background: rgba(0, 224, 84, 0.1);
 	border: 1px solid rgba(0, 224, 84, 0.25);
-	color: #e8eaed;
+	color: #fbf4ec;
 }
 .sb-more {
 	margin-top: 16px;
 }
 .sb-more a {
-	color: #40bcf4;
+	color: #8ec5ff;
 }
 </style>

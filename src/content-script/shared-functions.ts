@@ -833,7 +833,7 @@ function Amazon_fixTitle(title: string | undefined) {
 // TMDb is only the fallback: colour it on the IMDb scale (both are out of 10), grey when too few people voted
 const TMDB_LOW_RATING = 5.5
 function getTmdbColor(rating: number, lowVoteCount: boolean) {
-	return !rating || lowVoteCount ? "grey" : getScoreColor("imdb", rating)
+	return !rating || lowVoteCount ? "#b3aaa1" : getScoreColor("imdb", rating)
 }
 // Letterboxd and IMDb dim by colour band (the cut-off is picked in the popup); TMDb keeps the old threshold
 function isDimmed(data: MovieInfo, lowVoteCount: boolean) {
@@ -853,37 +853,84 @@ function getNormalizedScore(data: MovieInfo) {
 function getRatingVoteCount(data: MovieInfo) {
 	return (data?.source === "tmdb" ? data?.vote_count : data?.rating_count) || 0
 }
-// Score on top, coloured by how it ranks among what's streaming. Underneath, smaller: friends' Letterboxd
-// average, then your own status (seen it and what you gave it, or on your watchlist).
-// Keep the source and scale visible; colour adds context rather than carrying the meaning.
-function addBadgeLine(div: HTMLElement, text: string, color: string) {
-	const line = document.createElement("span")
-	line.textContent = text
-	Object.assign(line.style, { fontSize: "max(11px, 0.82em)", fontWeight: "500", color, letterSpacing: "0.01em" })
-	div.appendChild(line)
+// A popcorn chip: the score in a pill coloured by how it ranks among what's streaming, then, smaller, friends'
+// Letterboxd average (one dot per friend) and your own status (seen it and what you gave it, or on your watchlist).
+// Keep the source visible; colour adds context rather than carrying the meaning.
+const BADGE_INK = "#1b1918"
+const FRIEND_DOT_COLORS = ["#ff7a45", "#8ec5ff", "#f2c94c", "#7ad9a0", "#c9a7ff"]
+function addBadgeSegment(div: HTMLElement, text: string, color = BADGE_INK) {
+	const segment = document.createElement("span")
+	Object.assign(segment.style, {
+		display: "inline-flex",
+		alignItems: "center",
+		gap: "0.3em",
+		padding: "0 0.45em 0 0.15em",
+		fontSize: "max(11px, 0.85em)",
+		fontWeight: "700",
+		color,
+		whiteSpace: "nowrap",
+	})
+	segment.append(text)
+	div.appendChild(segment)
+	return segment
+}
+// a little stack of faces, coloured by name so the same friend keeps the same colour
+function friendDots(friends: { name: string }[], count: number) {
+	const dots = document.createElement("span")
+	dots.style.display = "inline-flex"
+	const names = friends.length ? friends.map((friend) => friend.name) : Array.from({ length: count }, (_, i) => `${i}`)
+	names.slice(0, 3).forEach((name, i) => {
+		const dot = document.createElement("i")
+		const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)
+		Object.assign(dot.style, {
+			display: "block",
+			width: "0.8em",
+			height: "0.8em",
+			marginLeft: i ? "-0.3em" : "0",
+			borderRadius: "50%",
+			border: "0.12em solid #fbf4ec",
+			background: FRIEND_DOT_COLORS[hash % FRIEND_DOT_COLORS.length],
+		})
+		dots.appendChild(dot)
+	})
+	return dots
 }
 const formatCount = (count = 0) =>
 	count >= 1e6 ? `${(count / 1e6).toFixed(1)}M` : count >= 1e3 ? `${Math.round(count / 1e3)}K` : String(count)
 function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor: string | undefined) {
 	const main = document.createElement("span")
-	main.style.fontSize = "1.08em"
+	const label = document.createElement("small")
+	Object.assign(label.style, { fontSize: "0.72em", fontWeight: "700", opacity: "0.7", marginRight: "0.3em" })
+	Object.assign(main.style, {
+		padding: "0.3em 0.55em",
+		borderRadius: "999px",
+		fontSize: "1.05em",
+		fontWeight: "800",
+		whiteSpace: "nowrap",
+	})
 	const tooltip: string[] = []
+	let value: string
 	if (data.source === "letterboxd") {
-		main.textContent = prefix + "LB " + data.rating?.toFixed(2) + "/5"
-		main.style.color = getScoreColor("letterboxd", data.rating ?? 0)
-		tooltip.push(`Letterboxd ${data.rating?.toFixed(2)} · ${formatCount(data.rating_count)} ratings`)
+		label.textContent = prefix + "LB"
+		value = data.rating?.toFixed(2) ?? ""
+		main.style.background = getScoreColor("letterboxd", data.rating ?? 0)
+		tooltip.push(`Letterboxd ${data.rating?.toFixed(2)}/5 · ${formatCount(data.rating_count)} ratings`)
 	} else if (data.source === "imdb") {
-		main.textContent = prefix + "IMDb " + data.rating?.toFixed(1) + "/10"
-		main.style.color = getScoreColor("imdb", data.rating ?? 0)
-		tooltip.push(`IMDb ${data.rating?.toFixed(1)} · ${formatCount(data.rating_count)} ratings`)
+		label.textContent = prefix + "IMDb"
+		value = data.rating?.toFixed(1) ?? ""
+		main.style.background = getScoreColor("imdb", data.rating ?? 0)
+		tooltip.push(`IMDb ${data.rating?.toFixed(1)}/10 · ${formatCount(data.rating_count)} ratings`)
 	} else {
-		main.textContent = prefix + "TMDb " + data.score?.toFixed(1) + "/10"
-		main.style.color = tmdbColor ?? "#fff"
-		tooltip.push(`TMDb ${data.score?.toFixed(1)} (no Letterboxd or IMDb rating)`)
+		label.textContent = prefix + "TMDb"
+		value = data.score?.toFixed(1) ?? ""
+		main.style.background = tmdbColor ?? "#b3aaa1"
+		tooltip.push(`TMDb ${data.score?.toFixed(1)}/10 (no Letterboxd or IMDb rating)`)
 	}
+	main.append(label, value)
 	div.appendChild(main)
 	if (data.source === "letterboxd" && data.friends_rating && settings.value.General.friendsRatings) {
-		addBadgeLine(div, "friends " + data.friends_rating.toFixed(1), "#aab3bc")
+		const segment = addBadgeSegment(div, data.friends_rating.toFixed(1))
+		segment.prepend(friendDots(data.friends ?? [], data.friends_count ?? 1))
 		const names = (data.friends ?? []).map((friend) => `${friend.name} ${friend.rating.toFixed(1)}`).join(", ")
 		tooltip.push(
 			`Friends ${data.friends_rating.toFixed(1)} from ${data.friends_count}${names ? `: ${names}` : ""}${(data.friends_count ?? 0) > (data.friends?.length ?? 0) ? "…" : ""}`,
@@ -891,14 +938,26 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 	}
 	const personal = getPersonalStatus(data)
 	if (personal.watched !== undefined) {
-		addBadgeLine(div, personal.watched ? `✓ you ${personal.watched.toFixed(1)}` : "✓ seen", "#e8eaed")
+		addBadgeSegment(div, personal.watched ? `✓ you ${personal.watched.toFixed(1)}` : "✓ seen")
 		tooltip.push(personal.watched ? `You rated it ${personal.watched.toFixed(1)}` : "You've logged it")
 	} else if (personal.watchlist) {
-		addBadgeLine(div, "watchlist", "#40bcf4")
+		addBadgeSegment(div, "watchlist", "#2f6fb5")
 		tooltip.push("On your watchlist")
 	}
 	div.title = tooltip.join("\n")
 	div.setAttribute("aria-label", tooltip.join(". "))
+}
+
+// Prime composites its own "prime" or channel logo into the artwork's bottom-right corner, and the image URL
+// says where: _CLs|W,H|...channels-logo...|...+x,y,w,h. Returns how far up the card the logo reaches (0 when none).
+function primeLogoHeight(container: HTMLElement) {
+	const img = container.querySelector("img")
+	if (!img) return 0
+	const src = decodeURIComponent(img.currentSrc || img.src || img.srcset)
+	const match = /_CLs\|\d+,(\d+)\|[^|]*channels-logo[^|]*\|(?:\d+,\d+,\d+,\d+\+)*\d+,(\d+),\d+,\d+/.exec(src)
+	if (!match) return 0
+	const height = Number(match[1])
+	return (height - Number(match[2])) / height
 }
 
 async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string) {
@@ -934,34 +993,39 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	// which streamBuddy build drew this badge (handy for checking that a rebuild was picked up)
 	div.dataset.sbBuild = __BUILD_ID__
 	const zIndexValue = isPrimeVideo ? "3" : "2"
-	// dark glass pill, numbers stacked and right-aligned
+	// popcorn chip: score pill first, friends and your status beside it; wraps on narrow cards
 	Object.assign(div.style, {
 		position: "absolute",
-		bottom: "0.3em",
+		// Netflix draws its "Recently added" and "Leaving soon" tags into the bottom of the boxart; the top-right is clear
+		...(isNetflix ? { top: "0.3em" } : { bottom: "0.3em" }),
 		right: isNetflix ? "calc(0.2vw + 0.3em)" : "0.3em",
+		maxWidth: "calc(100% - 0.6em)",
+		boxSizing: "border-box",
 		display: "flex",
-		flexDirection: "column",
-		alignItems: "flex-end",
-		gap: "0.15em",
-		color: "#fff",
+		flexWrap: "wrap",
+		justifyContent: "flex-end",
+		alignItems: "center",
+		rowGap: "0.2em",
+		color: BADGE_INK,
 		textDecoration: "none",
-		background: "rgba(14, 17, 20, 0.82)",
-		backdropFilter: "blur(6px)",
-		border: "1px solid rgba(255, 255, 255, 0.12)",
-		boxShadow: "0 1px 3px rgba(0, 0, 0, 0.35)",
-		borderRadius: "5px",
+		background: "#fbf4ec",
+		boxShadow: "0 2px 0 rgba(0, 0, 0, 0.35), 0 4px 14px rgba(0, 0, 0, 0.3)",
+		borderRadius: "1.1em",
 		opacity: "0",
-		transition: "opacity 160ms ease-out",
-		padding: "0.25em 0.4em",
-		fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI", Helvetica, sans-serif',
-		fontWeight: "600",
+		transform: "translateY(2px)",
+		transition: "opacity 160ms ease-out, transform 220ms cubic-bezier(0.3, 0.7, 0.2, 1)",
+		padding: "0.18em",
+		fontFamily:
+			'"Bricolage Grotesque Variable", "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif',
+		fontWeight: "700",
+		letterSpacing: "-0.01em",
 		fontVariantNumeric: "tabular-nums",
 		lineHeight: "1",
 		zIndex: zIndexValue,
 		fontSize: isMobile ? "clamp(12px, 4vw, 18px)" : "clamp(12px, 0.85vw, 15px)",
 	})
 
-	requestAnimationFrame(() => (div.style.opacity = "1"))
+	requestAnimationFrame(() => Object.assign(div.style, { opacity: "1", transform: "none" }))
 	{
 		fillBadge(div, data, "", getTmdbColor(score, vote_count < 50))
 		if (data.source !== "tmdb" && data.rating && activePlatform) {
@@ -1023,6 +1087,8 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		if (card.dataset.cardTitle) position = card?.firstChild?.firstChild as HTMLElement
 		else if (card.querySelector('div[data-testid="title-metadata-main"]'))
 			position = card.querySelector('div[data-testid="title-metadata-main"]') as HTMLElement
+		const logoHeight = position ? primeLogoHeight(position) : 0
+		if (logoHeight) div.style.bottom = `calc(${(logoHeight * 100).toFixed(1)}% + 0.2em)`
 		position?.appendChild(div)
 		if (isDimmed(data, vote_count < 50)) position?.appendChild(greyOverlay)
 		// card.closest("li")?.style.setProperty("opacity", getTransparencyForRating(data?.score, vote_count < 50))

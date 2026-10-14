@@ -30,7 +30,7 @@ export class RowPresentation {
 			const style = document.createElement("style")
 			style.id = "sb-row-presentation-style"
 			style.textContent = `
-				.sb-best-in-row { outline: 3px solid #00c878 !important; outline-offset: -3px !important; }
+				.sb-best-in-row { outline: 3px solid #ff7a45 !important; outline-offset: -3px !important; }
 				.sb-watched { opacity: 0.45 !important; }
 				.sb-watched:hover, .sb-watched:focus-within { opacity: 1 !important; }
 				.sb-below-cutoff { display: none !important; }
