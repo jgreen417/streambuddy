@@ -946,6 +946,35 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 	div.setAttribute("aria-label", tooltip.join(". "))
 }
 
+// The sites put their own labels in a card's bottom corners (Netflix's "Leaving soon" tag, the Prime logo).
+// When one sits under the badge, lift the badge to just above it instead of covering it.
+function liftAboveCardLabels(badge: HTMLElement) {
+	const host = badge.parentElement
+	if (!badge.isConnected || !host) return
+	const hostRect = host.getBoundingClientRect()
+	const rect = badge.getBoundingClientRect()
+	if (!rect.width || !hostRect.height) return
+	let top = rect.bottom
+	for (const element of Array.from(host.querySelectorAll("*"))) {
+		if (badge.contains(element) || element.closest(".sb-card-rating")) continue
+		const box = element.getBoundingClientRect()
+		// skip the artwork and anything else card-sized
+		if (!box.width || !box.height || box.width * box.height > hostRect.width * hostRect.height * 0.25) continue
+		if (box.right <= rect.left || box.left >= rect.right || box.bottom <= rect.top || box.top >= rect.bottom) continue
+		const isLabel =
+			element instanceof SVGElement ||
+			element.tagName === "IMG" ||
+			Array.from(element.childNodes).some((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim())
+		if (!isLabel) continue
+		const style = getComputedStyle(element)
+		if (style.visibility === "hidden" || style.opacity === "0") continue
+		top = Math.min(top, box.top)
+	}
+	const bottom = hostRect.bottom - top
+	// a label more than halfway up the card isn't a corner label; leave the badge where it is
+	if (top < rect.bottom && bottom < hostRect.height * 0.5) badge.style.bottom = `calc(${bottom}px + 0.3em)`
+}
+
 async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string) {
 	if (!card.isConnected) return
 	if ((isNetflix || isHBO || isPrimeVideo) && getCleanTitle(card, card.dataset.cardTitle ? 0 : 1) !== title) {
@@ -1075,6 +1104,11 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		position?.appendChild(div)
 		if (isDimmed(data, vote_count < 50)) position?.appendChild(greyOverlay)
 		// card.closest("li")?.style.setProperty("opacity", getTransparencyForRating(data?.score, vote_count < 50))
+	}
+	if (div.isConnected) {
+		requestAnimationFrame(() => liftAboveCardLabels(div))
+		// some sites draw their card labels a moment after the artwork
+		setTimeout(() => liftAboveCardLabels(div), 1000)
 	}
 	if (div.isConnected && (isNetflix || isHBO || isPrimeVideo)) {
 		searchSorting.setRating(card, score)
