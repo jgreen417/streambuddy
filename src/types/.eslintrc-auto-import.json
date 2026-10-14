@@ -48,6 +48,7 @@
     "VNode": true,
     "WatchLog": true,
     "WatchSummary": true,
+    "WatchTimerState": true,
     "WritableComputedRef": true,
     "acceptHMRUpdate": true,
     "addLetterboxdWatchlist": true,
@@ -409,6 +410,7 @@
     "watchPostEffect": true,
     "watchSyncEffect": true,
     "watchThrottled": true,
+    "watchTick": true,
     "watchTriggerable": true,
     "watchWithFilter": true,
     "whenever": true

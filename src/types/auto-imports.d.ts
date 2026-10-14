@@ -384,6 +384,7 @@ declare global {
   const watchPostEffect: typeof import('vue').watchPostEffect
   const watchSyncEffect: typeof import('vue').watchSyncEffect
   const watchThrottled: typeof import('@vueuse/core').watchThrottled
+  const watchTick: typeof import('../utils/stats').watchTick
   const watchTriggerable: typeof import('@vueuse/core').watchTriggerable
   const watchWithFilter: typeof import('@vueuse/core').watchWithFilter
   const whenever: typeof import('@vueuse/core').whenever
@@ -418,7 +419,7 @@ declare global {
   export type { RowPresentation } from '../utils/row-presentation'
   import('../utils/row-presentation')
   // @ts-ignore
-  export type { WatchLog, SeenTitle, SeenTop, WatchSummary, SavedLog } from '../utils/stats'
+  export type { WatchLog, SeenTitle, SeenTop, WatchTimerState, WatchSummary, SavedLog } from '../utils/stats'
   import('../utils/stats')
 }
 
@@ -796,6 +797,7 @@ declare module 'vue' {
     readonly watchPostEffect: UnwrapRef<typeof import('vue')['watchPostEffect']>
     readonly watchSyncEffect: UnwrapRef<typeof import('vue')['watchSyncEffect']>
     readonly watchThrottled: UnwrapRef<typeof import('@vueuse/core')['watchThrottled']>
+    readonly watchTick: UnwrapRef<typeof import('../utils/stats')['watchTick']>
     readonly watchTriggerable: UnwrapRef<typeof import('@vueuse/core')['watchTriggerable']>
     readonly watchWithFilter: UnwrapRef<typeof import('@vueuse/core')['watchWithFilter']>
     readonly whenever: UnwrapRef<typeof import('@vueuse/core')['whenever']>
