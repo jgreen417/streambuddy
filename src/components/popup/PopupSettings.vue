@@ -28,7 +28,7 @@ const { username } = useAccount()
 	</div>
 	<ExperiencePreferences
 		v-else
-		:settings="settings"
+		v-model:settings="settings"
 		:service="props.service"
 		:expanded="expanded"
 		:fixed-service="fixedService"
