@@ -17,6 +17,7 @@ export const netflix: SiteAdapter = {
 	// ad tiers show a countdown in the top corner of the player
 	adRemaining: () => parseClock($('[data-uia="ads-info-time-remaining"], span[class*="mmvz9h"]')?.textContent),
 	adStrategy: "fastForward",
+	seekBlocked: true,
 	episodeKey: () => /\/watch\/(\d+)/.exec(location.pathname)?.[1] ?? null,
 	// <div data-uia="video-title"><h4>Show</h4><span>E5</span><span>Episode name</span></div>
 	episodeNumber: () => parseEpisodeNumber($('[data-uia="video-title"] span')?.textContent),

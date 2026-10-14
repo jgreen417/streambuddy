@@ -143,6 +143,29 @@ describe("playback engine", () => {
 		expect(browser.storage.sync.set).toHaveBeenCalledWith({ skipRules: { "the bear": ["intro"] } })
 	})
 
+	it("offers no Undo where the player rejects seeks, and leaves the position alone", async () => {
+		const { video, tick, addButton, site } = setup()
+		site.seekBlocked = true
+		addButton("intro", 185)
+		tick()
+		vi.advanceTimersByTime(800)
+		expect(noticeText()).toContain("Skipped intro")
+		expect(noticeButton("Undo")).toBeUndefined()
+		noticeButton("Not for this show")!.click()
+		expect(video.currentTime).toBe(185)
+		expect(browser.storage.sync.set).toHaveBeenCalledWith({ skipRules: { "the bear": ["intro"] } })
+	})
+
+	it("announces a credits skip even when the next episode replaces the player", () => {
+		const { tick, addButton, state } = setup()
+		addButton("credits", 0)
+		tick()
+		// the site swaps in the next episode's player straight away
+		state.episode = "ep2"
+		expect(noticeText()).toContain("Skipped credits")
+		expect(noticeText()).toContain("48:20 saved")
+	})
+
 	it("plays the intro on episode 1 when asked to", () => {
 		const { video, tick, addButton, state } = setup({ keepFirstIntro: true })
 		state.episodeNumber = 1
@@ -193,6 +216,18 @@ describe("playback engine", () => {
 		tick()
 		expect(video.pause).toHaveBeenCalled()
 		expect(noticeText()).toContain("Paused after 2 episodes in a row")
+	})
+
+	it("keeps counting autoplayed episodes when the player drops its video between them", () => {
+		const { video, tick, state, site } = setup({ pauseAfter: 1 })
+		const realVideo = site.video
+		tick() // ep1, started by the viewer
+		site.video = () => null
+		tick() // a moment with no <video> while the next episode loads
+		site.video = realVideo
+		state.episode = "ep2"
+		tick()
+		expect(video.pause).toHaveBeenCalled()
 	})
 
 	it("changes speed from the keyboard and keeps it when the site resets the rate", async () => {

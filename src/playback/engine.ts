@@ -1,4 +1,4 @@
-import { PlayerOverlay, formatRate, formatSaved } from "./overlay"
+import { PlayerOverlay, formatRate, formatSaved, type NoticeAction } from "./overlay"
 import { isExcepted, loadRules, onRulesChanged, saveRules, withException } from "./rules"
 import { SKIP_LABELS, type PlaybackSettings, type SiteAdapter, type SkipKind, type SkipRules } from "./types"
 import { addSavedSeconds, type SavedLog } from "@/utils/stats"
@@ -88,9 +88,10 @@ export class PlaybackEngine {
 		})
 		this.applyRate()
 	}
+	// the episode is kept: players drop the <video> for a moment between autoplayed episodes, and forgetting
+	// it would restart the autoplay run on every episode
 	private leavePlayer() {
 		this.video = null
-		this.episode = null
 		this.overlay.removeSpeed()
 		this.overlay.detach()
 	}
@@ -155,13 +156,20 @@ export class PlaybackEngine {
 			if (settings.notices) this.overlay.showNotice("Kept playing")
 			return
 		}
+		const canSeek = !this.site.seekBlocked
+		if (kind === "credits") {
+			// announce now: the next episode replaces the player, so a notice after it would have nowhere to go
+			if (remaining > 1 && remaining < 30 * 60) this.recordSaved(kind, remaining)
+			if (settings.notices) this.announceSkip(kind, remaining, show ? [this.notForShow(kind, show)] : [])
+			return
+		}
 		// the jump lands a moment after the click; measure it then
 		setTimeout(() => {
-			const saved = kind === "credits" ? remaining : this.video === video ? video.currentTime - before : 0
+			const saved = this.video === video ? video.currentTime - before : 0
 			if (saved > 1 && saved < 30 * 60) this.recordSaved(kind, saved)
 			if (!settings.notices) return
 			const actions = []
-			if (kind !== "credits" && this.video === video)
+			if (canSeek && this.video === video)
 				actions.push({
 					label: "Undo",
 					run: () => {
@@ -170,19 +178,29 @@ export class PlaybackEngine {
 					},
 				})
 			if (show)
-				actions.push({
-					label: "Not for this show",
-					quiet: true,
-					run: () => {
-						this.suppressed.add(kind)
-						this.rules = withException(this.rules, show, kind)
-						saveRules(this.rules).catch(() => {})
-						if (kind !== "credits" && this.video === video) video.currentTime = before
-					},
-				})
-			const savedText = saved > 1 ? ` · ${formatSaved(saved)} saved` : ""
-			this.overlay.showNotice(`Skipped ${SKIP_LABELS[kind]}${savedText}`, actions)
+				actions.push(
+					this.notForShow(kind, show, () => {
+						if (canSeek && this.video === video) video.currentTime = before
+					}),
+				)
+			this.announceSkip(kind, saved, actions)
 		}, 700)
+	}
+	private announceSkip(kind: SkipKind, saved: number, actions: NoticeAction[]) {
+		const savedText = saved > 1 ? ` · ${formatSaved(saved)} saved` : ""
+		this.overlay.showNotice(`Skipped ${SKIP_LABELS[kind]}${savedText}`, actions)
+	}
+	private notForShow(kind: SkipKind, show: string, undo?: () => void): NoticeAction {
+		return {
+			label: "Not for this show",
+			quiet: true,
+			run: () => {
+				this.suppressed.add(kind)
+				this.rules = withException(this.rules, show, kind)
+				saveRules(this.rules).catch(() => {})
+				undo?.()
+			},
+		}
 	}
 	// #endregion
 
