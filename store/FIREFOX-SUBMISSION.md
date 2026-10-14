@@ -1,20 +1,19 @@
 # Firefox Add-ons (AMO) submission
 
-Prepared 14 October 2026. Not yet submitted.
+Prepared 14 October 2026 for version 1.0.1, which includes the Buddy redesign. Not yet submitted. It is ready apart from the steps under "Before submitting".
 
-- Item: streamBuddy 1.0.0
-- Add-on ID: `streambuddy@jgreen417` (permanent: AMO keys the listing to it, so it must never change)
-- Package: `release/firefox-1.0.0.zip`, built with `npm run build:release:firefox`
-- Source package: `release/streambuddy-source.zip`, built with `npm run build:source` (AMO requires source because the add-on is bundled by Vite)
-- Manifest: version 2 (the build converts the MV3 config, so host permissions are granted at install), Firefox 140+ desktop only (Android left out until it's tested on a phone)
+- Item: streamBuddy 1.0.1
+- Add-on ID: `streambuddy@jgreen417`. This is permanent: AMO keys the listing to it, so it must never change.
+- Package: `release/firefox-1.0.1.zip`, built with `npm run build:release:firefox`.
+- Source package: `release/streambuddy-source.zip`, built with `npm run build:source` from the same commit. AMO requires the source because Vite bundles the add-on.
+- Manifest: version 2. The build converts the MV3 config, so host permissions are granted at install. Desktop Firefox 140 and later only.
 
-## Verification (14 October 2026)
+## Verification (14 October 2026, 1.0.1)
 
 - `web-ext lint`: 0 errors, 0 notices, 1 warning. The warning is Vue's own `innerHTML` assignment in `runtime-dom.esm-bundler.js`, which AMO accepts for unmodified framework code.
-- Tests: 109 passed, 1 skipped. `vue-tsc` typecheck clean.
+- Tests: 118 passed, 1 skipped. The `vue-tsc` typecheck and `eslint --max-warnings=0` are clean.
 - The build is reproducible: two clean builds produced byte-identical files, which AMO reviewers check against the source package.
-- No development TMDb token or Letterboxd username in the release build (`RELEASE=1` blanks both).
-- Fixed: `web_accessible_resources` listed each shared chunk three times (once per content script). It is now one de-duplicated list of 14 files.
+- The release build contains no development TMDb token or Letterboxd username (`RELEASE=1` blanks both).
 
 ## Playback adapter review (`src/playback/`)
 
@@ -27,45 +26,20 @@ Nothing in the adapters or the engine is Chrome-only. They use the `browser` glo
 - `storage.sync` (settings, per-show rules) works in Firefox only because the add-on has a fixed ID. It syncs through the user's Mozilla account.
 - The background script runs as a persistent MV2 background page; `persistent: false` from the config is dropped by the build. This is fine on Firefox and keeps the in-memory Letterboxd caches alive.
 
-## Manual tests in Firefox (desktop, release build)
+## Firefox testing (14 October 2026)
 
-Load `release/firefox/manifest.json` from `about:debugging` > This Firefox > Load Temporary Add-on, or run `npm run firefox` against `dist/firefox`.
+Tested live in Firefox 157 on macOS against Netflix, Prime Video and Max, with Widevine and signed-in accounts. Full results: `/mnt/project-files/firefox-submission/firefox-test-results.md`.
 
-Install and settings
-
-- [ ] Fresh install opens the welcome page; finishing setup saves the TMDb key and Letterboxd username.
-- [ ] The toolbar popup and options page render at the right size, with no console errors.
-- [ ] Settings changed in the options page take effect on an open streaming tab without a reload.
-
-Ratings (each of Netflix, Prime Video, HBO Max)
-
-- [ ] Rating badges appear on browse rows, search results and title pages. This also confirms the content-script loader can import its chunks from `moz-extension://`.
-- [ ] The title panel shows friends' ratings when a Letterboxd username is set.
-- [ ] IMDb per-episode ratings load on a series page.
-
-Letterboxd account features (highest risk in Firefox)
-
-- [ ] Signed in to letterboxd.com in Firefox, "Add to watchlist" succeeds and the film shows on the Letterboxd watchlist. Firefox handles cookies on extension requests differently from Chrome (Total Cookie Protection, SameSite), so this may fail even though it works in Chrome.
-- [ ] Repeat with Enhanced Tracking Protection set to Strict.
-- [ ] The rate-at-credits prompt appears near the end of a film.
-
-Playback (each site)
-
-- [ ] Skip intro, skip recap, and credits/next episode skip, each showing a notice with a working Undo.
-- [ ] "Not for this show" stops skips for that show and the rule appears in options.
-- [ ] Netflix "Are you still watching?" is dismissed.
-- [ ] Speed pill on Prime Video and HBO Max; Shift + < / > on all three; speed is kept on the next episode.
-- [ ] Notices and speed pill are visible and styled in fullscreen.
-- [ ] Ads: Prime Video seeks past them; Netflix ad tier fast-forwards muted and restores sound and speed afterwards.
-- [ ] Pause after N autoplayed episodes.
-- [ ] Netflix games rows and Prime paid titles are hidden when those options are on.
+- Firefox-specific behaviour all passed: content-script chunk loading from `moz-extension://`, overlays under Netflix's and Max's CSP, `storage.sync`, DRM playback, the popup and the options page.
+- Bugs found that aren't specific to Firefox were fixed in PR #6: the title panel on all three sites, the "Watch again" titles on Max, Netflix Undo (now hidden, because Netflix blocks seeks), pause after N episodes, and the Max credits notice. These fixes were checked live in Firefox.
+- Not tested: Letterboxd sign-in and "Add to watchlist" (skipped at the owner's request), "Still watching?", recap skips, and real ad breaks (no ad-tier plans).
 
 ## AMO listing fields
 
-Reuse `store/LISTING.md` for the name, summary, description and screenshots. AMO-specific fields:
+Reuse `store/LISTING.md` (Buddy redesign copy) for the name, summary and description. For the screenshot, use `store/screenshots/netflix-ratings.png` (1280×800). AMO takes the icon from the manifest (`src/assets/Logo/icon.svg`). The promo tiles are Chrome-only. AMO-specific fields:
 
 - Summary: the manifest description (132 characters, within AMO's 250).
-- Categories: Photos, Music & Videos (desktop); Entertainment on Android if kept.
+- Categories: Photos, Music & Videos.
 - License: GNU GPL v3.0.
 - Privacy policy: paste `PRIVACY.md`, since AMO hosts the text rather than taking a link.
 - Homepage: https://github.com/jgreen417/streambuddy. Support site: https://github.com/jgreen417/streambuddy/issues
@@ -75,13 +49,19 @@ Reuse `store/LISTING.md` for the name, summary, description and screenshots. AMO
 
 > Build: Node 22, npm 10. Run `npm ci`, then `npm run build:release:firefox`. The output in `release/firefox/` matches the uploaded package byte for byte (`SOURCE_DATE_EPOCH` is fixed, and the code is not minified). Third-party code comes from npm (Vue, Pinia, vue-i18n, webextension-polyfill, webext-bridge).
 >
-> Ratings need a TMDb API read token, entered on the welcome page. [Test credential to be added here only if the owner approves sharing it with Mozilla's reviewers.]
+> Ratings need a TMDb API read token, entered on the welcome page. Test token: [paste Josh's TMDb read token here, in AMO's confidential reviewer notes only. Never commit it.]
 >
 > Network use: TMDb (title matching), letterboxd.com (ratings and, when the user confirms, adding a film to their watchlist using their existing Letterboxd sign-in), and caching.graphql.imdb.com (IMDb ratings). No analytics and no remote code.
 
-## Decisions before submitting
+## Decisions (14 October 2026)
 
-- Android: decided 14 October 2026 to ship desktop only. When uploading, untick Firefox for Android under compatibility. Leave `gecko_android` in the manifest: AMO decides platforms at upload, and without that key `web-ext lint` warns that Android 140 predates `data_collection_permissions`.
+- Android: desktop only. When uploading, untick Firefox for Android under compatibility. Leave `gecko_android` in the manifest: AMO decides platforms at upload, and without that key `web-ext lint` warns that Android 140 predates `data_collection_permissions`.
+- Distribution: listed publicly on AMO.
+- Reviewer credential: Josh's own TMDb token goes in the confidential reviewer notes.
+- Timing: submit after the Buddy redesign. Done: it shipped in 1.0.1.
 
-- Reviewer credential: share the development TMDb token with Mozilla's reviewers, as was done for Google.
-- Distribution: listed on AMO (public) or self-distributed (signed file only).
+## Before submitting
+
+1. Merge PR #6, then rebuild both zips from `main` so that the package and source match the merged commit.
+2. Sign in to addons.mozilla.org with Josh's Firefox account. This is a Mozilla account, separate from the Chrome publisher account.
+3. Submit a new add-on: choose "On this site" (listed), upload `firefox-1.0.1.zip`, untick Android, upload `streambuddy-source.zip`, paste the reviewer notes with the token, then fill in the listing fields above.
