@@ -30,6 +30,9 @@ jobs:
       - name: Write new screenshots
         run: npx playwright test --update-snapshots=changed
       - name: Commit them
+        env:
+          # branch names can hold quotes, so the ref goes through the environment and a JSON encoder
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
@@ -45,7 +48,7 @@ jobs:
             for workflow in ci.yml visual.yml; do
               curl -sSf -X POST -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
                 "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/$workflow/dispatches" \
-                -d '{"ref":"${{ github.event.pull_request.head.ref }}"}'
+                -d "$(node -e 'console.log(JSON.stringify({ ref: process.env.HEAD_REF }))')"
             done
           fi
       - name: Remove the label
