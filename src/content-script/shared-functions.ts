@@ -884,9 +884,13 @@ function getRatingVoteCount(data: MovieInfo) {
 // Letterboxd average (one dot per friend) and your own status (seen it and what you gave it, or on your watchlist).
 // The source and scale are in the tooltip; colour adds context rather than carrying the meaning.
 const BADGE_INK = "#1b1918"
+// colours inside the badge go through variables so the Liquid Glass look can switch them to light-on-glass
+const BADGE_LABEL = "var(--sb-label, #7a716a)"
+const BADGE_TEXT = "var(--sb-ink, #1b1918)"
+const BADGE_WATCHLIST = "var(--sb-watch, #2f6fb5)"
 // the first three are also the fixed trio
 const FRIEND_DOT_COLORS = ["#ff7a45", "#8ec5ff", "#f2c94c", "#7ad9a0", "#c9a7ff"]
-function addBadgeSegment(div: HTMLElement, text: string, color = BADGE_INK) {
+function addBadgeSegment(div: HTMLElement, text: string, color = BADGE_TEXT) {
 	const segment = document.createElement("span")
 	Object.assign(segment.style, {
 		display: "inline-flex",
@@ -935,14 +939,13 @@ function friendsIcon(friends: { name: string }[], count: number) {
 }
 // The default layout: a small column beside the score with a labelled line each for friends and you,
 // so what each number means is written on the badge rather than left to the tooltip.
-const BADGE_LABEL = "#7a716a"
 function addLabelLine(
 	div: HTMLElement,
 	column: HTMLElement | undefined,
 	dot: string,
 	label: string,
 	value: string,
-	color = BADGE_INK,
+	color = BADGE_TEXT,
 ) {
 	if (!column) {
 		column = document.createElement("span")
@@ -995,6 +998,9 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 		fontWeight: "800",
 		letterSpacing: "-0.02em",
 		whiteSpace: "nowrap",
+		// dark on the band colour in both badge looks
+		color: BADGE_INK,
+		textShadow: "none",
 	})
 	const tooltip: string[] = []
 	let value: string
@@ -1044,8 +1050,8 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 		else addBadgeSegment(div, personal.watched ? `✓ you ${personal.watched.toFixed(1)}` : "✓ seen")
 		tooltip.push(personal.watched ? `You rated it ${personal.watched.toFixed(1)}` : "You've logged it")
 	} else if (personal.watchlist) {
-		if (labelled) addLabelLine(div, column, "#8ec5ff", "you", "watchlist", "#2f6fb5")
-		else addBadgeSegment(div, "watchlist", "#2f6fb5")
+		if (labelled) addLabelLine(div, column, "#8ec5ff", "you", "watchlist", BADGE_WATCHLIST)
+		else addBadgeSegment(div, "watchlist", BADGE_WATCHLIST)
 		tooltip.push("On your watchlist")
 	}
 	div.title = tooltip.join("\n")
@@ -1128,6 +1134,24 @@ function watchBadgeResizes() {
 	})
 }
 
+// Liquid Glass: a blurred, lightly tinted pane in place of the cream chip, with light text. frost runs from
+// 0 (clear glass: a hairline edge and highlight) to 100 (thick frosted sea glass). The score pill keeps its colour.
+function applyGlass(div: HTMLElement, frost: number) {
+	const f = Math.min(Math.max(frost, 0), 100) / 100
+	const blur = `blur(${(2 + 14 * f).toFixed(1)}px) saturate(1.6)`
+	Object.assign(div.style, {
+		background: `rgba(251, 244, 236, ${(0.04 + 0.26 * f).toFixed(2)})`,
+		backdropFilter: blur,
+		webkitBackdropFilter: blur,
+		boxShadow:
+			"inset 0 0 0 0.5px rgba(255, 255, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 8px rgba(0, 0, 0, 0.25)",
+		textShadow: "0 1px 2px rgba(0, 0, 0, 0.35)",
+	})
+	div.style.setProperty("--sb-ink", "#ffffff")
+	div.style.setProperty("--sb-label", "rgba(255, 255, 255, 0.8)")
+	div.style.setProperty("--sb-watch", "#8ec5ff")
+}
+
 // Prime composites its own "prime" or channel logo into the artwork's bottom-right corner, and the image URL
 // says where: _CLs|W,H|...channels-logo...|...+x,y,w,h. Returns how far up the card the logo reaches (0 when none).
 function primeLogoHeight(container: HTMLElement) {
@@ -1186,7 +1210,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		justifyContent: "flex-end",
 		alignItems: "center",
 		rowGap: "0.2em",
-		color: BADGE_INK,
+		color: BADGE_TEXT,
 		textDecoration: "none",
 		background: "#fbf4ec",
 		// a sticker, not glass: a hard drop shadow lifts it off any artwork
@@ -1204,6 +1228,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		fontSize: isMobile ? "clamp(13px, 4vw, 19px)" : "clamp(13px, 0.95vw, 17px)",
 	})
 
+	if (settings.value.General.badgeStyle === "glass") applyGlass(div, settings.value.General.glassFrost)
 	requestAnimationFrame(() => Object.assign(div.style, { opacity: "1", transform: "none" }))
 	{
 		fillBadge(div, data, "", getTmdbColor(score, vote_count < 50))

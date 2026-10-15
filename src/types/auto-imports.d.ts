@@ -402,7 +402,7 @@ declare global {
   export type { BooleanObject, MediaType } from '../stores/options.store'
   import('../stores/options.store')
   // @ts-ignore
-  export type { FriendsStyle, RatingSources, settingsType } from '../stores/storeTypes'
+  export type { BadgeStyle, FriendsStyle, RatingSources, settingsType } from '../stores/storeTypes'
   import('../stores/storeTypes')
   // @ts-ignore
   export type { Account, CheckResult } from '../utils/account'

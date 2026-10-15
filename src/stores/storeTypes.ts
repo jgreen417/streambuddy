@@ -8,6 +8,7 @@ type ServicePlayback = {
 	speedControl: boolean
 	showRating: boolean
 }
+export type BadgeStyle = "classic" | "glass"
 export type FriendsStyle = "labels" | "dots" | "trio"
 // where badge scores come from; TMDb is always the last fallback
 export type RatingSources = "both" | "letterboxd" | "imdb" | "tmdb"
@@ -32,6 +33,9 @@ export type settingsType = {
 		ratingSources: RatingSources
 		// how the badge shows friends' score (and yours): labelled lines beside the score, a dot per friend, or always the same three dots
 		friendsStyle: FriendsStyle
+		badgeStyle: BadgeStyle
+		// Liquid Glass frost, 0 (clear) to 100 (frosted)
+		glassFrost: number
 		// with dimLowRatings on, dim titles in a colour band below this one (1 = below orange ... 4 = below green)
 		dimBelowBand: number
 		// mark films already logged on Letterboxd (and watchlist ones) on the badges
@@ -76,6 +80,8 @@ export const defaultSettings: settingsType = {
 		friendsRatings: true,
 		ratingSources: "both",
 		friendsStyle: "labels",
+		badgeStyle: "classic",
+		glassFrost: 60,
 		dimBelowBand: 1,
 		markWatched: true,
 		highlightBestInRow: true,

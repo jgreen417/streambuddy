@@ -52,6 +52,24 @@ describe("experience preferences integration", () => {
 		await nextTick()
 		expect(state.General.ratingSources).toBe("imdb")
 	})
+	it("keeps the classic badge by default and shows the glass slider only for Liquid Glass", async () => {
+		const { root, state } = mount(fresh())
+		const select = Array.from(root.querySelectorAll<HTMLSelectElement>("label.sb-cutoff select")).find((el) =>
+			el.closest("label")?.textContent?.includes("Badge look"),
+		)!
+		expect(select.value).toBe("classic")
+		expect(root.querySelector(".sb-frost")).toBeNull()
+		select.value = "glass"
+		select.dispatchEvent(new Event("change"))
+		await nextTick()
+		expect(state.General.badgeStyle).toBe("glass")
+		const slider = root.querySelector<HTMLInputElement>(".sb-frost input[type=range]")!
+		expect(slider.value).toBe("60")
+		slider.value = "20"
+		slider.dispatchEvent(new Event("input"))
+		await nextTick()
+		expect(state.General.glassFrost).toBe(20)
+	})
 	it("edits an individual recap without changing intros or other services", async () => {
 		const { root, state } = mount(fresh())
 		toggle(root, "Skip recaps").click()

@@ -176,6 +176,33 @@ const updateMode = (event: Event) => {
 					</select>
 				</label>
 				<p class="sb-help">TMDb fills in when the chosen sites have no rating.</p>
+				<label class="sb-cutoff">
+					Badge look
+					<select v-model="settings.General.badgeStyle">
+						<option value="classic">Classic</option>
+						<option value="glass">Liquid Glass</option>
+					</select>
+				</label>
+				<label
+					v-if="settings.General.badgeStyle === 'glass'"
+					class="sb-cutoff sb-frost"
+				>
+					Glass
+					<input
+						v-model.number="settings.General.glassFrost"
+						type="range"
+						min="0"
+						max="100"
+						step="5"
+						aria-valuetext="Clear to frosted"
+					/>
+				</label>
+				<p
+					v-if="settings.General.badgeStyle === 'glass'"
+					class="sb-help"
+				>
+					Slide left for clear glass, right for frosted.
+				</p>
 				<template v-if="supportsPages">
 					<PopupToggle
 						v-model="settings.General.detailRatings"
