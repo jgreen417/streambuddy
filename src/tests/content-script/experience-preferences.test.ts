@@ -41,6 +41,17 @@ describe("experience preferences integration", () => {
 		expect(state.Video.dimLowRatings).toBe(true)
 		expect(state.General.hideBelowRating).toBe(true)
 	})
+	it("picks which sites badge ratings come from", async () => {
+		const { root, state } = mount(fresh())
+		const select = Array.from(root.querySelectorAll<HTMLSelectElement>("label.sb-cutoff select")).find((el) =>
+			el.closest("label")?.textContent?.includes("Ratings from"),
+		)!
+		expect(select.value).toBe("both")
+		select.value = "imdb"
+		select.dispatchEvent(new Event("change"))
+		await nextTick()
+		expect(state.General.ratingSources).toBe("imdb")
+	})
 	it("edits an individual recap without changing intros or other services", async () => {
 		const { root, state } = mount(fresh())
 		toggle(root, "Skip recaps").click()

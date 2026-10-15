@@ -88,9 +88,17 @@ type MovieInfo = {
 	friends_count?: number
 	friends?: FriendRating[]
 	cacheVersion?: number
+	// the rating-source setting this was looked up under (missing on older entries, which used both)
+	sources?: RatingSources
 }
 // bump when lookups change so older entries (wrong matches, fallbacks saved during an outage) are refetched once
 const CACHE_VERSION = 2
+const ratingSources = () => settings.value.General.ratingSources
+const useLetterboxd = () => ratingSources() === "both" || ratingSources() === "letterboxd"
+const useImdb = () => ratingSources() === "both" || ratingSources() === "imdb"
+// cached under the current lookup rules and the current choice of sources
+const isCacheCurrent = (entry: MovieInfo | undefined) =>
+	entry?.cacheVersion === CACHE_VERSION && (entry.sources ?? "both") === ratingSources()
 type DBCacheType = {
 	[title: string]: MovieInfo
 }
@@ -200,7 +208,7 @@ async function lookupMovieInfo(
 	let url = `https://api.themoviedb.org/3/search/${queryType}?query=${encodeURIComponent(title)}&include_adult=false&language=${locale}&page=1`
 	if (year) url += `&year=${year}`
 	// start downloading the likely Letterboxd page now; it's verified against TMDb's answer before being used
-	if (media_type !== "tv")
+	if (media_type !== "tv" && useLetterboxd())
 		Promise.resolve(
 			sendMessage("letterboxdPrefetch", { title, friends: settings.value.General.friendsRatings }, "background"),
 		).catch(() => {})
@@ -232,6 +240,7 @@ async function lookupMovieInfo(
 		friends_count: external.rating?.friends_count,
 		friends: external.rating?.friends,
 		cacheVersion: CACHE_VERSION,
+		sources: ratingSources(),
 	}
 	// a temporary Letterboxd/IMDb failure must not pin this title to the fallback for a month
 	if (!external.transient) {
@@ -251,7 +260,7 @@ function scheduleCacheSave() {
 
 type ExternalResult = ExternalRating | null | { error: string }
 const isLookupError = (result: ExternalResult): result is { error: string } => !!result && "error" in result
-// Films: Letterboxd. TV, and films Letterboxd has no rating for yet: IMDb.
+// Films: Letterboxd. TV, and films Letterboxd has no rating for yet: IMDb. The rating-source setting can drop either.
 async function getExternalRating(
 	tmdbId: number,
 	media_type: string,
@@ -260,7 +269,7 @@ async function getExternalRating(
 	let transient = false
 	try {
 		// Letterboxd's /tmdb/{id} only understands movie ids, a TV id would resolve to an unrelated film
-		if (media_type === "movie") {
+		if (media_type === "movie" && useLetterboxd()) {
 			const letterboxd: ExternalResult = await sendMessage(
 				"letterboxdRating",
 				{ tmdbId, friends: settings.value.General.friendsRatings, title },
@@ -269,7 +278,7 @@ async function getExternalRating(
 			if (isLookupError(letterboxd)) transient = true
 			else if (letterboxd?.rating) return { rating: letterboxd, transient }
 		}
-		if (media_type !== "movie" && media_type !== "tv") return { rating: null, transient }
+		if (!useImdb() || (media_type !== "movie" && media_type !== "tv")) return { rating: null, transient }
 		const externalIds: { imdb_id?: string; error?: string } = await sendMessage(
 			"fetch",
 			{ url: `https://api.themoviedb.org/3/${media_type}/${tmdbId}/external_ids`, type: "tmdb" },
@@ -357,7 +366,7 @@ const detailRatings = new DetailRatings(
 	async (title, type, year) => {
 		const cached = DBCache[title]
 		if (
-			cached?.cacheVersion === CACHE_VERSION &&
+			isCacheCurrent(cached) &&
 			(!type || cached.media_type === type) &&
 			(!year || cached.release_date?.startsWith(year)) &&
 			getDiffInDays(cached.date, new Date()) <= 1
@@ -740,7 +749,7 @@ async function addRating() {
 				if (lastTitle != title && !title.includes("Netflix") && !title.includes("Prime Video")) {
 					lastTitle = title
 					if (
-						DBCache[title]?.cacheVersion === CACHE_VERSION &&
+						isCacheCurrent(DBCache[title]) &&
 						// a Letterboxd/IMDb rating counts even when TMDb has no votes; unrated titles are retried after a week
 						(DBCache[title]?.rating || DBCache[title]?.score || getDiffInDays(DBCache[title]?.date, date) <= 7) &&
 						(!media_type || DBCache[title]?.media_type == media_type)
