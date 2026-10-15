@@ -1091,7 +1091,7 @@ const badgeFits = new WeakMap<HTMLElement, { host: HTMLElement; corner: BadgeCor
 // the artwork: the biggest rounded box in the card (else its biggest image), skipping our own badge and overlays.
 // The container itself is only a fallback, since its box includes the gutter around the artwork.
 function findArtwork(host: HTMLElement) {
-	let rounded: { el: HTMLElement; rect: DOMRect } | undefined
+	const rounded: { el: HTMLElement; rect: DOMRect }[] = []
 	let image: { el: HTMLElement; rect: DOMRect } | undefined
 	const area = (rect: DOMRect) => rect.width * rect.height
 	for (const el of Array.from(host.querySelectorAll<HTMLElement>("img, picture, div, span")).slice(0, 80)) {
@@ -1101,13 +1101,20 @@ function findArtwork(host: HTMLElement) {
 		const style = getComputedStyle(el)
 		const radius =
 			Number.parseFloat(style.borderTopRightRadius) || Number.parseFloat(style.borderBottomRightRadius) || 0
-		if (radius > 0 && style.borderTopRightRadius.endsWith("px") && (!rounded || area(rect) > area(rounded.rect)))
-			rounded = { el, rect }
+		if (radius > 0 && style.borderTopRightRadius.endsWith("px")) rounded.push({ el, rect })
 		if (el.tagName === "IMG" && (!image || area(rect) > area(image.rect))) image = { el, rect }
 	}
-	// a rounded badge or progress bar is no artwork: the rounded box has to be about as big as the biggest image
-	if (rounded && (!image || area(rounded.rect) >= area(image.rect) * 0.8)) return rounded
-	return image ?? { el: host, rect: host.getBoundingClientRect() }
+	// a rounded badge or progress bar is no artwork, so the rounded box has to be about as big as the biggest image,
+	// and a focus ring drawn around the image (Max's tile outline) isn't either, so it can't reach outside it
+	const inside = (rect: DOMRect, outer: DOMRect) =>
+		rect.left >= outer.left - 0.5 &&
+		rect.top >= outer.top - 0.5 &&
+		rect.right <= outer.right + 0.5 &&
+		rect.bottom <= outer.bottom + 0.5
+	const artwork = rounded
+		.filter(({ rect }) => !image || (area(rect) >= area(image.rect) * 0.8 && inside(rect, image.rect)))
+		.sort((a, b) => area(b.rect) - area(a.rect))[0]
+	return artwork ?? image ?? { el: host, rect: host.getBoundingClientRect() }
 }
 function cornerRadius(art: HTMLElement, host: HTMLElement, corner: BadgeCorner) {
 	const property = corner === "top" ? "borderTopRightRadius" : "borderBottomRightRadius"
@@ -1127,13 +1134,18 @@ function fitBadgeToCorner(div: HTMLElement, host: HTMLElement, corner: BadgeCorn
 	const box = div.offsetParent as HTMLElement | null
 	if (art && box) {
 		const outer = box.getBoundingClientRect()
-		// absolute offsets are measured from the containing block's padding box
-		const left = outer.left + box.clientLeft
-		const top = outer.top + box.clientTop
-		div.style.right = `${Math.round(left + box.clientWidth - art.rect.right + BADGE_INSET_PX)}px`
-		if (corner === "top") div.style.top = `${Math.round(art.rect.top - top + BADGE_INSET_PX)}px`
-		else
-			div.style.bottom = `${Math.round(top + box.clientHeight - art.rect.bottom + art.rect.height * raise + BADGE_INSET_PX)}px`
+		const border = getComputedStyle(box)
+		// absolute offsets are measured from the containing block's padding box; clientWidth and clientHeight round
+		// to whole pixels, so take its edges from the fractional rect instead
+		const px = (value: number) => `${value.toFixed(2)}px`
+		const right = outer.right - Number.parseFloat(border.borderRightWidth)
+		div.style.right = px(right - art.rect.right + BADGE_INSET_PX)
+		if (corner === "top")
+			div.style.top = px(art.rect.top - (outer.top + Number.parseFloat(border.borderTopWidth)) + BADGE_INSET_PX)
+		else {
+			const bottom = outer.bottom - Number.parseFloat(border.borderBottomWidth)
+			div.style.bottom = px(bottom - art.rect.bottom + art.rect.height * raise + BADGE_INSET_PX)
+		}
 	}
 	const radius = art ? cornerRadius(art.el, host, corner) : 0
 	const badgeRadius = Math.max(radius - BADGE_INSET_PX, 2)
@@ -1176,8 +1188,13 @@ function applyGlass(div: HTMLElement, frost: number) {
 
 // Prime composites its own "prime" or channel logo into the artwork's bottom-right corner, and the image URL
 // says where: _CLs|W,H|...channels-logo...|...+x,y,w,h. Returns how far up the card the logo reaches (0 when none).
+// Read it off the image on show: the large cards also hold a hidden landscape image with its logo elsewhere.
 function primeLogoHeight(container: HTMLElement) {
-	const img = container.querySelector("img")
+	const area = (el: Element) => el.getBoundingClientRect().width * el.getBoundingClientRect().height
+	const img = Array.from(container.querySelectorAll("img")).reduce<HTMLImageElement | null>(
+		(best, el) => (!best || area(el) > area(best) ? el : best),
+		null,
+	)
 	if (!img) return 0
 	const src = decodeURIComponent(img.currentSrc || img.src || img.srcset)
 	const match = /_CLs\|\d+,(\d+)\|[^|]*channels-logo[^|]*\|(?:\d+,\d+,\d+,\d+\+)*\d+,(\d+),\d+,\d+/.exec(src)
@@ -1312,14 +1329,17 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		// card.style.opacity = getTransparencyForRating(data?.score, vote_count < 50)
 	} else if (isPrimeVideo) {
 		let position: HTMLElement = card
+		// the hero's metadata block has no artwork, only the title's logo image, which the badge mustn't cover
+		const heroMetadata = card.dataset.cardTitle
+			? null
+			: card.querySelector<HTMLElement>('div[data-testid="title-metadata-main"]')
 		if (card.dataset.cardTitle) position = card?.firstChild?.firstChild as HTMLElement
-		else if (card.querySelector('div[data-testid="title-metadata-main"]'))
-			position = card.querySelector('div[data-testid="title-metadata-main"]') as HTMLElement
-		const logoHeight = position ? primeLogoHeight(position) : 0
+		else if (heroMetadata) position = heroMetadata
+		const logoHeight = position && !heroMetadata ? primeLogoHeight(position) : 0
 		if (logoHeight) div.style.bottom = `calc(${(logoHeight * 100).toFixed(1)}% + ${BADGE_INSET_PX}px)`
 		if (position) {
 			position.appendChild(div)
-			fitBadgeToCorner(div, position, "bottom", logoHeight)
+			if (!heroMetadata) fitBadgeToCorner(div, position, "bottom", logoHeight)
 		}
 		if (isDimmed(data, vote_count < 50)) position?.appendChild(greyOverlay)
 		// card.closest("li")?.style.setProperty("opacity", getTransparencyForRating(data?.score, vote_count < 50))
