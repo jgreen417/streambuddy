@@ -843,9 +843,10 @@ function getCleanTitle(card: HTMLElement, type: number): string | undefined {
 		title = card?.getAttribute("aria-label")?.split(" (")[0]
 	} else if (isPrimeVideo) {
 		// detail means not live shows
-		if (card.querySelector("a")?.href?.includes("detail")) {
+		const link = Amazon_titleLink(card)
+		if (link) {
 			if (type == 0) title = Amazon_fixTitle(card.dataset.cardTitle ?? "")
-			else if (type == 1) title = Amazon_fixTitle(card.querySelector("a")?.getAttribute("aria-label") ?? "")
+			else if (type == 1) title = Amazon_fixTitle(link.getAttribute("aria-label") ?? "")
 		}
 	} else if (isHBO) {
 		const href = card.getAttribute("href") || ""
@@ -867,6 +868,12 @@ export function HBO_fixTitle(label: string | null | undefined): string | undefin
 	const firstPart = label.includes("\u2069") ? label.slice(0, label.indexOf("\u2069")) : label
 	const title = firstPart.replaceAll(/[\u2066-\u2069\u200e\u200f]/g, "").trim()
 	return title || undefined
+}
+// The card's own link to its title page. Not simply its first link: the badge is a link too, and once Prime re-renders a
+// card (the large cards do on hover) the badge can come first, which read as the card having no title and dropped it.
+export function Amazon_titleLink(card: HTMLElement) {
+	const link = card.querySelector<HTMLAnchorElement>("a:not(.sb-card-rating)")
+	return link?.href?.includes("detail") ? link : undefined
 }
 function Amazon_fixTitle(title: string | undefined) {
 	return (
