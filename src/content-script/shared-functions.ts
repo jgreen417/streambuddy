@@ -1,4 +1,4 @@
-import { installPageFeatureStyle } from "@/utils/page-feature-styles"
+import { BADGE_FONT, installPageFeatureStyle } from "@/utils/page-feature-styles"
 import { sendMessage } from "webext-bridge/content-script"
 import {
 	getLetterboxdSlug,
@@ -21,6 +21,7 @@ import {
 	type EpisodeRating,
 } from "@/utils/page-features"
 import { CreditsRatingPrompt } from "@/utils/letterboxd-actions"
+import { NetflixShowTitles, getEpisodeId } from "@/utils/netflix-shows"
 import {
 	addWatchSeconds,
 	localDateKey,
@@ -34,7 +35,8 @@ import {
 console.log("shared-functions loaded")
 // Global Variables
 
-const { data: settings, promise } = useBrowserSyncStorage<settingsType>("settings", defaultSettings)
+// exported for tests
+export const { data: settings, promise } = useBrowserSyncStorage<settingsType>("settings", defaultSettings)
 export const date = new Date()
 const today = date.toISOString().split("T")[0]
 
@@ -88,9 +90,18 @@ type MovieInfo = {
 	friends_count?: number
 	friends?: FriendRating[]
 	cacheVersion?: number
+	// the rating-source setting this was looked up under (missing on older entries, which used both)
+	sources?: RatingSources
 }
 // bump when lookups change so older entries (wrong matches, fallbacks saved during an outage) are refetched once
 const CACHE_VERSION = 2
+const ratingSources = () => settings.value.General.ratingSources
+// a lookup takes the sources setting as it was when it started, so a change mid-lookup can't mislabel its result
+const usesLetterboxd = (sources: RatingSources) => sources === "both" || sources === "letterboxd"
+const usesImdb = (sources: RatingSources) => sources === "both" || sources === "imdb"
+// cached under the current lookup rules and the current choice of sources
+export const isCacheCurrent = (entry: MovieInfo | undefined) =>
+	entry?.cacheVersion === CACHE_VERSION && (entry.sources ?? "both") === ratingSources()
 type DBCacheType = {
 	[title: string]: MovieInfo
 }
@@ -175,35 +186,45 @@ type TMDBResponse = {
 // The same title often sits in several rows; share one lookup between all of its cards
 const lookupsInFlight = new Map<string, Promise<MovieInfo | null>>()
 const checkedCards = new CheckedCards()
+// switching rating sources can turn an unrated title into a rated one, so a card is checked again under new sources
+const checkedKey = (title: string) => `${title}|${ratingSources()}`
 async function getMovieInfo(
 	title: string,
 	card: HTMLElement,
 	media_type: string | null = null,
 	year: string | null = null,
 ) {
-	const key = `${title}|${media_type ?? ""}|${year ?? ""}`
+	const sources = ratingSources()
+	const key = `${title}|${media_type ?? ""}|${year ?? ""}|${sources}`
 	let lookup = lookupsInFlight.get(key)
 	if (!lookup) {
-		lookup = lookupMovieInfo(title, media_type, year).finally(() => lookupsInFlight.delete(key))
+		lookup = lookupMovieInfo(title, media_type, year, sources).finally(() => lookupsInFlight.delete(key))
 		lookupsInFlight.set(key, lookup)
 	}
 	const info = await lookup
+	// the sources setting changed while this was being looked up: let the next pass look it up again
+	if (sources !== ratingSources()) {
+		card.classList.remove("imdb")
+		if (isPrimeVideo) card.closest("li")?.classList.remove("imdb")
+		return
+	}
 	if (info) setRatingOnCard(card, info, title)
 	// no match, or TMDb unreachable: try this card again in a while rather than on every tick
-	else checkedCards.mark(card, title, Date.now() + 30_000)
+	else checkedCards.mark(card, checkedKey(title), Date.now() + 30_000)
 }
 
-async function lookupMovieInfo(
+export async function lookupMovieInfo(
 	title: string,
 	media_type: string | null,
 	year: string | null,
+	sources: RatingSources = ratingSources(),
 ): Promise<MovieInfo | null> {
 	const locale = htmlLang || navigator?.language || "en-US"
 	const queryType = media_type ?? "multi"
 	let url = `https://api.themoviedb.org/3/search/${queryType}?query=${encodeURIComponent(title)}&include_adult=false&language=${locale}&page=1`
 	if (year) url += `&year=${year}`
 	// start downloading the likely Letterboxd page now; it's verified against TMDb's answer before being used
-	if (media_type !== "tv")
+	if (media_type !== "tv" && usesLetterboxd(sources))
 		Promise.resolve(
 			sendMessage("letterboxdPrefetch", { title, friends: settings.value.General.friendsRatings }, "background"),
 		).catch(() => {})
@@ -215,7 +236,7 @@ async function lookupMovieInfo(
 	if (!movie?.id) return null
 	const resolvedMediaType = queryType == "multi" ? movie?.media_type : queryType
 	const external = movie?.id
-		? await getExternalRating(movie.id, resolvedMediaType, title)
+		? await getExternalRating(movie.id, resolvedMediaType, title, sources)
 		: { rating: null, transient: false }
 	const compiledData: MovieInfo = {
 		id: movie?.id,
@@ -235,6 +256,7 @@ async function lookupMovieInfo(
 		friends_count: external.rating?.friends_count,
 		friends: external.rating?.friends,
 		cacheVersion: CACHE_VERSION,
+		sources,
 	}
 	// a temporary Letterboxd/IMDb failure must not pin this title to the fallback for a month
 	if (!external.transient) {
@@ -254,16 +276,17 @@ function scheduleCacheSave() {
 
 type ExternalResult = ExternalRating | null | { error: string }
 const isLookupError = (result: ExternalResult): result is { error: string } => !!result && "error" in result
-// Films: Letterboxd. TV, and films Letterboxd has no rating for yet: IMDb.
+// Films: Letterboxd. TV, and films Letterboxd has no rating for yet: IMDb. The rating-source setting can drop either.
 async function getExternalRating(
 	tmdbId: number,
 	media_type: string,
 	title: string,
+	sources: RatingSources,
 ): Promise<{ rating: ExternalRating | null; transient: boolean }> {
 	let transient = false
 	try {
 		// Letterboxd's /tmdb/{id} only understands movie ids, a TV id would resolve to an unrelated film
-		if (media_type === "movie") {
+		if (media_type === "movie" && usesLetterboxd(sources)) {
 			const letterboxd: ExternalResult = await sendMessage(
 				"letterboxdRating",
 				{ tmdbId, friends: settings.value.General.friendsRatings, title },
@@ -272,7 +295,7 @@ async function getExternalRating(
 			if (isLookupError(letterboxd)) transient = true
 			else if (letterboxd?.rating) return { rating: letterboxd, transient }
 		}
-		if (media_type !== "movie" && media_type !== "tv") return { rating: null, transient }
+		if (!usesImdb(sources) || (media_type !== "movie" && media_type !== "tv")) return { rating: null, transient }
 		const externalIds: { imdb_id?: string; error?: string } = await sendMessage(
 			"fetch",
 			{ url: `https://api.themoviedb.org/3/${media_type}/${tmdbId}/external_ids`, type: "tmdb" },
@@ -295,9 +318,11 @@ const rowPresentation = new RowPresentation()
 const rowCardData = new WeakMap<HTMLElement, MovieInfo>()
 const rowCardTitles = new WeakMap<HTMLElement, string>()
 const rowCardDecorations = new WeakMap<HTMLElement, HTMLElement[]>()
-function refreshRowPresentation() {
+const netflixShowTitles = new NetflixShowTitles()
+// redrawAll: drop every card badge so the next pass draws it again (after a setting that changes how badges look)
+function refreshRowPresentation(redrawAll = false) {
 	const stale = rowPresentation.prune(
-		(card) => getCleanTitle(card, card.dataset.cardTitle ? 0 : 1) === rowCardTitles.get(card),
+		(card) => !redrawAll && getCleanTitle(card, card.dataset.cardTitle ? 0 : 1) === rowCardTitles.get(card),
 	)
 	for (const card of stale) {
 		rowCardDecorations.get(card)?.forEach((decoration) => decoration.remove())
@@ -315,7 +340,6 @@ function refreshRowPresentation() {
 				: false
 	rowPresentation.refresh(
 		{
-			highlightBest: !!enabled && settings.value.General.highlightBestInRow,
 			fadeWatched: !!enabled && settings.value.General.fadeWatched,
 			hideBelow: !!enabled && settings.value.General.hideBelowRating,
 		},
@@ -341,7 +365,6 @@ function refreshRowPresentation() {
 }
 watch(
 	() => [
-		settings.value.General.highlightBestInRow,
 		settings.value.General.fadeWatched,
 		settings.value.General.hideBelowRating,
 		settings.value.General.dimBelowBand,
@@ -349,18 +372,34 @@ watch(
 		settings.value.Amazon?.showRating,
 		settings.value.HBO?.showRating,
 	],
-	refreshRowPresentation,
+	() => refreshRowPresentation(),
+)
+// badges read these when they're drawn, so redraw the ones on screen; settled first, as the glass slider fires per step
+let badgeRedrawTimer: ReturnType<typeof setTimeout> | undefined
+watch(
+	() => [
+		settings.value.General.ratingSources,
+		settings.value.General.friendsRatings,
+		settings.value.General.friendsStyle,
+		settings.value.General.badgeStyle,
+		settings.value.General.glassFrost,
+		settings.value.General.markWatched,
+	],
+	() => {
+		clearTimeout(badgeRedrawTimer)
+		badgeRedrawTimer = setTimeout(() => refreshRowPresentation(true), 150)
+	},
 )
 let watchlistSlugs = new Set<string>()
 
 const searchSorting = new SearchRatingSort()
 const creditsPrompt = new CreditsRatingPrompt()
-let playerLookup: { title: string; data: FeatureRating | null; pending?: Promise<unknown>; retry: number } | null = null
+let playerLookup: { title: string; sources: RatingSources; data: FeatureRating | null; pending?: Promise<unknown>; retry: number } | null = null
 const detailRatings = new DetailRatings(
 	async (title, type, year) => {
 		const cached = DBCache[title]
 		if (
-			cached?.cacheVersion === CACHE_VERSION &&
+			isCacheCurrent(cached) &&
 			(!type || cached.media_type === type) &&
 			(!year || cached.release_date?.startsWith(year)) &&
 			getDiffInDays(cached.date, new Date()) <= 1
@@ -491,6 +530,7 @@ function startPageFeatures() {
 				episodes: settings.value.General.episodeRatings,
 				actions: settings.value.General.letterboxdActions,
 				friends: settings.value.General.friendsRatings,
+				sources: ratingSources(),
 			})
 			.catch((error) => console.debug("streamBuddy page ratings:", error))
 		updateSearchSorting()
@@ -542,7 +582,8 @@ function updateCreditsPrompt() {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
-	if (playerLookup?.title !== title) playerLookup = { title, data: null, retry: 0 }
+	if (playerLookup?.title !== title || playerLookup.sources !== ratingSources())
+		playerLookup = { title, sources: ratingSources(), data: null, retry: 0 }
 	if (!playerLookup.pending && !playerLookup.data && playerLookup.retry <= Date.now()) {
 		const current = playerLookup
 		current.pending = lookupMovieInfo(title, null, null)
@@ -689,7 +730,7 @@ function getAllTitleCardsTypes(): Array<NodeListOf<Element>> {
 	if (isNetflix)
 		AllTitleCardsTypes = [
 			document.querySelectorAll(
-				'a[data-uia="standard-card"]:not(.imdb), a[data-uia="progress-card"]:not(.imdb), a[data-uia="ranked-card"]:not(.imdb)',
+				'a[data-uia="standard-card"]:not(.imdb), a[data-uia="progress-card"]:not(.imdb), a[data-uia="ranked-card"]:not(.imdb), a[data-uia="episodic-card"]:not(.imdb)',
 			),
 		]
 	else if (isHBO) AllTitleCardsTypes = [document.querySelectorAll("a[class*='StyledTileLinkNormal-']:not(.imdb)")]
@@ -737,13 +778,22 @@ async function addRating() {
 			}
 			const media_type = getMediaType(card)
 			const title = getCleanTitle(card, type)
-			if (!title || checkedCards.isChecked(card, title)) continue
+			if (!title) {
+				// an episode card whose show is still being looked up gets another pass once it's known
+				if (
+					isNetflixEpisodeCard(card) &&
+					netflixShowTitles.get(getEpisodeId(card.getAttribute("href")) ?? "") === undefined
+				)
+					card.classList.remove("imdb")
+				continue
+			}
+			if (checkedCards.isChecked(card, checkedKey(title))) continue
 			{
 				// sometimes more than one image is loaded for the same title
 				if (lastTitle != title && !title.includes("Netflix") && !title.includes("Prime Video")) {
 					lastTitle = title
 					if (
-						DBCache[title]?.cacheVersion === CACHE_VERSION &&
+						isCacheCurrent(DBCache[title]) &&
 						// a Letterboxd/IMDb rating counts even when TMDb has no votes; unrated titles are retried after a week
 						(DBCache[title]?.rating || DBCache[title]?.score || getDiffInDays(DBCache[title]?.date, date) <= 7) &&
 						(!media_type || DBCache[title]?.media_type == media_type)
@@ -771,7 +821,7 @@ async function addRating() {
 function getMediaType(card: HTMLElement): MediaType {
 	let media_type: MediaType = null
 	if (isNetflix) {
-		if (url.includes("genre/83")) media_type = "tv"
+		if (isNetflixEpisodeCard(card) || url.includes("genre/83")) media_type = "tv"
 		else if (url.includes("genre/34399")) media_type = "movie"
 	} else if (isHBO) {
 		const href = card.getAttribute("href") || ""
@@ -785,9 +835,17 @@ function getMediaType(card: HTMLElement): MediaType {
 	return media_type
 }
 
+// labelled with the episode name, so the series title is looked up (see netflix-shows.ts)
+function isNetflixEpisodeCard(card: HTMLElement) {
+	return card.dataset.uia === "episodic-card"
+}
 function getCleanTitle(card: HTMLElement, type: number): string | undefined {
 	let title: string | undefined
 	if (isNetflix) {
+		if (isNetflixEpisodeCard(card)) {
+			const episodeId = getEpisodeId(card.getAttribute("href"))
+			return (episodeId && netflixShowTitles.get(episodeId)) || undefined
+		}
 		title = card?.getAttribute("aria-label")?.split(" (")[0]
 	} else if (isPrimeVideo) {
 		// detail means not live shows
@@ -858,18 +916,26 @@ function getRatingVoteCount(data: MovieInfo) {
 	return (data?.source === "tmdb" ? data?.vote_count : data?.rating_count) || 0
 }
 // A popcorn chip: the score in a pill coloured by how it ranks among what's streaming, then, smaller, friends'
-// Letterboxd average (one dot per friend) and your own status (seen it and what you gave it, or on your watchlist).
-// Keep the source visible; colour adds context rather than carrying the meaning.
+// Letterboxd average and your own status (your rating, seen, or on your watchlist), labelled or as dots per the
+// friendsStyle setting. The exact score and scale are in the tooltip; colour adds context rather than carrying the meaning.
 const BADGE_INK = "#1b1918"
+// colours inside the badge go through variables so the Liquid Glass look can switch them to light-on-glass
+const BADGE_LABEL = "var(--sb-label, #7a716a)"
+const BADGE_TEXT = "var(--sb-ink, #1b1918)"
+const BADGE_WATCHLIST = "var(--sb-watch, #2f6fb5)"
+const BADGE_CHIP = "var(--sb-chip, #fbf4ec)"
+// the small column beside the score: friends/you lines, or the IMDb/TMDb source name
+const LABEL_COLUMN_STYLE = { padding: "0 0.5em 0 0.45em", fontSize: "max(10px, 0.72em)", fontWeight: "800" }
+// the first three are also the fixed trio
 const FRIEND_DOT_COLORS = ["#ff7a45", "#8ec5ff", "#f2c94c", "#7ad9a0", "#c9a7ff"]
-function addBadgeSegment(div: HTMLElement, text: string, color = BADGE_INK) {
+function addBadgeSegment(div: HTMLElement, text: string, color = BADGE_TEXT) {
 	const segment = document.createElement("span")
 	Object.assign(segment.style, {
 		display: "inline-flex",
 		alignItems: "center",
 		gap: "0.3em",
-		padding: "0 0.45em 0 0.15em",
-		fontSize: "max(11px, 0.85em)",
+		padding: "0 0.5em 0 0.2em",
+		fontSize: "max(11px, 0.8em)",
 		fontWeight: "700",
 		color,
 		whiteSpace: "nowrap",
@@ -878,63 +944,132 @@ function addBadgeSegment(div: HTMLElement, text: string, color = BADGE_INK) {
 	div.appendChild(segment)
 	return segment
 }
-// a little stack of faces, coloured by name so the same friend keeps the same colour
-function friendDots(friends: { name: string }[], count: number) {
+// a little stack of faces: one per friend, coloured by name so the same friend keeps the same colour
+function friendDots(colors: string[]) {
 	const dots = document.createElement("span")
 	dots.style.display = "inline-flex"
-	const names = friends.length ? friends.map((friend) => friend.name) : Array.from({ length: count }, (_, i) => `${i}`)
-	names.slice(0, 3).forEach((name, i) => {
+	colors.forEach((color, i) => {
 		const dot = document.createElement("i")
-		const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)
 		Object.assign(dot.style, {
 			display: "block",
-			width: "0.8em",
-			height: "0.8em",
-			marginLeft: i ? "-0.3em" : "0",
+			width: "1.05em",
+			height: "1.05em",
+			boxSizing: "border-box",
+			marginLeft: i ? "-0.35em" : "0",
 			borderRadius: "50%",
-			border: "0.12em solid #fbf4ec",
-			background: FRIEND_DOT_COLORS[hash % FRIEND_DOT_COLORS.length],
+			border: `0.15em solid ${BADGE_CHIP}`,
+			background: color,
 		})
 		dots.appendChild(dot)
 	})
 	return dots
 }
+function friendColors(friends: { name: string }[], count: number) {
+	const names = friends.length ? friends.map((friend) => friend.name) : Array.from({ length: count }, (_, i) => `${i}`)
+	return names.slice(0, 3).map((name) => {
+		const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)
+		return FRIEND_DOT_COLORS[hash % FRIEND_DOT_COLORS.length]
+	})
+}
+function friendsIcon(friends: { name: string }[], count: number) {
+	if (settings.value.General.friendsStyle === "trio") return friendDots(FRIEND_DOT_COLORS.slice(0, 3))
+	return friendDots(friendColors(friends, count))
+}
+// The default layout: a small column beside the score with a labelled line each for friends and you,
+// so what each number means is written on the badge rather than left to the tooltip.
+function addLabelLine(
+	div: HTMLElement,
+	column: HTMLElement | undefined,
+	dot: string,
+	label: string,
+	value: string,
+	color = BADGE_TEXT,
+) {
+	if (!column) {
+		column = document.createElement("span")
+		Object.assign(column.style, {
+			...LABEL_COLUMN_STYLE,
+			display: "inline-flex",
+			flexDirection: "column",
+			gap: "0.2em",
+			lineHeight: "1",
+			whiteSpace: "nowrap",
+		})
+		div.appendChild(column)
+	}
+	const line = document.createElement("span")
+	Object.assign(line.style, { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5em" })
+	const name = document.createElement("span")
+	Object.assign(name.style, {
+		display: "inline-flex",
+		alignItems: "center",
+		gap: "0.3em",
+		color: BADGE_LABEL,
+		fontWeight: "700",
+	})
+	const swatch = document.createElement("i")
+	Object.assign(swatch.style, {
+		display: "block",
+		width: "0.6em",
+		height: "0.6em",
+		borderRadius: "50%",
+		background: dot,
+	})
+	name.append(swatch, label)
+	const score = document.createElement("span")
+	score.style.color = color
+	score.append(value)
+	line.append(name, score)
+	column.appendChild(line)
+	return column
+}
 const formatCount = (count = 0) =>
 	count >= 1e6 ? `${(count / 1e6).toFixed(1)}M` : count >= 1e3 ? `${Math.round(count / 1e3)}K` : String(count)
 function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor: string | undefined) {
 	const main = document.createElement("span")
-	const label = document.createElement("small")
-	Object.assign(label.style, { fontSize: "0.72em", fontWeight: "700", opacity: "0.7", marginRight: "0.3em" })
 	Object.assign(main.style, {
-		padding: "0.3em 0.55em",
-		borderRadius: "999px",
-		fontSize: "1.05em",
+		padding: "0.28em 0.6em",
+		borderRadius: "var(--sb-pill-r, 999px)",
+		fontSize: "1.15em",
 		fontWeight: "800",
+		letterSpacing: "-0.02em",
 		whiteSpace: "nowrap",
+		// dark on the band colour in both badge looks
+		color: BADGE_INK,
+		textShadow: "none",
 	})
 	const tooltip: string[] = []
 	let value: string
 	if (data.source === "letterboxd") {
-		label.textContent = prefix + "LB"
-		value = data.rating?.toFixed(2) ?? ""
+		value = data.rating?.toFixed(1) ?? ""
 		main.style.background = getScoreColor("letterboxd", data.rating ?? 0)
 		tooltip.push(`Letterboxd ${data.rating?.toFixed(2)}/5 · ${formatCount(data.rating_count)} ratings`)
 	} else if (data.source === "imdb") {
-		label.textContent = prefix + "IMDb"
 		value = data.rating?.toFixed(1) ?? ""
 		main.style.background = getScoreColor("imdb", data.rating ?? 0)
 		tooltip.push(`IMDb ${data.rating?.toFixed(1)}/10 · ${formatCount(data.rating_count)} ratings`)
 	} else {
-		label.textContent = prefix + "TMDb"
 		value = data.score?.toFixed(1) ?? ""
 		main.style.background = tmdbColor ?? "#b3aaa1"
 		tooltip.push(`TMDb ${data.score?.toFixed(1)}/10 (no Letterboxd or IMDb rating)`)
 	}
-	main.append(label, value)
+	main.append(prefix + value)
 	div.appendChild(main)
+	// Letterboxd's 0-5 is the default; a 0-10 score from IMDb or TMDb says where it's from in the label column
+	if (data.source !== "letterboxd") {
+		const source = document.createElement("span")
+		Object.assign(source.style, { ...LABEL_COLUMN_STYLE, color: BADGE_LABEL })
+		source.append(data.source === "imdb" ? "IMDb" : "TMDb")
+		div.appendChild(source)
+	}
+	const labelled = settings.value.General.friendsStyle === "labels"
+	let column: HTMLElement | undefined
 	if (data.source === "letterboxd" && data.friends_rating && settings.value.General.friendsRatings) {
-		const segment = addBadgeSegment(div, data.friends_rating.toFixed(1))
-		segment.prepend(friendDots(data.friends ?? [], data.friends_count ?? 1))
+		if (labelled) column = addLabelLine(div, column, "#ff7a45", "friends", data.friends_rating.toFixed(1))
+		else {
+			const segment = addBadgeSegment(div, data.friends_rating.toFixed(1))
+			segment.prepend(friendsIcon(data.friends ?? [], data.friends_count ?? 1))
+		}
 		const names = (data.friends ?? []).map((friend) => `${friend.name} ${friend.rating.toFixed(1)}`).join(", ")
 		tooltip.push(
 			`Friends ${data.friends_rating.toFixed(1)} from ${data.friends_count}${names ? `: ${names}` : ""}${(data.friends_count ?? 0) > (data.friends?.length ?? 0) ? "…" : ""}`,
@@ -942,20 +1077,133 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 	}
 	const personal = getPersonalStatus(data)
 	if (personal.watched !== undefined) {
-		addBadgeSegment(div, personal.watched ? `✓ you ${personal.watched.toFixed(1)}` : "✓ seen")
+		if (labelled) addLabelLine(div, column, "#8ec5ff", "you", personal.watched ? personal.watched.toFixed(1) : "seen")
+		else addBadgeSegment(div, personal.watched ? `✓ you ${personal.watched.toFixed(1)}` : "✓ seen")
 		tooltip.push(personal.watched ? `You rated it ${personal.watched.toFixed(1)}` : "You've logged it")
 	} else if (personal.watchlist) {
-		addBadgeSegment(div, "watchlist", "#2f6fb5")
+		if (labelled) addLabelLine(div, column, "#8ec5ff", "you", "watchlist", BADGE_WATCHLIST)
+		else addBadgeSegment(div, "watchlist", BADGE_WATCHLIST)
 		tooltip.push("On your watchlist")
 	}
 	div.title = tooltip.join("\n")
 	div.setAttribute("aria-label", tooltip.join(". "))
 }
 
+// The badge sits in a corner of the card's artwork: the same gap from both edges of that corner, and its corners
+// follow the artwork's (the artwork's radius less the gap, and the score pill inside the same again, so the curves
+// share a centre). The artwork often sits inset in the element the badge is attached to (Netflix pads its slots,
+// Max its tiles), so the gap is measured from the artwork itself rather than from the badge's container.
+const BADGE_INSET_PX = 3
+const BADGE_PAD_PX = 3
+type BadgeCorner = "top" | "bottom"
+const badgeFits = new WeakMap<HTMLElement, { host: HTMLElement; corner: BadgeCorner; raise: number }>()
+// the artwork: the biggest rounded box in the card (else its biggest image), skipping our own badge and overlays.
+// The container itself is only a fallback, since its box includes the gutter around the artwork.
+function findArtwork(host: HTMLElement) {
+	const rounded: { el: HTMLElement; rect: DOMRect }[] = []
+	let image: { el: HTMLElement; rect: DOMRect } | undefined
+	const area = (rect: DOMRect) => rect.width * rect.height
+	for (const el of Array.from(host.querySelectorAll<HTMLElement>("img, picture, div, span")).slice(0, 80)) {
+		if (el.closest(".sb-card-rating")) continue
+		const rect = el.getBoundingClientRect()
+		if (!rect.width || !rect.height) continue
+		const style = getComputedStyle(el)
+		const radius =
+			Number.parseFloat(style.borderTopRightRadius) || Number.parseFloat(style.borderBottomRightRadius) || 0
+		if (radius > 0 && style.borderTopRightRadius.endsWith("px")) rounded.push({ el, rect })
+		if (el.tagName === "IMG" && (!image || area(rect) > area(image.rect))) image = { el, rect }
+	}
+	// a rounded badge or progress bar is no artwork, so the rounded box has to be about as big as the biggest image,
+	// and a focus ring drawn around the image (Max's tile outline) isn't either, so it can't reach outside it
+	const inside = (rect: DOMRect, outer: DOMRect) =>
+		rect.left >= outer.left - 0.5 &&
+		rect.top >= outer.top - 0.5 &&
+		rect.right <= outer.right + 0.5 &&
+		rect.bottom <= outer.bottom + 0.5
+	const artwork = rounded
+		.filter(({ rect }) => !image || (area(rect) >= area(image.rect) * 0.8 && inside(rect, image.rect)))
+		.sort((a, b) => area(b.rect) - area(a.rect))[0]
+	return artwork ?? image ?? { el: host, rect: host.getBoundingClientRect() }
+}
+function cornerRadius(art: HTMLElement, host: HTMLElement, corner: BadgeCorner) {
+	const property = corner === "top" ? "borderTopRightRadius" : "borderBottomRightRadius"
+	// the radius can sit on the artwork or on a clipping ancestor of it inside the card
+	let radius = 0
+	for (let el: HTMLElement | null = art; el; el = el === host ? null : el.parentElement) {
+		const value = getComputedStyle(el)[property]
+		if (value.endsWith("px")) radius = Math.max(radius, Number.parseFloat(value) || 0)
+	}
+	return radius
+}
+// raise: a bottom badge sits that fraction of the artwork's height higher (Prime's channel logo)
+function fitBadgeToCorner(div: HTMLElement, host: HTMLElement, corner: BadgeCorner, raise = 0) {
+	badgeFits.set(div, { host, corner, raise })
+	watchBadgeResizes()
+	const art = findArtwork(host)
+	const box = div.offsetParent as HTMLElement | null
+	if (art && box) {
+		const outer = box.getBoundingClientRect()
+		const border = getComputedStyle(box)
+		// absolute offsets are measured from the containing block's padding box; clientWidth and clientHeight round
+		// to whole pixels, so take its edges from the fractional rect instead
+		const px = (value: number) => `${value.toFixed(2)}px`
+		const right = outer.right - Number.parseFloat(border.borderRightWidth)
+		div.style.right = px(right - art.rect.right + BADGE_INSET_PX)
+		if (corner === "top")
+			div.style.top = px(art.rect.top - (outer.top + Number.parseFloat(border.borderTopWidth)) + BADGE_INSET_PX)
+		else {
+			const bottom = outer.bottom - Number.parseFloat(border.borderBottomWidth)
+			div.style.bottom = px(bottom - art.rect.bottom + art.rect.height * raise + BADGE_INSET_PX)
+		}
+	}
+	const radius = art ? cornerRadius(art.el, host, corner) : 0
+	const badgeRadius = Math.max(radius - BADGE_INSET_PX, 2)
+	div.style.borderRadius = `${badgeRadius}px`
+	div.style.setProperty("--sb-pill-r", `${Math.max(badgeRadius - BADGE_PAD_PX, 2)}px`)
+}
+// card sizes follow the window, so re-measure the badges on screen after a resize settles
+let badgeResizeTimer: ReturnType<typeof setTimeout> | undefined
+let watchingBadgeResizes = false
+function watchBadgeResizes() {
+	if (watchingBadgeResizes) return
+	watchingBadgeResizes = true
+	globalThis.addEventListener("resize", () => {
+		clearTimeout(badgeResizeTimer)
+		badgeResizeTimer = setTimeout(() => {
+			for (const div of Array.from(document.querySelectorAll<HTMLElement>(".sb-card-rating"))) {
+				const fit = badgeFits.get(div)
+				if (fit && div.isConnected) fitBadgeToCorner(div, fit.host, fit.corner, fit.raise)
+			}
+		}, 200)
+	})
+}
+
+// Liquid Glass: a blurred, lightly tinted pane in place of the cream chip, with light text. frost runs from
+// 0 (clear glass: a hairline edge and highlight) to 100 (thick frosted sea glass). The score pill keeps its colour.
+function applyGlass(div: HTMLElement, frost: number) {
+	const f = Math.min(Math.max(frost, 0), 100) / 100
+	Object.assign(div.style, {
+		background: `rgba(251, 244, 236, ${(0.04 + 0.26 * f).toFixed(2)})`,
+		backdropFilter: `blur(${(2 + 14 * f).toFixed(1)}px) saturate(1.6)`,
+		boxShadow:
+			"inset 0 0 0 0.5px rgba(255, 255, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 8px rgba(0, 0, 0, 0.25)",
+		textShadow: "0 1px 2px rgba(0, 0, 0, 0.35)",
+	})
+	div.style.setProperty("--sb-ink", "#ffffff")
+	div.style.setProperty("--sb-label", "rgba(255, 255, 255, 0.8)")
+	div.style.setProperty("--sb-watch", "#8ec5ff")
+	div.style.setProperty("--sb-chip", "rgba(255, 255, 255, 0.6)")
+}
+
 // Prime composites its own "prime" or channel logo into the artwork's bottom-right corner, and the image URL
 // says where: _CLs|W,H|...channels-logo...|...+x,y,w,h. Returns how far up the card the logo reaches (0 when none).
+// Read it off the image on show: the large cards also hold a hidden landscape image with its logo elsewhere.
 function primeLogoHeight(container: HTMLElement) {
-	const img = container.querySelector("img")
+	const area = (el: Element) => el.getBoundingClientRect().width * el.getBoundingClientRect().height
+	const img = Array.from(container.querySelectorAll("img")).reduce<HTMLImageElement | null>(
+		(best, el) => (!best || area(el) > area(best) ? el : best),
+		null,
+	)
 	if (!img) return 0
 	const src = decodeURIComponent(img.currentSrc || img.src || img.srcset)
 	const match = /_CLs\|\d+,(\d+)\|[^|]*channels-logo[^|]*\|(?:\d+,\d+,\d+,\d+\+)*\d+,(\d+),\d+,\d+/.exec(src)
@@ -989,7 +1237,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		// Prime's card selectors can't skip cards already seen, so remember it. A cached unrated title is looked up
 		// again once the cache refreshes it (a week), which needs a page load anyway; a result left uncached because
 		// Letterboxd/IMDb failed for a moment is retried shortly
-		checkedCards.mark(card, title, DBCache[title] === data ? Number.POSITIVE_INFINITY : Date.now() + 30_000)
+		checkedCards.mark(card, checkedKey(title), DBCache[title] === data ? Number.POSITIVE_INFINITY : Date.now() + 30_000)
 		return
 	}
 	const vote_count = getRatingVoteCount(data)
@@ -1005,34 +1253,34 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	Object.assign(div.style, {
 		position: "absolute",
 		// Netflix draws its "Recently added" and "Leaving soon" tags into the bottom of the boxart; the top-right is clear
-		...(isNetflix ? { top: "0.3em" } : { bottom: "0.3em" }),
-		right: isNetflix ? "calc(0.2vw + 0.3em)" : "0.3em",
-		maxWidth: "calc(100% - 0.6em)",
+		...(isNetflix ? { top: `${BADGE_INSET_PX}px` } : { bottom: `${BADGE_INSET_PX}px` }),
+		right: isNetflix ? `calc(0.2vw + ${BADGE_INSET_PX}px)` : `${BADGE_INSET_PX}px`,
+		maxWidth: `calc(100% - ${2 * BADGE_INSET_PX}px)`,
 		boxSizing: "border-box",
 		display: "flex",
 		flexWrap: "wrap",
 		justifyContent: "flex-end",
 		alignItems: "center",
 		rowGap: "0.2em",
-		color: BADGE_INK,
+		color: BADGE_TEXT,
 		textDecoration: "none",
-		background: "#fbf4ec",
-		boxShadow: "0 2px 0 rgba(0, 0, 0, 0.35), 0 4px 14px rgba(0, 0, 0, 0.3)",
+		background: BADGE_CHIP,
+		// a sticker, not glass: a hard drop shadow lifts it off any artwork
+		boxShadow: "0 3px 0 rgba(0, 0, 0, 0.35)",
 		borderRadius: "1.1em",
 		opacity: "0",
 		transform: "translateY(2px)",
 		transition: "opacity 160ms ease-out, transform 220ms cubic-bezier(0.3, 0.7, 0.2, 1)",
-		padding: "0.18em",
-		fontFamily:
-			'"Bricolage Grotesque Variable", "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif',
+		padding: `${BADGE_PAD_PX}px`,
+		fontFamily: `${BADGE_FONT}, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif`,
 		fontWeight: "700",
-		letterSpacing: "-0.01em",
 		fontVariantNumeric: "tabular-nums",
 		lineHeight: "1",
 		zIndex: zIndexValue,
-		fontSize: isMobile ? "clamp(12px, 4vw, 18px)" : "clamp(12px, 0.85vw, 15px)",
+		fontSize: isMobile ? "clamp(13px, 4vw, 19px)" : "clamp(13px, 0.95vw, 17px)",
 	})
 
+	if (settings.value.General.badgeStyle === "glass") applyGlass(div, settings.value.General.glassFrost)
 	requestAnimationFrame(() => Object.assign(div.style, { opacity: "1", transform: "none" }))
 	{
 		fillBadge(div, data, "", getTmdbColor(score, vote_count < 50))
@@ -1081,6 +1329,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		if (titleCardContainer) {
 			if (getComputedStyle(titleCardContainer).position === "static") titleCardContainer.style.position = "relative"
 			titleCardContainer.appendChild(div)
+			fitBadgeToCorner(div, titleCardContainer, "top")
 			if (isDimmed(data, vote_count < 50)) titleCardContainer.appendChild(greyOverlay)
 			// titleCardContainer.style.opacity = getTransparencyForRating(data?.score, vote_count < 50)
 		}
@@ -1088,34 +1337,38 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		// the tile link itself is unpositioned; the poster container is the relative box
 		const position = (card.querySelector('[data-testid$="_tileImage"]') as HTMLElement | null) ?? card
 		position.appendChild(div)
+		fitBadgeToCorner(div, position, "bottom")
 		if (isDimmed(data, vote_count < 50)) position.appendChild(greyOverlay)
 		// card.style.opacity = getTransparencyForRating(data?.score, vote_count < 50)
 	} else if (isPrimeVideo) {
 		let position: HTMLElement = card
+		// the hero's metadata block has no artwork, only the title's logo image, which the badge mustn't cover
+		const heroMetadata = card.dataset.cardTitle
+			? null
+			: card.querySelector<HTMLElement>('div[data-testid="title-metadata-main"]')
 		if (card.dataset.cardTitle) position = card?.firstChild?.firstChild as HTMLElement
-		else if (card.querySelector('div[data-testid="title-metadata-main"]'))
-			position = card.querySelector('div[data-testid="title-metadata-main"]') as HTMLElement
-		const logoHeight = position ? primeLogoHeight(position) : 0
-		if (logoHeight) div.style.bottom = `calc(${(logoHeight * 100).toFixed(1)}% + 0.2em)`
-		position?.appendChild(div)
+		else if (heroMetadata) position = heroMetadata
+		const logoHeight = position && !heroMetadata ? primeLogoHeight(position) : 0
+		if (logoHeight) div.style.bottom = `calc(${(logoHeight * 100).toFixed(1)}% + ${BADGE_INSET_PX}px)`
+		if (position) {
+			position.appendChild(div)
+			if (!heroMetadata) fitBadgeToCorner(div, position, "bottom", logoHeight)
+		}
 		if (isDimmed(data, vote_count < 50)) position?.appendChild(greyOverlay)
 		// card.closest("li")?.style.setProperty("opacity", getTransparencyForRating(data?.score, vote_count < 50))
 	}
 	if (div.isConnected && (isNetflix || isHBO || isPrimeVideo)) {
 		searchSorting.setRating(card, score)
-		const target = isNetflix
-			? (card.closest<HTMLElement>("[data-virtual-slot]") ?? card.parentElement)
-			: isHBO
-				? (card.querySelector<HTMLElement>('[data-testid$="_tileImage"]') ?? card)
+		rowCardData.set(card, data)
+		rowCardTitles.set(card, title)
+		rowCardDecorations.set(card, [div, greyOverlay])
+		const hideTarget = isNetflix
+			? (card.closest<HTMLElement>("[data-virtual-slot]") ?? card.parentElement ?? card)
+			: isPrimeVideo
+				? (card.closest<HTMLElement>("li") ?? card)
 				: card
-		if (target) {
-			rowCardData.set(card, data)
-			rowCardTitles.set(card, title)
-			rowCardDecorations.set(card, [div, greyOverlay])
-			const hideTarget = isNetflix ? target : isPrimeVideo ? (card.closest<HTMLElement>("li") ?? card) : card
-			rowPresentation.track(card, target, score, hideTarget)
-			refreshRowPresentation()
-		}
+		rowPresentation.track(card, hideTarget)
+		refreshRowPresentation()
 	}
 }
 // #region streamBuddy stats

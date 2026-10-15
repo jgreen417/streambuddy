@@ -25,12 +25,13 @@ describe("experience preferences integration", () => {
 		const settings = fresh()
 		settings.Netflix.showRating = false
 		const { root, state } = mount(settings)
-		expect(toggle(root, "Highlight best-rated").disabled).toBe(true)
-		expect(state.General.highlightBestInRow).toBe(true)
+		const filter = () => root.querySelector<HTMLFieldSetElement>("fieldset.sb-filter")!
+		expect(filter().disabled).toBe(true)
+		expect(state.General.dimBelowBand).toBe(1)
 		toggle(root, "Ratings on title cards").click()
 		await nextTick()
-		expect(toggle(root, "Highlight best-rated").disabled).toBe(false)
-		expect(state.General.highlightBestInRow).toBe(true)
+		expect(filter().disabled).toBe(false)
+		expect(state.General.dimBelowBand).toBe(1)
 	})
 	it("does not change legacy cutoff combinations merely by rendering", () => {
 		const settings = fresh()
@@ -40,6 +41,35 @@ describe("experience preferences integration", () => {
 		expect(root.querySelector<HTMLInputElement>('input[value="hide"]')?.checked).toBe(true)
 		expect(state.Video.dimLowRatings).toBe(true)
 		expect(state.General.hideBelowRating).toBe(true)
+	})
+	it("picks which sites badge ratings come from", async () => {
+		const { root, state } = mount(fresh())
+		const select = Array.from(root.querySelectorAll<HTMLSelectElement>("label.sb-cutoff select")).find((el) =>
+			el.closest("label")?.textContent?.includes("Ratings from"),
+		)!
+		expect(select.value).toBe("both")
+		select.value = "imdb"
+		select.dispatchEvent(new Event("change"))
+		await nextTick()
+		expect(state.General.ratingSources).toBe("imdb")
+	})
+	it("keeps the classic badge by default and shows the glass slider only for Liquid Glass", async () => {
+		const { root, state } = mount(fresh())
+		const select = Array.from(root.querySelectorAll<HTMLSelectElement>("label.sb-cutoff select")).find((el) =>
+			el.closest("label")?.textContent?.includes("Badge look"),
+		)!
+		expect(select.value).toBe("classic")
+		expect(root.querySelector(".sb-frost")).toBeNull()
+		select.value = "glass"
+		select.dispatchEvent(new Event("change"))
+		await nextTick()
+		expect(state.General.badgeStyle).toBe("glass")
+		const slider = root.querySelector<HTMLInputElement>(".sb-frost input[type=range]")!
+		expect(slider.value).toBe("60")
+		slider.value = "20"
+		slider.dispatchEvent(new Event("input"))
+		await nextTick()
+		expect(state.General.glassFrost).toBe(20)
 	})
 	it("edits an individual recap without changing intros or other services", async () => {
 		const { root, state } = mount(fresh())
