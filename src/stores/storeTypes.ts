@@ -40,7 +40,6 @@ export type settingsType = {
 		dimBelowBand: number
 		// mark films already logged on Letterboxd (and watchlist ones) on the badges
 		markWatched: boolean
-		highlightBestInRow: boolean
 		fadeWatched: boolean
 		hideBelowRating: boolean
 		detailRatings: boolean
@@ -84,7 +83,6 @@ export const defaultSettings: settingsType = {
 		glassFrost: 60,
 		dimBelowBand: 1,
 		markWatched: true,
-		highlightBestInRow: true,
 		fadeWatched: true,
 		hideBelowRating: false,
 		detailRatings: true,

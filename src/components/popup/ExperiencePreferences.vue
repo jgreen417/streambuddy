@@ -214,12 +214,6 @@ const updateMode = (event: Event) => {
 						description="IMDb scores beside individual episodes."
 					/>
 					<PopupToggle
-						v-model="settings.General.highlightBestInRow"
-						label="Highlight best-rated in each row"
-						:disabled="cardsInactive"
-						:description="cardDependency"
-					/>
-					<PopupToggle
 						v-model="settings.General.searchSort"
 						label="Search sort button"
 						description="Choose rating order on a search page."

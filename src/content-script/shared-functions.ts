@@ -323,7 +323,6 @@ function refreshRowPresentation() {
 				: false
 	rowPresentation.refresh(
 		{
-			highlightBest: !!enabled && settings.value.General.highlightBestInRow,
 			fadeWatched: !!enabled && settings.value.General.fadeWatched,
 			hideBelow: !!enabled && settings.value.General.hideBelowRating,
 		},
@@ -349,7 +348,6 @@ function refreshRowPresentation() {
 }
 watch(
 	() => [
-		settings.value.General.highlightBestInRow,
 		settings.value.General.fadeWatched,
 		settings.value.General.hideBelowRating,
 		settings.value.General.dimBelowBand,
@@ -1299,26 +1297,16 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	}
 	if (div.isConnected && (isNetflix || isHBO || isPrimeVideo)) {
 		searchSorting.setRating(card, score)
-		const netflixSlot = card.closest<HTMLElement>("[data-virtual-slot]") ?? card.parentElement
-		// episode cards have their name and genre under the still; outline just the still
-		const target = isNetflix
-			? (isNetflixEpisodeCard(card) && card.querySelector<HTMLElement>('[data-uia="episodic-card+still"]')) ||
-				netflixSlot
-			: isHBO
-				? (card.querySelector<HTMLElement>('[data-testid$="_tileImage"]') ?? card)
+		rowCardData.set(card, data)
+		rowCardTitles.set(card, title)
+		rowCardDecorations.set(card, [div, greyOverlay])
+		const hideTarget = isNetflix
+			? (card.closest<HTMLElement>("[data-virtual-slot]") ?? card.parentElement ?? card)
+			: isPrimeVideo
+				? (card.closest<HTMLElement>("li") ?? card)
 				: card
-		if (target) {
-			rowCardData.set(card, data)
-			rowCardTitles.set(card, title)
-			rowCardDecorations.set(card, [div, greyOverlay])
-			const hideTarget = isNetflix
-				? (netflixSlot ?? target)
-				: isPrimeVideo
-					? (card.closest<HTMLElement>("li") ?? card)
-					: card
-			rowPresentation.track(card, target, score, hideTarget)
-			refreshRowPresentation()
-		}
+		rowPresentation.track(card, hideTarget)
+		refreshRowPresentation()
 	}
 }
 // #region streamBuddy stats

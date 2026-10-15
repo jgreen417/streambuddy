@@ -5,6 +5,7 @@
 - A new look: a new logo (two friends on the couch), a warm dark palette with tangerine highlights and the Bricolage Grotesque typeface in the popup and settings.
 - Rating badges are now a single cream chip in the same typeface: a bold score in a pill coloured by how it ranks, with labelled "friends" and "you" lines beside it, or "IMDb"/"TMDb" when the score isn't from Letterboxd. The badge's corners follow each service's card corners. The exact score and source are in the tooltip.
 - New settings: "Ratings from" picks Letterboxd, IMDb or TMDb (or Letterboxd and IMDb together, as before), and "Friends' ratings" picks labelled lines, a dot per friend, three dots or hidden, and "Badge look" switches the cream chip for Liquid Glass with a slider from clear to frosted.
+- Removed the orange best-in-row highlight and its setting.
 - Housekeeping: removed leftovers from Streaming enhanced, renamed the icon files and updated dependencies.
 
 # streamBuddy 1.0.0

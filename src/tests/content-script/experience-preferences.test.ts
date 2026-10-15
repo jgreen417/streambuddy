@@ -25,12 +25,13 @@ describe("experience preferences integration", () => {
 		const settings = fresh()
 		settings.Netflix.showRating = false
 		const { root, state } = mount(settings)
-		expect(toggle(root, "Highlight best-rated").disabled).toBe(true)
-		expect(state.General.highlightBestInRow).toBe(true)
+		const filter = () => root.querySelector<HTMLFieldSetElement>("fieldset.sb-filter")!
+		expect(filter().disabled).toBe(true)
+		expect(state.General.dimBelowBand).toBe(1)
 		toggle(root, "Ratings on title cards").click()
 		await nextTick()
-		expect(toggle(root, "Highlight best-rated").disabled).toBe(false)
-		expect(state.General.highlightBestInRow).toBe(true)
+		expect(filter().disabled).toBe(false)
+		expect(state.General.dimBelowBand).toBe(1)
 	})
 	it("does not change legacy cutoff combinations merely by rendering", () => {
 		const settings = fresh()
