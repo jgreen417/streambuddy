@@ -9,7 +9,7 @@ import {
 	type LetterboxdProfile,
 	type RatingSource,
 } from "@/utils/ratings"
-import { pickBestMatch } from "@/utils/tmdb"
+import { CheckedCards, isSeasonOnlyTitle, pickBestMatch } from "@/utils/tmdb"
 import { getAccount, onAccountChanged } from "@/utils/account"
 import type { StreamingService } from "@/constants/streamingServices"
 import { RowPresentation, normalizeRowScore, isBelowRatingCutoff } from "@/utils/row-presentation"
@@ -174,6 +174,7 @@ type TMDBResponse = {
 
 // The same title often sits in several rows; share one lookup between all of its cards
 const lookupsInFlight = new Map<string, Promise<MovieInfo | null>>()
+const checkedCards = new CheckedCards()
 async function getMovieInfo(
 	title: string,
 	card: HTMLElement,
@@ -188,6 +189,8 @@ async function getMovieInfo(
 	}
 	const info = await lookup
 	if (info) setRatingOnCard(card, info, title)
+	// no match, or TMDb unreachable: try this card again in a while rather than on every tick
+	else checkedCards.mark(card, title, Date.now() + 30_000)
 }
 
 async function lookupMovieInfo(
@@ -734,7 +737,7 @@ async function addRating() {
 			}
 			const media_type = getMediaType(card)
 			const title = getCleanTitle(card, type)
-			if (!title) continue
+			if (!title || checkedCards.isChecked(card, title)) continue
 			{
 				// sometimes more than one image is loaded for the same title
 				if (lastTitle != title && !title.includes("Netflix") && !title.includes("Prime Video")) {
@@ -792,6 +795,7 @@ function getCleanTitle(card: HTMLElement, type: number): string | undefined {
 			if (type == 0) title = Amazon_fixTitle(card.dataset.cardTitle ?? "")
 			else if (type == 1) title = Amazon_fixTitle(card.querySelector("a")?.getAttribute("aria-label") ?? "")
 		}
+		if (title && isSeasonOnlyTitle(title)) title = undefined
 	} else if (isHBO) {
 		const href = card.getAttribute("href") || ""
 		if (
@@ -982,6 +986,9 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	const hasRating = (data?.source !== "tmdb" && !!data?.rating) || data?.score > 0
 	if (!hasRating) {
 		console.log("no score found:", title, data, card)
+		// Prime's card selectors can't skip cards already seen, so remember it; an unrated cached title is looked up
+		// again once the cache refreshes it (a week), which needs a page load anyway
+		checkedCards.mark(card, title)
 		return
 	}
 	const vote_count = getRatingVoteCount(data)

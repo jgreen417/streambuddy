@@ -8,6 +8,7 @@
 // biome-ignore lint: disable
 export {}
 declare global {
+  const CheckedCards: typeof import('../utils/tmdb').CheckedCards
   const CreditsRatingPrompt: typeof import('../utils/letterboxd-actions').CreditsRatingPrompt
   const DetailRatings: typeof import('../utils/page-features').DetailRatings
   const EffectScope: typeof import('vue').EffectScope
@@ -93,6 +94,7 @@ declare global {
   const isReactive: typeof import('vue').isReactive
   const isReadonly: typeof import('vue').isReadonly
   const isRef: typeof import('vue').isRef
+  const isSeasonOnlyTitle: typeof import('../utils/tmdb').isSeasonOnlyTitle
   const isSetUp: typeof import('../utils/account').isSetUp
   const isShallow: typeof import('vue').isShallow
   const localDateKey: typeof import('../utils/stats').localDateKey
@@ -421,6 +423,9 @@ declare global {
   // @ts-ignore
   export type { WatchLog, SeenTitle, SeenTop, WatchTimerState, WatchSummary, SavedLog } from '../utils/stats'
   import('../utils/stats')
+  // @ts-ignore
+  export type { CheckedCards } from '../utils/tmdb'
+  import('../utils/tmdb')
 }
 
 // for vue template auto import
@@ -428,6 +433,7 @@ import { UnwrapRef } from 'vue'
 declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
+    readonly CheckedCards: UnwrapRef<typeof import('../utils/tmdb')['CheckedCards']>
     readonly CreditsRatingPrompt: UnwrapRef<typeof import('../utils/letterboxd-actions')['CreditsRatingPrompt']>
     readonly DetailRatings: UnwrapRef<typeof import('../utils/page-features')['DetailRatings']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
@@ -510,6 +516,7 @@ declare module 'vue' {
     readonly isReactive: UnwrapRef<typeof import('vue')['isReactive']>
     readonly isReadonly: UnwrapRef<typeof import('vue')['isReadonly']>
     readonly isRef: UnwrapRef<typeof import('vue')['isRef']>
+    readonly isSeasonOnlyTitle: UnwrapRef<typeof import('../utils/tmdb')['isSeasonOnlyTitle']>
     readonly isSetUp: UnwrapRef<typeof import('../utils/account')['isSetUp']>
     readonly isShallow: UnwrapRef<typeof import('vue')['isShallow']>
     readonly localDateKey: UnwrapRef<typeof import('../utils/stats')['localDateKey']>
