@@ -857,6 +857,7 @@ function getRatingVoteCount(data: MovieInfo) {
 // Letterboxd average (one dot per friend) and your own status (seen it and what you gave it, or on your watchlist).
 // The source and scale are in the tooltip; colour adds context rather than carrying the meaning.
 const BADGE_INK = "#1b1918"
+// the first three are also the fixed trio
 const FRIEND_DOT_COLORS = ["#ff7a45", "#8ec5ff", "#f2c94c", "#7ad9a0", "#c9a7ff"]
 function addBadgeSegment(div: HTMLElement, text: string, color = BADGE_INK) {
 	const segment = document.createElement("span")
@@ -874,14 +875,12 @@ function addBadgeSegment(div: HTMLElement, text: string, color = BADGE_INK) {
 	div.appendChild(segment)
 	return segment
 }
-// a little stack of faces, coloured by name so the same friend keeps the same colour
-function friendDots(friends: { name: string }[], count: number) {
+// a little stack of faces: one per friend, coloured by name so the same friend keeps the same colour
+function friendDots(colors: string[]) {
 	const dots = document.createElement("span")
 	dots.style.display = "inline-flex"
-	const names = friends.length ? friends.map((friend) => friend.name) : Array.from({ length: count }, (_, i) => `${i}`)
-	names.slice(0, 3).forEach((name, i) => {
+	colors.forEach((color, i) => {
 		const dot = document.createElement("i")
-		const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)
 		Object.assign(dot.style, {
 			display: "block",
 			width: "1.05em",
@@ -890,11 +889,42 @@ function friendDots(friends: { name: string }[], count: number) {
 			marginLeft: i ? "-0.35em" : "0",
 			borderRadius: "50%",
 			border: "0.15em solid #fbf4ec",
-			background: FRIEND_DOT_COLORS[hash % FRIEND_DOT_COLORS.length],
+			background: color,
 		})
 		dots.appendChild(dot)
 	})
 	return dots
+}
+function friendColors(friends: { name: string }[], count: number) {
+	const names = friends.length ? friends.map((friend) => friend.name) : Array.from({ length: count }, (_, i) => `${i}`)
+	return names.slice(0, 3).map((name) => {
+		const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)
+		return FRIEND_DOT_COLORS[hash % FRIEND_DOT_COLORS.length]
+	})
+}
+// the logo's two overlapping circles: "your friends", whoever and however many they are
+function buddyMark() {
+	const ns = "http://www.w3.org/2000/svg"
+	const svg = document.createElementNS(ns, "svg")
+	svg.setAttribute("viewBox", "0 0 30 20")
+	svg.setAttribute("aria-hidden", "true")
+	Object.assign(svg.style, { display: "block", width: "1.5em", height: "1em" })
+	for (const [tag, attrs] of [
+		["circle", { cx: "10", cy: "10", r: "8.5", fill: BADGE_INK }],
+		["circle", { cx: "20", cy: "10", r: "8.5", fill: "#ff7a45" }],
+		["path", { d: "M15 3.1A8.5 8.5 0 0 1 15 16.9A8.5 8.5 0 0 1 15 3.1Z", fill: "#fbf4ec" }],
+	] as const) {
+		const el = document.createElementNS(ns, tag)
+		for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value)
+		svg.appendChild(el)
+	}
+	return svg
+}
+function friendsIcon(friends: { name: string }[], count: number) {
+	const style = settings.value.General.friendsStyle
+	if (style === "dots") return friendDots(friendColors(friends, count))
+	if (style === "trio") return friendDots(FRIEND_DOT_COLORS.slice(0, 3))
+	return buddyMark()
 }
 const formatCount = (count = 0) =>
 	count >= 1e6 ? `${(count / 1e6).toFixed(1)}M` : count >= 1e3 ? `${Math.round(count / 1e3)}K` : String(count)
@@ -927,7 +957,7 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 	div.appendChild(main)
 	if (data.source === "letterboxd" && data.friends_rating && settings.value.General.friendsRatings) {
 		const segment = addBadgeSegment(div, data.friends_rating.toFixed(1))
-		segment.prepend(friendDots(data.friends ?? [], data.friends_count ?? 1))
+		segment.prepend(friendsIcon(data.friends ?? [], data.friends_count ?? 1))
 		const names = (data.friends ?? []).map((friend) => `${friend.name} ${friend.rating.toFixed(1)}`).join(", ")
 		tooltip.push(
 			`Friends ${data.friends_rating.toFixed(1)} from ${data.friends_count}${names ? `: ${names}` : ""}${(data.friends_count ?? 0) > (data.friends?.length ?? 0) ? "…" : ""}`,

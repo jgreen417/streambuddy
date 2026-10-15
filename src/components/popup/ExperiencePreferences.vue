@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, useId } from "vue"
-import type { settingsType } from "@/stores/storeTypes"
+import type { FriendsStyle, settingsType } from "@/stores/storeTypes"
 import { streamingServices, type StreamingService } from "@/constants/streamingServices"
 import { getServiceState, setServiceState, getRatingMode, setRatingMode, type RatingMode } from "@/utils/preferences"
 import { SCORE_BANDS } from "@/utils/ratings"
@@ -52,6 +52,20 @@ const pauseOptions = [
 	{ value: 4, label: "After 4 episodes" },
 	{ value: 6, label: "After 6 episodes" },
 ]
+// one picker for whether friends' ratings show and how: "hidden" turns them off (and stops fetching them)
+const friendsOptions: { value: FriendsStyle | "hidden"; label: string }[] = [
+	{ value: "mark", label: "Buddy mark" },
+	{ value: "dots", label: "Dot per friend" },
+	{ value: "trio", label: "Three dots" },
+	{ value: "hidden", label: "Hidden" },
+]
+const friendsDisplay = computed({
+	get: () => (settings.value.General.friendsRatings ? settings.value.General.friendsStyle : "hidden"),
+	set: (value: FriendsStyle | "hidden") => {
+		settings.value.General.friendsRatings = value !== "hidden"
+		if (value !== "hidden") settings.value.General.friendsStyle = value
+	},
+})
 const cardsInactive = computed(() => cards.value !== true)
 const cardDependency = computed(() =>
 	cardsInactive.value ? "Turn on card ratings for the selected services." : undefined,
@@ -222,10 +236,18 @@ const updateMode = (event: Event) => {
 			<div class="sb-disclosure-body">
 				<slot name="profile" />
 				<template v-if="username">
-					<PopupToggle
-						v-model="settings.General.friendsRatings"
-						label="Friends’ ratings"
-					/>
+					<label class="sb-cutoff">
+						Friends’ ratings
+						<select v-model="friendsDisplay">
+							<option
+								v-for="option in friendsOptions"
+								:key="option.value"
+								:value="option.value"
+							>
+								{{ option.label }}
+							</option>
+						</select>
+					</label>
 					<PopupToggle
 						v-model="settings.General.markWatched"
 						label="Seen & watchlist card marks"

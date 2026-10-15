@@ -8,6 +8,7 @@ type ServicePlayback = {
 	speedControl: boolean
 	showRating: boolean
 }
+export type FriendsStyle = "mark" | "dots" | "trio"
 export type settingsType = {
 	Netflix: ServicePlayback & {
 		// hide the mobile-games rows that fill the Netflix homepage
@@ -25,6 +26,8 @@ export type settingsType = {
 		// last time the rating cache was pruned
 		GCdate: string
 		friendsRatings: boolean
+		// how the badge marks friends' score: the Buddy mark, a dot per friend, or always the same three dots
+		friendsStyle: FriendsStyle
 		// with dimLowRatings on, dim titles in a colour band below this one (1 = below orange ... 4 = below green)
 		dimBelowBand: number
 		// mark films already logged on Letterboxd (and watchlist ones) on the badges
@@ -67,6 +70,7 @@ export const defaultSettings: settingsType = {
 	General: {
 		GCdate: "2024-01-01",
 		friendsRatings: true,
+		friendsStyle: "mark",
 		dimBelowBand: 1,
 		markWatched: true,
 		highlightBestInRow: true,
