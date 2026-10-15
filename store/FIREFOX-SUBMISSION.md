@@ -55,7 +55,7 @@ Reuse `store/LISTING.md` (Buddy redesign copy) for the name, summary and descrip
 
 ## Decisions (14 October 2026)
 
-- Android: desktop only. When uploading, untick Firefox for Android under compatibility. Leave `gecko_android` in the manifest: AMO decides platforms at upload, and without that key `web-ext lint` warns that Android 140 predates `data_collection_permissions`.
+- Android: desktop only. AMO ignores the upload page's Android checkbox and locks Android compatibility on whenever the manifest has `gecko_android`, so 1.0.1 went out listing Android too. The key is now removed, so the next version is Firefox-only. `web-ext lint` gains one harmless warning (data_collection_permissions on Android 140), because the linter assumes Android when no gecko_android minimum is given.
 - Distribution: listed publicly on AMO.
 - Reviewer credential: Josh's own TMDb token goes in the confidential reviewer notes.
 - Timing: submit after the Buddy redesign. Done: it shipped in 1.0.1.

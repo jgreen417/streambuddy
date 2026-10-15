@@ -22,9 +22,6 @@ export default defineManifest((env) => ({
 				required: ["websiteContent", "authenticationInfo"],
 			},
 		},
-		gecko_android: {
-			strict_min_version: "142.0",
-		},
 	},
 	manifest_version: 3,
 	background: {
