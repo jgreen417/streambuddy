@@ -1,0 +1,68 @@
+name: Visual checks
+
+# The built extension in headless Chromium on saved copies of Netflix, Prime Video and Max (e2e/visual):
+# every badge is checked against the placement spec and screenshotted against e2e/visual/baselines.
+# Runs inside Playwright's own image so fonts and rendering match the committed baselines exactly.
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    # also started by accept-visuals.yml after it commits new screenshots (its push starts nothing by itself)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual:
+    name: Badge placement & screenshots
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    env:
+      HOME: /root
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - name: Typecheck the visual tests
+        run: npx tsc -p e2e/tsconfig.json
+      - name: Run visual checks
+        run: npx playwright test
+      - name: Collect changed screenshots
+        if: failure()
+        run: |
+          mkdir -p e2e/.new-baselines
+          find e2e/.results -name '*-actual.png' | while read -r file; do
+            cp "$file" "e2e/.new-baselines/$(basename "$file" | sed 's/-actual\.png$/.png/')"
+          done
+          {
+            echo "### Screenshots that changed"
+            echo
+            echo "Download **visual-report** (open \`index.html\`) to see each one as expected / actual / diff."
+            echo "If the new look is right, the files in **visual-new-baselines** replace those in \`e2e/visual/baselines\`."
+            echo
+            for file in e2e/.new-baselines/*.png; do [ -e "$file" ] && echo "- \`$(basename "$file")\`"; done
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-report
+          path: |
+            e2e/.report
+            e2e/.results
+          retention-days: 14
+          # the output folders start with a dot, which upload-artifact skips unless told otherwise
+          include-hidden-files: true
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: visual-new-baselines
+          path: e2e/.new-baselines
+          if-no-files-found: ignore
+          retention-days: 14
+          include-hidden-files: true

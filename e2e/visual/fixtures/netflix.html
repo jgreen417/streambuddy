@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Home - Netflix</title>
+		<!--
+  Netflix's browse page, cut down to the card markup streamBuddy reads: rows of a[data-uia=…-card] links inside
+  padded div[data-virtual-slot] slots, with the boxart in a rounded, clipped box. data-sb-art marks the artwork
+  each badge is measured against (the test's own marker, not Netflix's). Artwork comes from /art/ (see art.ts).
+-->
+		<style>
+			body {
+				margin: 0;
+				background: #141414;
+				color: #e5e5e5;
+				font:
+					14px/1.25 Arial,
+					"Liberation Sans",
+					sans-serif;
+			}
+			.lolomoRow {
+				margin: 0 0 28px;
+				padding: 0 4%;
+			}
+			.rowHeader {
+				margin: 0 0 8px;
+				font-size: 18px;
+				font-weight: 700;
+			}
+			.sliderContent {
+				display: flex;
+			}
+			[data-virtual-slot] {
+				box-sizing: border-box;
+				padding: 0 0.2vw;
+				flex: 0 0 calc(100% / 6);
+			}
+			.row-8 [data-virtual-slot] {
+				flex-basis: calc(100% / 8);
+			}
+			.row-ranked [data-virtual-slot] {
+				flex-basis: calc(100% / 5);
+			}
+			a {
+				color: inherit;
+				text-decoration: none;
+				display: block;
+			}
+			.boxart-container {
+				position: relative;
+				padding-top: 56.25%;
+				border-radius: 4px;
+				overflow: hidden;
+			}
+			.boxart-container img {
+				position: absolute;
+				inset: 0;
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+			}
+			.progress {
+				height: 3px;
+				margin-top: 6px;
+				background: #4d4d4d;
+			}
+			.progress i {
+				display: block;
+				height: 100%;
+				background: #e50914;
+			}
+			.ranked {
+				display: flex;
+				align-items: stretch;
+				height: 0;
+				padding-top: 70%;
+				position: relative;
+			}
+			.ranked svg {
+				position: absolute;
+				left: 0;
+				top: 0;
+				height: 100%;
+				width: 50%;
+			}
+			.ranked .poster {
+				position: absolute;
+				right: 0;
+				top: 0;
+				width: 50%;
+				height: 100%;
+				border-radius: 4px;
+				overflow: hidden;
+			}
+			.ranked .poster img {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				display: block;
+			}
+			.episode-name {
+				margin-top: 6px;
+				font-size: 13px;
+				color: #bcbcbc;
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<section
+				class="lolomoRow"
+				data-shot="standard"
+			>
+				<h2 class="rowHeader">Trending Now</h2>
+				<div class="sliderContent">
+					<div data-virtual-slot="0">
+						<a
+							data-uia="standard-card"
+							href="/watch/1"
+							aria-label="Past Lives"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=10"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="1">
+						<a
+							data-uia="standard-card"
+							href="/watch/2"
+							aria-label="Dune: Part Two"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=35"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="2">
+						<a
+							data-uia="standard-card"
+							href="/watch/3"
+							aria-label="Wednesday (2022)"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=270"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="3">
+						<a
+							data-uia="standard-card"
+							href="/watch/4"
+							aria-label="Squid Game"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=150&tags=top10"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="4">
+						<a
+							data-uia="standard-card"
+							href="/watch/5"
+							aria-label="Rebel Moon"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=0"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="5">
+						<a
+							data-uia="standard-card"
+							href="/watch/6"
+							aria-label="Glass Onion"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=200"
+								/>
+							</div>
+						</a>
+					</div>
+				</div>
+			</section>
+			<section
+				class="lolomoRow"
+				data-shot="standard-tags"
+			>
+				<h2 class="rowHeader">New on Netflix</h2>
+				<div class="sliderContent">
+					<div data-virtual-slot="0">
+						<a
+							data-uia="standard-card"
+							href="/watch/7"
+							aria-label="Quiet Archive"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=90"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="1">
+						<a
+							data-uia="standard-card"
+							href="/watch/8"
+							aria-label="Leave the World Behind"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=220&tags=recent"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="2">
+						<a
+							data-uia="standard-card"
+							href="/watch/9"
+							aria-label="The Gentlemen"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=45&tags=top10,recent"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="3">
+						<a
+							data-uia="standard-card"
+							href="/watch/10"
+							aria-label="Unknown Title"
+						>
+							<div class="boxart-container">
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=300"
+								/>
+							</div>
+						</a>
+					</div>
+				</div>
+			</section>
+			<section
+				class="lolomoRow"
+				data-shot="progress"
+			>
+				<h2 class="rowHeader">Continue Watching</h2>
+				<div class="sliderContent">
+					<div data-virtual-slot="0">
+						<a
+							data-uia="progress-card"
+							href="/watch/11"
+							aria-label="Stranger Things"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=355"
+								/>
+							</div>
+							<div class="progress"><i style="width: 40%"></i></div>
+						</a>
+					</div>
+					<div data-virtual-slot="1">
+						<a
+							data-uia="progress-card"
+							href="/watch/12"
+							aria-label="Bridgerton"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=320"
+								/>
+							</div>
+							<div class="progress"><i style="width: 75%"></i></div>
+						</a>
+					</div>
+					<div data-virtual-slot="2">
+						<a
+							data-uia="progress-card"
+							href="/watch/13"
+							aria-label="The Irishman"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=25"
+								/>
+							</div>
+							<div class="progress"><i style="width: 10%"></i></div>
+						</a>
+					</div>
+				</div>
+			</section>
+			<section
+				class="lolomoRow row-ranked"
+				data-shot="ranked"
+			>
+				<h2 class="rowHeader">Top 10 Shows Today</h2>
+				<div class="sliderContent">
+					<div data-virtual-slot="0">
+						<a
+							data-uia="ranked-card"
+							href="/watch/21"
+							aria-label="Adolescence"
+						>
+							<div class="ranked">
+								<svg viewBox="0 0 100 140">
+									<text
+										x="96"
+										y="138"
+										text-anchor="end"
+										font-size="150"
+										font-weight="900"
+										fill="#141414"
+										stroke="#595959"
+										stroke-width="3"
+									>
+										1
+									</text>
+								</svg>
+								<div
+									class="poster"
+									data-sb-art
+									data-sb-corner="top"
+								>
+									<img
+										alt=""
+										src="https://art.test/art/a.svg?w=166&h=233&hue=210"
+									/>
+								</div>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="1">
+						<a
+							data-uia="ranked-card"
+							href="/watch/22"
+							aria-label="Carry-On"
+						>
+							<div class="ranked">
+								<svg viewBox="0 0 100 140">
+									<text
+										x="96"
+										y="138"
+										text-anchor="end"
+										font-size="150"
+										font-weight="900"
+										fill="#141414"
+										stroke="#595959"
+										stroke-width="3"
+									>
+										2
+									</text>
+								</svg>
+								<div
+									class="poster"
+									data-sb-art
+									data-sb-corner="top"
+								>
+									<img
+										alt=""
+										src="https://art.test/art/a.svg?w=166&h=233&hue=5&tags=top10"
+									/>
+								</div>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="2">
+						<a
+							data-uia="ranked-card"
+							href="/watch/23"
+							aria-label="Nonnas"
+						>
+							<div class="ranked">
+								<svg viewBox="0 0 100 140">
+									<text
+										x="96"
+										y="138"
+										text-anchor="end"
+										font-size="150"
+										font-weight="900"
+										fill="#141414"
+										stroke="#595959"
+										stroke-width="3"
+									>
+										3
+									</text>
+								</svg>
+								<div
+									class="poster"
+									data-sb-art
+									data-sb-corner="top"
+								>
+									<img
+										alt=""
+										src="https://art.test/art/a.svg?w=166&h=233&hue=60"
+									/>
+								</div>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="3">
+						<a
+							data-uia="ranked-card"
+							href="/watch/24"
+							aria-label="The Life List"
+						>
+							<div class="ranked">
+								<svg viewBox="0 0 100 140">
+									<text
+										x="96"
+										y="138"
+										text-anchor="end"
+										font-size="150"
+										font-weight="900"
+										fill="#141414"
+										stroke="#595959"
+										stroke-width="3"
+									>
+										4
+									</text>
+								</svg>
+								<div
+									class="poster"
+									data-sb-art
+									data-sb-corner="top"
+								>
+									<img
+										alt=""
+										src="https://art.test/art/a.svg?w=166&h=233&hue=130"
+									/>
+								</div>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="4">
+						<a
+							data-uia="ranked-card"
+							href="/watch/25"
+							aria-label="Ginny &amp; Georgia"
+						>
+							<div class="ranked">
+								<svg viewBox="0 0 100 140">
+									<text
+										x="96"
+										y="138"
+										text-anchor="end"
+										font-size="150"
+										font-weight="900"
+										fill="#141414"
+										stroke="#595959"
+										stroke-width="3"
+									>
+										5
+									</text>
+								</svg>
+								<div
+									class="poster"
+									data-sb-art
+									data-sb-corner="top"
+								>
+									<img
+										alt=""
+										src="https://art.test/art/a.svg?w=166&h=233&hue=290"
+									/>
+								</div>
+							</div>
+						</a>
+					</div>
+				</div>
+			</section>
+			<section
+				class="lolomoRow"
+				data-shot="episodic"
+			>
+				<h2 class="rowHeader">Super Buzzy Pilot Episodes</h2>
+				<div class="sliderContent">
+					<div data-virtual-slot="0">
+						<a
+							data-uia="episodic-card"
+							href="/watch/80001?jbv=80001"
+							aria-label="Episode 1: Venezia"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=180"
+								/>
+							</div>
+							<div class="episode-name">Episode 1: Venezia</div>
+						</a>
+					</div>
+					<div data-virtual-slot="1">
+						<a
+							data-uia="episodic-card"
+							href="/watch/80002?jbv=80002"
+							aria-label="Episode 1"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=240"
+								/>
+							</div>
+							<div class="episode-name">Episode 1</div>
+						</a>
+					</div>
+					<div data-virtual-slot="2">
+						<a
+							data-uia="episodic-card"
+							href="/watch/80003?jbv=80003"
+							aria-label="Pilot"
+						>
+							<div class="boxart-container">
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=341&h=192&hue=80"
+								/>
+							</div>
+							<div class="episode-name">Pilot (no series known: no badge)</div>
+						</a>
+					</div>
+				</div>
+			</section>
+			<section
+				class="lolomoRow row-8"
+				data-shot="narrow"
+			>
+				<h2 class="rowHeader">Narrow cards (eight to a row)</h2>
+				<div class="sliderContent">
+					<div data-virtual-slot="0">
+						<a
+							data-uia="standard-card"
+							href="/watch/31"
+							aria-label="Leo"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=256&h=144&hue=100"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="1">
+						<a
+							data-uia="standard-card"
+							href="/watch/32"
+							aria-label="Maestro"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=256&h=144&hue=15"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="2">
+						<a
+							data-uia="standard-card"
+							href="/watch/33"
+							aria-label="May December"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=256&h=144&hue=330"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="3">
+						<a
+							data-uia="standard-card"
+							href="/watch/34"
+							aria-label="Nyad"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=256&h=144&hue=190"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="4">
+						<a
+							data-uia="standard-card"
+							href="/watch/35"
+							aria-label="Society of the Snow"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=256&h=144&hue=210"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="5">
+						<a
+							data-uia="standard-card"
+							href="/watch/36"
+							aria-label="The Killer"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=256&h=144&hue=0"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="6">
+						<a
+							data-uia="standard-card"
+							href="/watch/37"
+							aria-label="Rustin"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=256&h=144&hue=50"
+								/>
+							</div>
+						</a>
+					</div>
+					<div data-virtual-slot="7">
+						<a
+							data-uia="standard-card"
+							href="/watch/38"
+							aria-label="Pain Hustlers"
+						>
+							<div
+								class="boxart-container"
+								data-sb-art
+								data-sb-corner="top"
+							>
+								<img
+									alt=""
+									src="https://art.test/art/a.svg?w=256&h=144&hue=280"
+								/>
+							</div>
+						</a>
+					</div>
+				</div>
+			</section>
+		</main>
+	</body>
+</html>

@@ -22,6 +22,8 @@
 		"test": "vitest",
 		"test:ui": "vitest --ui",
 		"test:coverage": "vitest run --coverage",
+		"test:visual": "playwright test",
+		"test:visual:update": "playwright test --update-snapshots=changed",
 		"typecheck": "vue-tsc --noEmit"
 	},
 	"dependencies": {
@@ -41,6 +43,7 @@
 		"@iconify-json/mdi": "^1.2.3",
 		"@iconify-json/ph": "^1.2.2",
 		"@intlify/unplugin-vue-i18n": "^11.2.4",
+		"@playwright/test": "1.56.1",
 		"@types/eslint": "^9.6.1",
 		"@types/node": "^26.2.0",
 		"@types/webextension-polyfill": "^0.12.5",
