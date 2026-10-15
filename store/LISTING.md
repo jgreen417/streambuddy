@@ -28,9 +28,10 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > FIND THE GOOD STUFF FASTER
 > • A rating panel on title pages, with friends' stars
 > • IMDb ratings for every episode of a season
-> • Best-in-row highlights, and an optional cut-off that hides low-rated titles
+> • An optional cut-off that hides low-rated titles
 > • Ratings and sort-by-rating on search pages
 > • Watched films can fade back so new ones stand out
+> • Pick your scores: Letterboxd, IMDb, TMDb, or Letterboxd for films and IMDb for series
 >
 > WATCH WITHOUT THE FIDDLY BITS
 > • Optional automatic skipping of supported intro, recap and credits controls, with a notice and one-tap Undo
@@ -61,7 +62,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 | Marquee promo tile (optional) | 1400×560 PNG | Ready: `store/promo-marquee.png` (source: `promo-marquee.svg`) |
 
 **Screenshot list** (1280×800, in this order):
-1. Netflix home rows with badges, including a friends line, a "✓ you" mark and a best-in-row ring
+1. Netflix home rows with badges, including labelled "friends" and "you" lines
 2. A Netflix title pop-up with the rating panel and the "＋ Watchlist" button
 3. An HBO Max or Prime Video series page with episode rating chips
 4. The popup, Settings tab, next to a streaming page

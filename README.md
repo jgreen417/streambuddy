@@ -16,7 +16,7 @@ streamBuddy puts a small score on every title card. Films show their Letterboxd 
 - **Your diary.** Films you've logged show your stars, and watchlisted films are marked. Watched films can fade back.
 - **Title-page panel.** Letterboxd average, your status, friends' stars and a one-click "add to watchlist".
 - **Episode ratings.** IMDb ratings for every episode of the season you're viewing.
-- **Find the good stuff.** Best-in-row highlights, an optional cut-off that hides low-rated titles, and sort-by-rating on search pages.
+- **Find the good stuff.** An optional cut-off that hides low-rated titles, and sort-by-rating on search pages.
 - **Stats.** Weekly watch time by service, plus watchlist films that are streaming now.
 - **Skips you can trust.** Intros, recaps, credits, ads and "Still watching?" are handled for you, each with a small notice and one-tap Undo.
 - **Your rules.** Choose "Not for this show" to keep a theme song you love, or let the first episode of a season play its intro.

@@ -156,11 +156,12 @@ export class DetailRatings {
 	) {}
 	async tick(
 		site: FeatureSite,
-		options: { panel: boolean; episodes: boolean; actions?: boolean; friends?: boolean },
+		// sources: the rating-source setting; results looked up under another one are not reused
+		options: { panel: boolean; episodes: boolean; actions?: boolean; friends?: boolean; sources?: string },
 		path = location.pathname,
 	) {
 		const context = readDetailContext(site, path)
-		const active = `${site}|${path}|${context?.title}|${context?.mediaType}|${context?.year}|${options.panel}|${options.episodes}|${options.actions}|${options.friends}`
+		const active = `${site}|${path}|${context?.title}|${context?.mediaType}|${context?.year}|${options.panel}|${options.episodes}|${options.actions}|${options.friends}|${options.sources}`
 		if (this.active !== active) {
 			document.querySelectorAll(".sb-detail-panel,.sb-episode-rating").forEach((el) => el.remove())
 			document.querySelectorAll(".sb-episode-host").forEach((el) => el.classList.remove("sb-episode-host"))
@@ -171,16 +172,17 @@ export class DetailRatings {
 		if (!options.panel && !options.episodes) return
 		if (!context) return
 		const key = `${context.title}|${context.mediaType}|${context.year}`
-		if ((this.nextRetry.get(key) ?? 0) > Date.now()) return
-		let pending = this.info.get(key)
+		const lookupKey = `${key}|${options.sources ?? ""}`
+		if ((this.nextRetry.get(lookupKey) ?? 0) > Date.now()) return
+		let pending = this.info.get(lookupKey)
 		if (!pending) {
 			pending = this.lookup(context.title, context.mediaType, context.year)
-			this.info.set(key, pending)
+			this.info.set(lookupKey, pending)
 		}
 		const data = await pending.catch(() => null)
 		if (!data) {
-			this.info.delete(key)
-			this.nextRetry.set(key, Date.now() + 30_000)
+			this.info.delete(lookupKey)
+			this.nextRetry.set(lookupKey, Date.now() + 30_000)
 			return
 		}
 		const current = readDetailContext(site, location.pathname === path ? path : location.pathname)
@@ -198,7 +200,7 @@ export class DetailRatings {
 				options.friends === false
 					? { ...data, friends_rating: undefined, friends_count: undefined, friends: undefined }
 					: data,
-				`${key}|${options.actions}|${options.friends}`,
+				`${key}|${options.actions}|${options.friends}|${options.sources}`,
 			)
 		if (!options.episodes || data.media_type !== "tv") return
 		const cards = readEpisodeCards(site, context.root)

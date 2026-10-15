@@ -12,7 +12,7 @@ Prepared 12 October 2026.
 - Distribution: free, public, all regions.
 - Confidential reviewer instructions saved. The user approved sharing the development TMDb credential with Google's review team. No credential is included in this document or the release ZIP.
 
-The screenshot is a crop of the live Netflix catalogue, resized to 1280×800. It shows ratings, friends' averages, personal rating marks and the best-in-row highlight, without the browser sidebar or account details.
+The screenshot is a crop of the live Netflix catalogue, resized to 1280×800. It shows ratings, friends' averages, and personal rating marks, without the browser sidebar or account details.
 
 Verification: 110 tests passed; Chrome release build succeeded; ZIP integrity passed; no embedded development TMDb credential or Letterboxd username found.
 

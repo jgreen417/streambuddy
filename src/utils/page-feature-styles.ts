@@ -1,9 +1,16 @@
+import bricolageLatin from "@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-opsz-normal.woff2?url"
+
+// The badge's typeface, served from the extension itself (no request leaves the browser). The family name is
+// streamBuddy's own so it can't clash with a font the site loads.
+export const BADGE_FONT = '"streamBuddy Bricolage"'
+
 // Scoped to streamBuddy's injected controls; avoid styling the host site's UI.
 export function installPageFeatureStyle() {
 	if (document.getElementById("sb-page-features-style")) return
 	const style = document.createElement("style")
 	style.id = "sb-page-features-style"
 	style.textContent = `
+ @font-face { font-family:${BADGE_FONT}; src:url("${browser.runtime.getURL(bricolageLatin)}") format("woff2"); font-weight:200 800; font-display:swap; }
  .sb-detail-panel,.sb-rate-prompt { --sb-feature-bg:#1b1918f2; --sb-feature-text:#fbf4ec; --sb-feature-muted:#cfc6bc; --sb-feature-line:#ffffff26; color:var(--sb-feature-text); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
  .sb-detail-panel { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin:16px 0; padding:12px 14px; border:1px solid var(--sb-feature-line); border-radius:10px; background:var(--sb-feature-bg); }
  .sb-detail-panel a { text-decoration:none; color:inherit; } .sb-detail-score { font-size:17px; font-weight:650; }

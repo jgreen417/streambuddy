@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, useId } from "vue"
-import type { settingsType } from "@/stores/storeTypes"
+import type { FriendsStyle, RatingSources, settingsType } from "@/stores/storeTypes"
 import { streamingServices, type StreamingService } from "@/constants/streamingServices"
 import { getServiceState, setServiceState, getRatingMode, setRatingMode, type RatingMode } from "@/utils/preferences"
 import { SCORE_BANDS } from "@/utils/ratings"
@@ -52,6 +52,27 @@ const pauseOptions = [
 	{ value: 4, label: "After 4 episodes" },
 	{ value: 6, label: "After 6 episodes" },
 ]
+const sourceOptions: { value: RatingSources; label: string }[] = [
+	{ value: "both", label: "Letterboxd & IMDb" },
+	{ value: "letterboxd", label: "Letterboxd only" },
+	{ value: "imdb", label: "IMDb only" },
+	{ value: "tmdb", label: "TMDb only" },
+]
+const letterboxdOff = computed(() => ["imdb", "tmdb"].includes(settings.value.General.ratingSources))
+// one picker for whether friends' ratings show and how: "hidden" turns them off (and stops fetching them)
+const friendsOptions: { value: FriendsStyle | "hidden"; label: string }[] = [
+	{ value: "labels", label: "Labelled" },
+	{ value: "dots", label: "Dot per friend" },
+	{ value: "trio", label: "Three dots" },
+	{ value: "hidden", label: "Hidden" },
+]
+const friendsDisplay = computed({
+	get: () => (settings.value.General.friendsRatings ? settings.value.General.friendsStyle : "hidden"),
+	set: (value: FriendsStyle | "hidden") => {
+		settings.value.General.friendsRatings = value !== "hidden"
+		if (value !== "hidden") settings.value.General.friendsStyle = value
+	},
+})
 const cardsInactive = computed(() => cards.value !== true)
 const cardDependency = computed(() =>
 	cardsInactive.value ? "Turn on card ratings for the selected services." : undefined,
@@ -142,6 +163,46 @@ const updateMode = (event: Event) => {
 				>
 					Title pages, episodes and search work on Netflix, HBO Max and Prime Video.
 				</p>
+				<label class="sb-cutoff">
+					Ratings from
+					<select v-model="settings.General.ratingSources">
+						<option
+							v-for="option in sourceOptions"
+							:key="option.value"
+							:value="option.value"
+						>
+							{{ option.label }}
+						</option>
+					</select>
+				</label>
+				<p class="sb-help">TMDb fills in when the chosen sites have no rating.</p>
+				<label class="sb-cutoff">
+					Badge look
+					<select v-model="settings.General.badgeStyle">
+						<option value="classic">Classic</option>
+						<option value="glass">Liquid Glass</option>
+					</select>
+				</label>
+				<label
+					v-if="settings.General.badgeStyle === 'glass'"
+					class="sb-cutoff sb-frost"
+				>
+					Glass
+					<input
+						v-model.number="settings.General.glassFrost"
+						type="range"
+						min="0"
+						max="100"
+						step="5"
+						:aria-valuetext="`${settings.General.glassFrost}% frosted`"
+					/>
+				</label>
+				<p
+					v-if="settings.General.badgeStyle === 'glass'"
+					class="sb-help"
+				>
+					Slide left for clear glass, right for frosted.
+				</p>
 				<template v-if="supportsPages">
 					<PopupToggle
 						v-model="settings.General.detailRatings"
@@ -151,12 +212,6 @@ const updateMode = (event: Event) => {
 						v-model="settings.General.episodeRatings"
 						label="Episode ratings"
 						description="IMDb scores beside individual episodes."
-					/>
-					<PopupToggle
-						v-model="settings.General.highlightBestInRow"
-						label="Highlight best-rated in each row"
-						:disabled="cardsInactive"
-						:description="cardDependency"
 					/>
 					<PopupToggle
 						v-model="settings.General.searchSort"
@@ -222,10 +277,27 @@ const updateMode = (event: Event) => {
 			<div class="sb-disclosure-body">
 				<slot name="profile" />
 				<template v-if="username">
-					<PopupToggle
-						v-model="settings.General.friendsRatings"
-						label="Friends’ ratings"
-					/>
+					<label class="sb-cutoff">
+						Friends’ ratings
+						<select
+							v-model="friendsDisplay"
+							:disabled="letterboxdOff"
+						>
+							<option
+								v-for="option in friendsOptions"
+								:key="option.value"
+								:value="option.value"
+							>
+								{{ option.label }}
+							</option>
+						</select>
+					</label>
+					<p
+						v-if="letterboxdOff"
+						class="sb-help"
+					>
+						Friends’ ratings need Letterboxd in “Ratings from”.
+					</p>
 					<PopupToggle
 						v-model="settings.General.markWatched"
 						label="Seen & watchlist card marks"
