@@ -5,7 +5,7 @@ import pluginVue from "eslint-plugin-vue"
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
-	{ ignores: ["dist/**", "release/**", "android-app/**"] },
+	{ ignores: ["dist/**", "release/**", "android-app/**", "e2e/.build/**", "e2e/.report/**", "e2e/.results/**"] },
 	{ files: ["**/*.{ts,vue}"] },
 	{ languageOptions: { globals: globals.browser } },
 	pluginJs.configs.recommended,

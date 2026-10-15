@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest"
 import { sendMessage } from "webext-bridge/content-script"
-import { HBO_fixTitle, isCacheCurrent, lookupMovieInfo, settings } from "../../content-script/shared-functions"
+import { Amazon_titleLink, HBO_fixTitle, isCacheCurrent, lookupMovieInfo, settings } from "../../content-script/shared-functions"
 import { CheckedCards, isSeasonOnlyTitle, pickBestMatch } from "../../utils/tmdb"
 
 describe("HBO_fixTitle", () => {
@@ -29,6 +29,28 @@ describe("HBO_fixTitle", () => {
 	it("returns undefined without a label", () => {
 		expect(HBO_fixTitle(null)).toBeUndefined()
 		expect(HBO_fixTitle("")).toBeUndefined()
+	})
+})
+
+describe("Amazon_titleLink", () => {
+	const card = (html: string) => {
+		const article = document.createElement("article")
+		article.innerHTML = html
+		return article
+	}
+	const badge = '<a id="rating" class="sb-card-rating" href="https://letterboxd.com/film/invincible/">4.1</a>'
+	const link = '<a href="https://www.primevideo.com/detail/0ABC/" aria-label="Invincible"></a>'
+
+	it("finds the title link", () => {
+		expect(Amazon_titleLink(card(link))?.getAttribute("aria-label")).toBe("Invincible")
+	})
+
+	it("skips the badge when a re-render puts it before the title link", () => {
+		expect(Amazon_titleLink(card(badge + link))?.getAttribute("aria-label")).toBe("Invincible")
+	})
+
+	it("has no title link on live cards", () => {
+		expect(Amazon_titleLink(card('<a href="https://www.primevideo.com/live/0ABC/" aria-label="Live">'))).toBeUndefined()
 	})
 })
 
