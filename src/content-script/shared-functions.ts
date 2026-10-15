@@ -902,7 +902,7 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 	const main = document.createElement("span")
 	Object.assign(main.style, {
 		padding: "0.28em 0.6em",
-		borderRadius: "999px",
+		borderRadius: "var(--sb-pill-r, 999px)",
 		fontSize: "1.15em",
 		fontWeight: "800",
 		letterSpacing: "-0.02em",
@@ -943,6 +943,30 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 	}
 	div.title = tooltip.join("\n")
 	div.setAttribute("aria-label", tooltip.join(". "))
+}
+
+// The badge sits in a corner of the card, so its corners follow the card's: the card's radius less the gap
+// between them, and the score pill inside does the same again, so the three curves share a centre.
+const BADGE_INSET_PX = 5
+const BADGE_PAD_PX = 3
+function fitBadgeToCorner(
+	div: HTMLElement,
+	host: HTMLElement,
+	corner: "borderTopRightRadius" | "borderBottomRightRadius",
+) {
+	const hostWidth = host.getBoundingClientRect().width
+	let radius = 0
+	// the artwork's rounded box: skip small rounded bits inside the card (progress bars, avatars) and our own badge
+	for (const el of [host, ...Array.from(host.querySelectorAll<HTMLElement>("*")).slice(0, 60)]) {
+		if (el.closest(".sb-card-rating")) continue
+		const value = getComputedStyle(el)[corner]
+		if (!value.endsWith("px")) continue
+		if (hostWidth && el.getBoundingClientRect().width < hostWidth / 2) continue
+		radius = Math.max(radius, Number.parseFloat(value) || 0)
+	}
+	const outer = Math.max(radius - BADGE_INSET_PX, 2)
+	div.style.borderRadius = `${outer}px`
+	div.style.setProperty("--sb-pill-r", `${Math.max(outer - BADGE_PAD_PX, 2)}px`)
 }
 
 // Prime composites its own "prime" or channel logo into the artwork's bottom-right corner, and the image URL
@@ -994,9 +1018,9 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	Object.assign(div.style, {
 		position: "absolute",
 		// Netflix draws its "Recently added" and "Leaving soon" tags into the bottom of the boxart; the top-right is clear
-		...(isNetflix ? { top: "0.3em" } : { bottom: "0.3em" }),
-		right: isNetflix ? "calc(0.2vw + 0.3em)" : "0.3em",
-		maxWidth: "calc(100% - 0.6em)",
+		...(isNetflix ? { top: `${BADGE_INSET_PX}px` } : { bottom: `${BADGE_INSET_PX}px` }),
+		right: isNetflix ? `calc(0.2vw + ${BADGE_INSET_PX}px)` : `${BADGE_INSET_PX}px`,
+		maxWidth: `calc(100% - ${2 * BADGE_INSET_PX}px)`,
 		boxSizing: "border-box",
 		display: "flex",
 		flexWrap: "wrap",
@@ -1012,7 +1036,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		opacity: "0",
 		transform: "translateY(2px)",
 		transition: "opacity 160ms ease-out, transform 220ms cubic-bezier(0.3, 0.7, 0.2, 1)",
-		padding: "0.2em",
+		padding: `${BADGE_PAD_PX}px`,
 		fontFamily: `${BADGE_FONT}, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif`,
 		fontWeight: "700",
 		fontVariantNumeric: "tabular-nums",
@@ -1069,6 +1093,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		if (titleCardContainer) {
 			if (getComputedStyle(titleCardContainer).position === "static") titleCardContainer.style.position = "relative"
 			titleCardContainer.appendChild(div)
+			fitBadgeToCorner(div, titleCardContainer, "borderTopRightRadius")
 			if (isDimmed(data, vote_count < 50)) titleCardContainer.appendChild(greyOverlay)
 			// titleCardContainer.style.opacity = getTransparencyForRating(data?.score, vote_count < 50)
 		}
@@ -1076,6 +1101,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		// the tile link itself is unpositioned; the poster container is the relative box
 		const position = (card.querySelector('[data-testid$="_tileImage"]') as HTMLElement | null) ?? card
 		position.appendChild(div)
+		fitBadgeToCorner(div, position, "borderBottomRightRadius")
 		if (isDimmed(data, vote_count < 50)) position.appendChild(greyOverlay)
 		// card.style.opacity = getTransparencyForRating(data?.score, vote_count < 50)
 	} else if (isPrimeVideo) {
@@ -1085,7 +1111,10 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 			position = card.querySelector('div[data-testid="title-metadata-main"]') as HTMLElement
 		const logoHeight = position ? primeLogoHeight(position) : 0
 		if (logoHeight) div.style.bottom = `calc(${(logoHeight * 100).toFixed(1)}% + 0.2em)`
-		position?.appendChild(div)
+		if (position) {
+			position.appendChild(div)
+			fitBadgeToCorner(div, position, "borderBottomRightRadius")
+		}
 		if (isDimmed(data, vote_count < 50)) position?.appendChild(greyOverlay)
 		// card.closest("li")?.style.setProperty("opacity", getTransparencyForRating(data?.score, vote_count < 50))
 	}
