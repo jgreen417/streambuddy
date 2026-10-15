@@ -21,6 +21,7 @@ import {
 	type EpisodeRating,
 } from "@/utils/page-features"
 import { CreditsRatingPrompt } from "@/utils/letterboxd-actions"
+import { NetflixShowTitles, getEpisodeId } from "@/utils/netflix-shows"
 import {
 	addWatchSeconds,
 	localDateKey,
@@ -301,6 +302,7 @@ const rowPresentation = new RowPresentation()
 const rowCardData = new WeakMap<HTMLElement, MovieInfo>()
 const rowCardTitles = new WeakMap<HTMLElement, string>()
 const rowCardDecorations = new WeakMap<HTMLElement, HTMLElement[]>()
+const netflixShowTitles = new NetflixShowTitles()
 function refreshRowPresentation() {
 	const stale = rowPresentation.prune(
 		(card) => getCleanTitle(card, card.dataset.cardTitle ? 0 : 1) === rowCardTitles.get(card),
@@ -695,7 +697,7 @@ function getAllTitleCardsTypes(): Array<NodeListOf<Element>> {
 	if (isNetflix)
 		AllTitleCardsTypes = [
 			document.querySelectorAll(
-				'a[data-uia="standard-card"]:not(.imdb), a[data-uia="progress-card"]:not(.imdb), a[data-uia="ranked-card"]:not(.imdb)',
+				'a[data-uia="standard-card"]:not(.imdb), a[data-uia="progress-card"]:not(.imdb), a[data-uia="ranked-card"]:not(.imdb), a[data-uia="episodic-card"]:not(.imdb)',
 			),
 		]
 	else if (isHBO) AllTitleCardsTypes = [document.querySelectorAll("a[class*='StyledTileLinkNormal-']:not(.imdb)")]
@@ -743,7 +745,15 @@ async function addRating() {
 			}
 			const media_type = getMediaType(card)
 			const title = getCleanTitle(card, type)
-			if (!title) continue
+			if (!title) {
+				// an episode card whose show is still being looked up gets another pass once it's known
+				if (
+					isNetflixEpisodeCard(card) &&
+					netflixShowTitles.get(getEpisodeId(card.getAttribute("href")) ?? "") === undefined
+				)
+					card.classList.remove("imdb")
+				continue
+			}
 			{
 				// sometimes more than one image is loaded for the same title
 				if (lastTitle != title && !title.includes("Netflix") && !title.includes("Prime Video")) {
@@ -777,7 +787,7 @@ async function addRating() {
 function getMediaType(card: HTMLElement): MediaType {
 	let media_type: MediaType = null
 	if (isNetflix) {
-		if (url.includes("genre/83")) media_type = "tv"
+		if (isNetflixEpisodeCard(card) || url.includes("genre/83")) media_type = "tv"
 		else if (url.includes("genre/34399")) media_type = "movie"
 	} else if (isHBO) {
 		const href = card.getAttribute("href") || ""
@@ -791,9 +801,17 @@ function getMediaType(card: HTMLElement): MediaType {
 	return media_type
 }
 
+// labelled with the episode name, so the series title is looked up (see netflix-shows.ts)
+function isNetflixEpisodeCard(card: HTMLElement) {
+	return card.dataset.uia === "episodic-card"
+}
 function getCleanTitle(card: HTMLElement, type: number): string | undefined {
 	let title: string | undefined
 	if (isNetflix) {
+		if (isNetflixEpisodeCard(card)) {
+			const episodeId = getEpisodeId(card.getAttribute("href"))
+			return (episodeId && netflixShowTitles.get(episodeId)) || undefined
+		}
 		title = card?.getAttribute("aria-label")?.split(" (")[0]
 	} else if (isPrimeVideo) {
 		// detail means not live shows
@@ -1209,8 +1227,11 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	}
 	if (div.isConnected && (isNetflix || isHBO || isPrimeVideo)) {
 		searchSorting.setRating(card, score)
+		const netflixSlot = card.closest<HTMLElement>("[data-virtual-slot]") ?? card.parentElement
+		// episode cards have their name and genre under the still; outline just the still
 		const target = isNetflix
-			? (card.closest<HTMLElement>("[data-virtual-slot]") ?? card.parentElement)
+			? (isNetflixEpisodeCard(card) && card.querySelector<HTMLElement>('[data-uia="episodic-card+still"]')) ||
+				netflixSlot
 			: isHBO
 				? (card.querySelector<HTMLElement>('[data-testid$="_tileImage"]') ?? card)
 				: card
@@ -1218,7 +1239,11 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 			rowCardData.set(card, data)
 			rowCardTitles.set(card, title)
 			rowCardDecorations.set(card, [div, greyOverlay])
-			const hideTarget = isNetflix ? target : isPrimeVideo ? (card.closest<HTMLElement>("li") ?? card) : card
+			const hideTarget = isNetflix
+				? (netflixSlot ?? target)
+				: isPrimeVideo
+					? (card.closest<HTMLElement>("li") ?? card)
+					: card
 			rowPresentation.track(card, target, score, hideTarget)
 			refreshRowPresentation()
 		}

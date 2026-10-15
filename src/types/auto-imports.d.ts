@@ -13,6 +13,7 @@ declare global {
   const DetailRatings: typeof import('../utils/page-features').DetailRatings
   const EffectScope: typeof import('vue').EffectScope
   const HiddenTitlesPromise: typeof import('../stores/options.store').HiddenTitlesPromise
+  const NetflixShowTitles: typeof import('../utils/netflix-shows').NetflixShowTitles
   const PLATFORM_NAMES: typeof import('../utils/stats').PLATFORM_NAMES
   const RowPresentation: typeof import('../utils/row-presentation').RowPresentation
   const SCORE_BANDS: typeof import('../utils/ratings').SCORE_BANDS
@@ -75,6 +76,7 @@ declare global {
   const getCurrentInstance: typeof import('vue').getCurrentInstance
   const getCurrentScope: typeof import('vue').getCurrentScope
   const getCurrentWatcher: typeof import('vue').getCurrentWatcher
+  const getEpisodeId: typeof import('../utils/netflix-shows').getEpisodeId
   const getLetterboxdSlug: typeof import('../utils/ratings').getLetterboxdSlug
   const getRatingMode: typeof import('../utils/preferences').getRatingMode
   const getRatingPercentile: typeof import('../utils/stats').getRatingPercentile
@@ -134,6 +136,7 @@ declare global {
   const parseLetterboxdHtml: typeof import('../utils/ratings').parseLetterboxdHtml
   const parseLetterboxdTmdbId: typeof import('../utils/ratings').parseLetterboxdTmdbId
   const parseProfileGrid: typeof import('../utils/ratings').parseProfileGrid
+  const parseShowTitles: typeof import('../utils/netflix-shows').parseShowTitles
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
   const pickBestMatch: typeof import('../utils/tmdb').pickBestMatch
   const pinia: typeof import('../utils/pinia').pinia
@@ -408,6 +411,9 @@ declare global {
   export type { CreditsRatingPrompt } from '../utils/letterboxd-actions'
   import('../utils/letterboxd-actions')
   // @ts-ignore
+  export type { NetflixShowTitles } from '../utils/netflix-shows'
+  import('../utils/netflix-shows')
+  // @ts-ignore
   export type { DetailRatings, SearchRatingSort, FeatureSite, DetailContext, FeatureRating, EpisodeRating, PersonalStatus } from '../utils/page-features'
   import('../utils/page-features')
   // @ts-ignore
@@ -433,6 +439,7 @@ declare module 'vue' {
     readonly CreditsRatingPrompt: UnwrapRef<typeof import('../utils/letterboxd-actions')['CreditsRatingPrompt']>
     readonly DetailRatings: UnwrapRef<typeof import('../utils/page-features')['DetailRatings']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
+    readonly NetflixShowTitles: UnwrapRef<typeof import('../utils/netflix-shows')['NetflixShowTitles']>
     readonly PLATFORM_NAMES: UnwrapRef<typeof import('../utils/stats')['PLATFORM_NAMES']>
     readonly RowPresentation: UnwrapRef<typeof import('../utils/row-presentation')['RowPresentation']>
     readonly SCORE_BANDS: UnwrapRef<typeof import('../utils/ratings')['SCORE_BANDS']>
@@ -493,6 +500,7 @@ declare module 'vue' {
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
     readonly getCurrentWatcher: UnwrapRef<typeof import('vue')['getCurrentWatcher']>
+    readonly getEpisodeId: UnwrapRef<typeof import('../utils/netflix-shows')['getEpisodeId']>
     readonly getLetterboxdSlug: UnwrapRef<typeof import('../utils/ratings')['getLetterboxdSlug']>
     readonly getRatingMode: UnwrapRef<typeof import('../utils/preferences')['getRatingMode']>
     readonly getRatingPercentile: UnwrapRef<typeof import('../utils/stats')['getRatingPercentile']>
@@ -552,6 +560,7 @@ declare module 'vue' {
     readonly parseLetterboxdHtml: UnwrapRef<typeof import('../utils/ratings')['parseLetterboxdHtml']>
     readonly parseLetterboxdTmdbId: UnwrapRef<typeof import('../utils/ratings')['parseLetterboxdTmdbId']>
     readonly parseProfileGrid: UnwrapRef<typeof import('../utils/ratings')['parseProfileGrid']>
+    readonly parseShowTitles: UnwrapRef<typeof import('../utils/netflix-shows')['parseShowTitles']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
     readonly pickBestMatch: UnwrapRef<typeof import('../utils/tmdb')['pickBestMatch']>
     readonly pinia: UnwrapRef<typeof import('../utils/pinia')['pinia']>
