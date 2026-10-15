@@ -986,9 +986,10 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	const hasRating = (data?.source !== "tmdb" && !!data?.rating) || data?.score > 0
 	if (!hasRating) {
 		console.log("no score found:", title, data, card)
-		// Prime's card selectors can't skip cards already seen, so remember it; an unrated cached title is looked up
-		// again once the cache refreshes it (a week), which needs a page load anyway
-		checkedCards.mark(card, title)
+		// Prime's card selectors can't skip cards already seen, so remember it. A cached unrated title is looked up
+		// again once the cache refreshes it (a week), which needs a page load anyway; a result left uncached because
+		// Letterboxd/IMDb failed for a moment is retried shortly
+		checkedCards.mark(card, title, DBCache[title] === data ? Number.POSITIVE_INFINITY : Date.now() + 30_000)
 		return
 	}
 	const vote_count = getRatingVoteCount(data)
