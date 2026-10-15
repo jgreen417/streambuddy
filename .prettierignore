@@ -9,3 +9,5 @@ src/locales/
 *.md
 *.json
 *.js
+# fixture pages keep the sites' markup as served (no whitespace between tags)
+e2e/visual/fixtures/

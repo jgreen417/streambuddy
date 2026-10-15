@@ -41,3 +41,8 @@ release/
 preview/
 .claude/
 *.tsbuildinfo
+
+# visual checks: the extension build and run output (baselines in e2e/visual/baselines are committed)
+e2e/.build/
+e2e/.results/
+e2e/.report/
