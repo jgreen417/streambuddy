@@ -61,7 +61,7 @@ const sourceOptions: { value: RatingSources; label: string }[] = [
 const letterboxdOff = computed(() => ["imdb", "tmdb"].includes(settings.value.General.ratingSources))
 // one picker for whether friends' ratings show and how: "hidden" turns them off (and stops fetching them)
 const friendsOptions: { value: FriendsStyle | "hidden"; label: string }[] = [
-	{ value: "mark", label: "Buddy mark" },
+	{ value: "labels", label: "Labelled" },
 	{ value: "dots", label: "Dot per friend" },
 	{ value: "trio", label: "Three dots" },
 	{ value: "hidden", label: "Hidden" },

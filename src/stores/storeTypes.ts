@@ -8,7 +8,7 @@ type ServicePlayback = {
 	speedControl: boolean
 	showRating: boolean
 }
-export type FriendsStyle = "mark" | "dots" | "trio"
+export type FriendsStyle = "labels" | "dots" | "trio"
 // where badge scores come from; TMDb is always the last fallback
 export type RatingSources = "both" | "letterboxd" | "imdb" | "tmdb"
 export type settingsType = {
@@ -30,7 +30,7 @@ export type settingsType = {
 		friendsRatings: boolean
 		// "both": Letterboxd for films, IMDb for TV and films Letterboxd hasn't rated
 		ratingSources: RatingSources
-		// how the badge marks friends' score: the Buddy mark, a dot per friend, or always the same three dots
+		// how the badge shows friends' score (and yours): labelled lines beside the score, a dot per friend, or always the same three dots
 		friendsStyle: FriendsStyle
 		// with dimLowRatings on, dim titles in a colour band below this one (1 = below orange ... 4 = below green)
 		dimBelowBand: number
@@ -75,7 +75,7 @@ export const defaultSettings: settingsType = {
 		GCdate: "2024-01-01",
 		friendsRatings: true,
 		ratingSources: "both",
-		friendsStyle: "mark",
+		friendsStyle: "labels",
 		dimBelowBand: 1,
 		markWatched: true,
 		highlightBestInRow: true,

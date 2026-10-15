@@ -911,29 +911,60 @@ function friendColors(friends: { name: string }[], count: number) {
 		return FRIEND_DOT_COLORS[hash % FRIEND_DOT_COLORS.length]
 	})
 }
-// the logo's two overlapping circles: "your friends", whoever and however many they are
-function buddyMark() {
-	const ns = "http://www.w3.org/2000/svg"
-	const svg = document.createElementNS(ns, "svg")
-	svg.setAttribute("viewBox", "0 0 30 20")
-	svg.setAttribute("aria-hidden", "true")
-	Object.assign(svg.style, { display: "block", width: "1.5em", height: "1em" })
-	for (const [tag, attrs] of [
-		["circle", { cx: "10", cy: "10", r: "8.5", fill: BADGE_INK }],
-		["circle", { cx: "20", cy: "10", r: "8.5", fill: "#ff7a45" }],
-		["path", { d: "M15 3.1A8.5 8.5 0 0 1 15 16.9A8.5 8.5 0 0 1 15 3.1Z", fill: "#fbf4ec" }],
-	] as const) {
-		const el = document.createElementNS(ns, tag)
-		for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value)
-		svg.appendChild(el)
-	}
-	return svg
-}
 function friendsIcon(friends: { name: string }[], count: number) {
-	const style = settings.value.General.friendsStyle
-	if (style === "dots") return friendDots(friendColors(friends, count))
-	if (style === "trio") return friendDots(FRIEND_DOT_COLORS.slice(0, 3))
-	return buddyMark()
+	if (settings.value.General.friendsStyle === "trio") return friendDots(FRIEND_DOT_COLORS.slice(0, 3))
+	return friendDots(friendColors(friends, count))
+}
+// The default layout: a small column beside the score with a labelled line each for friends and you,
+// so what each number means is written on the badge rather than left to the tooltip.
+const BADGE_LABEL = "#7a716a"
+function addLabelLine(
+	div: HTMLElement,
+	column: HTMLElement | undefined,
+	dot: string,
+	label: string,
+	value: string,
+	color = BADGE_INK,
+) {
+	if (!column) {
+		column = document.createElement("span")
+		Object.assign(column.style, {
+			display: "inline-flex",
+			flexDirection: "column",
+			gap: "0.2em",
+			padding: "0 0.5em 0 0.45em",
+			fontSize: "max(10px, 0.72em)",
+			fontWeight: "800",
+			lineHeight: "1",
+			whiteSpace: "nowrap",
+		})
+		div.appendChild(column)
+	}
+	const line = document.createElement("span")
+	Object.assign(line.style, { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5em" })
+	const name = document.createElement("span")
+	Object.assign(name.style, {
+		display: "inline-flex",
+		alignItems: "center",
+		gap: "0.3em",
+		color: BADGE_LABEL,
+		fontWeight: "700",
+	})
+	const swatch = document.createElement("i")
+	Object.assign(swatch.style, {
+		display: "block",
+		width: "0.6em",
+		height: "0.6em",
+		borderRadius: "50%",
+		background: dot,
+	})
+	name.append(swatch, label)
+	const score = document.createElement("span")
+	score.style.color = color
+	score.append(value)
+	line.append(name, score)
+	column.appendChild(line)
+	return column
 }
 const formatCount = (count = 0) =>
 	count >= 1e6 ? `${(count / 1e6).toFixed(1)}M` : count >= 1e3 ? `${Math.round(count / 1e3)}K` : String(count)
@@ -964,9 +995,26 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 	}
 	main.append(prefix + value)
 	div.appendChild(main)
+	// Letterboxd's 0-5 is the default; a 0-10 score from IMDb or TMDb says where it's from in the label column
+	if (data.source !== "letterboxd") {
+		const source = document.createElement("span")
+		Object.assign(source.style, {
+			padding: "0 0.5em 0 0.45em",
+			fontSize: "max(10px, 0.72em)",
+			fontWeight: "800",
+			color: BADGE_LABEL,
+		})
+		source.append(data.source === "imdb" ? "IMDb" : "TMDb")
+		div.appendChild(source)
+	}
+	const labelled = settings.value.General.friendsStyle === "labels"
+	let column: HTMLElement | undefined
 	if (data.source === "letterboxd" && data.friends_rating && settings.value.General.friendsRatings) {
-		const segment = addBadgeSegment(div, data.friends_rating.toFixed(1))
-		segment.prepend(friendsIcon(data.friends ?? [], data.friends_count ?? 1))
+		if (labelled) column = addLabelLine(div, column, "#ff7a45", "friends", data.friends_rating.toFixed(1))
+		else {
+			const segment = addBadgeSegment(div, data.friends_rating.toFixed(1))
+			segment.prepend(friendsIcon(data.friends ?? [], data.friends_count ?? 1))
+		}
 		const names = (data.friends ?? []).map((friend) => `${friend.name} ${friend.rating.toFixed(1)}`).join(", ")
 		tooltip.push(
 			`Friends ${data.friends_rating.toFixed(1)} from ${data.friends_count}${names ? `: ${names}` : ""}${(data.friends_count ?? 0) > (data.friends?.length ?? 0) ? "…" : ""}`,
@@ -974,10 +1022,12 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 	}
 	const personal = getPersonalStatus(data)
 	if (personal.watched !== undefined) {
-		addBadgeSegment(div, personal.watched ? `✓ you ${personal.watched.toFixed(1)}` : "✓ seen")
+		if (labelled) addLabelLine(div, column, "#8ec5ff", "you", personal.watched ? personal.watched.toFixed(1) : "seen")
+		else addBadgeSegment(div, personal.watched ? `✓ you ${personal.watched.toFixed(1)}` : "✓ seen")
 		tooltip.push(personal.watched ? `You rated it ${personal.watched.toFixed(1)}` : "You've logged it")
 	} else if (personal.watchlist) {
-		addBadgeSegment(div, "watchlist", "#2f6fb5")
+		if (labelled) addLabelLine(div, column, "#8ec5ff", "you", "watchlist", "#2f6fb5")
+		else addBadgeSegment(div, "watchlist", "#2f6fb5")
 		tooltip.push("On your watchlist")
 	}
 	div.title = tooltip.join("\n")
