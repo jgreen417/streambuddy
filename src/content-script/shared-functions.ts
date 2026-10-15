@@ -1087,7 +1087,7 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 const BADGE_INSET_PX = 3
 const BADGE_PAD_PX = 3
 type BadgeCorner = "top" | "bottom"
-const badgeFits = new WeakMap<HTMLElement, { host: HTMLElement; corner: BadgeCorner; keepBottom: boolean }>()
+const badgeFits = new WeakMap<HTMLElement, { host: HTMLElement; corner: BadgeCorner; raise: number }>()
 // the artwork: the biggest rounded box in the card (else its biggest image), skipping our own badge and overlays.
 // The container itself is only a fallback, since its box includes the gutter around the artwork.
 function findArtwork(host: HTMLElement) {
@@ -1119,8 +1119,9 @@ function cornerRadius(art: HTMLElement, host: HTMLElement, corner: BadgeCorner) 
 	}
 	return radius
 }
-function fitBadgeToCorner(div: HTMLElement, host: HTMLElement, corner: BadgeCorner, keepBottom = false) {
-	badgeFits.set(div, { host, corner, keepBottom })
+// raise: a bottom badge sits that fraction of the artwork's height higher (Prime's channel logo)
+function fitBadgeToCorner(div: HTMLElement, host: HTMLElement, corner: BadgeCorner, raise = 0) {
+	badgeFits.set(div, { host, corner, raise })
 	watchBadgeResizes()
 	const art = findArtwork(host)
 	const box = div.offsetParent as HTMLElement | null
@@ -1131,8 +1132,8 @@ function fitBadgeToCorner(div: HTMLElement, host: HTMLElement, corner: BadgeCorn
 		const top = outer.top + box.clientTop
 		div.style.right = `${Math.round(left + box.clientWidth - art.rect.right + BADGE_INSET_PX)}px`
 		if (corner === "top") div.style.top = `${Math.round(art.rect.top - top + BADGE_INSET_PX)}px`
-		else if (!keepBottom)
-			div.style.bottom = `${Math.round(top + box.clientHeight - art.rect.bottom + BADGE_INSET_PX)}px`
+		else
+			div.style.bottom = `${Math.round(top + box.clientHeight - art.rect.bottom + art.rect.height * raise + BADGE_INSET_PX)}px`
 	}
 	const radius = art ? cornerRadius(art.el, host, corner) : 0
 	const badgeRadius = Math.max(radius - BADGE_INSET_PX, 2)
@@ -1150,7 +1151,7 @@ function watchBadgeResizes() {
 		badgeResizeTimer = setTimeout(() => {
 			for (const div of Array.from(document.querySelectorAll<HTMLElement>(".sb-card-rating"))) {
 				const fit = badgeFits.get(div)
-				if (fit && div.isConnected) fitBadgeToCorner(div, fit.host, fit.corner, fit.keepBottom)
+				if (fit && div.isConnected) fitBadgeToCorner(div, fit.host, fit.corner, fit.raise)
 			}
 		}, 200)
 	})
@@ -1315,10 +1316,10 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		else if (card.querySelector('div[data-testid="title-metadata-main"]'))
 			position = card.querySelector('div[data-testid="title-metadata-main"]') as HTMLElement
 		const logoHeight = position ? primeLogoHeight(position) : 0
-		if (logoHeight) div.style.bottom = `calc(${(logoHeight * 100).toFixed(1)}% + 0.2em)`
+		if (logoHeight) div.style.bottom = `calc(${(logoHeight * 100).toFixed(1)}% + ${BADGE_INSET_PX}px)`
 		if (position) {
 			position.appendChild(div)
-			fitBadgeToCorner(div, position, "bottom", !!logoHeight)
+			fitBadgeToCorner(div, position, "bottom", logoHeight)
 		}
 		if (isDimmed(data, vote_count < 50)) position?.appendChild(greyOverlay)
 		// card.closest("li")?.style.setProperty("opacity", getTransparencyForRating(data?.score, vote_count < 50))
