@@ -22,9 +22,11 @@ The run's summary lists what changed. The **visual-report** artifact has the HTM
 each screenshot as expected, actual and diff. Placement failures name the card and the gap, for example
 `Past Lives: 5px from the top, want 3px`.
 
-If the new look is intended, the **visual-new-baselines** artifact holds the new screenshots: copy them into
-`baselines/` and commit. CI renders in Playwright's own Linux image, so baselines come from CI rather than from a
-local run.
+If the new look is intended, add the **accept-visuals** label to the pull request: CI re-renders, commits the new
+screenshots to `baselines/` and removes the label (placement checks still have to pass). The commit is made by
+GitHub Actions, so the checks re-run on the next push. The same screenshots are also in the
+**visual-new-baselines** artifact. CI renders in Playwright's own Linux image, so baselines come from CI rather than
+from a local run.
 
 ## Running locally
 

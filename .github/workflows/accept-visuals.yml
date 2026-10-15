@@ -1,0 +1,48 @@
+name: Accept new screenshots
+
+# Adding the "accept-visuals" label to a pull request re-runs the visual checks in the same Playwright image,
+# writes any new or changed screenshots into e2e/visual/baselines, commits them to the pull request's branch and
+# removes the label. Placement checks still have to pass: a badge off spec is never accepted.
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  accept:
+    if: github.event.label.name == 'accept-visuals' && github.event.pull_request.head.repo.full_name == github.repository
+    name: Accept new screenshots
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    env:
+      HOME: /root
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - run: npm ci
+      - name: Write new screenshots
+        run: npx playwright test --update-snapshots=changed
+      - name: Commit them
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add e2e/visual/baselines
+          if git diff --cached --quiet; then
+            echo "No screenshots changed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            git diff --cached --name-only | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
+            git commit -m "Accept new visual baselines"
+            git push
+          fi
+      - name: Remove the label
+        if: always()
+        run: |
+          curl -sS -X DELETE -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels/accept-visuals"
