@@ -389,7 +389,7 @@ let watchlistSlugs = new Set<string>()
 
 const searchSorting = new SearchRatingSort()
 const creditsPrompt = new CreditsRatingPrompt()
-let playerLookup: { title: string; data: FeatureRating | null; pending?: Promise<unknown>; retry: number } | null = null
+let playerLookup: { title: string; sources: RatingSources; data: FeatureRating | null; pending?: Promise<unknown>; retry: number } | null = null
 const detailRatings = new DetailRatings(
 	async (title, type, year) => {
 		const cached = DBCache[title]
@@ -525,6 +525,7 @@ function startPageFeatures() {
 				episodes: settings.value.General.episodeRatings,
 				actions: settings.value.General.letterboxdActions,
 				friends: settings.value.General.friendsRatings,
+				sources: ratingSources(),
 			})
 			.catch((error) => console.debug("streamBuddy page ratings:", error))
 		updateSearchSorting()
@@ -576,7 +577,8 @@ function updateCreditsPrompt() {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
-	if (playerLookup?.title !== title) playerLookup = { title, data: null, retry: 0 }
+	if (playerLookup?.title !== title || playerLookup.sources !== ratingSources())
+		playerLookup = { title, sources: ratingSources(), data: null, retry: 0 }
 	if (!playerLookup.pending && !playerLookup.data && playerLookup.retry <= Date.now()) {
 		const current = playerLookup
 		current.pending = lookupMovieInfo(title, null, null)

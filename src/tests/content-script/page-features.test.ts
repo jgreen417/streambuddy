@@ -98,6 +98,24 @@ describe("detail rendering", () => {
 		await features.tick("netflix", { panel: false, episodes: false })
 		expect(document.querySelector(".sb-detail-panel")).toBeNull()
 	})
+	it("looks a title up again when the rating sources change", async () => {
+		document.body.innerHTML = `<div data-uia="modal-motion-container-DETAIL_MODAL"><div data-uia="about-container"><h3>About Film</h3></div><div data-uia="previewModal--detailsMetadata"></div></div>`
+		const lookup = vi
+			.fn()
+			.mockResolvedValueOnce({ id: 1, title: "Film", media_type: "movie", source: "letterboxd", rating: 4 })
+			.mockResolvedValueOnce({ id: 1, title: "Film", media_type: "movie", source: "imdb", rating: 7.9 })
+		const features = new DetailRatings(
+			lookup,
+			async () => [],
+			() => ({}),
+		)
+		await features.tick("netflix", { panel: true, episodes: false, sources: "both" })
+		expect(document.querySelector(".sb-detail-panel")?.textContent).toContain("Letterboxd")
+		await features.tick("netflix", { panel: true, episodes: false, sources: "imdb" })
+		expect(lookup).toHaveBeenCalledTimes(2)
+		expect(document.querySelectorAll(".sb-detail-panel")).toHaveLength(1)
+		expect(document.querySelector(".sb-detail-panel")?.textContent).toContain("IMDb")
+	})
 	it("clears a reused title's panel before a new lookup fails", async () => {
 		document.body.innerHTML = `<div data-uia="modal-motion-container-DETAIL_MODAL"><div data-uia="about-container"><h3>About Old</h3></div><div data-uia="previewModal--detailsMetadata"></div></div>`
 		const lookup = vi
