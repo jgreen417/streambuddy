@@ -1056,7 +1056,7 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 // follow the artwork's (the artwork's radius less the gap, and the score pill inside the same again, so the curves
 // share a centre). The artwork often sits inset in the element the badge is attached to (Netflix pads its slots,
 // Max its tiles), so the gap is measured from the artwork itself rather than from the badge's container.
-const BADGE_INSET_PX = 5
+const BADGE_INSET_PX = 3
 const BADGE_PAD_PX = 3
 type BadgeCorner = "top" | "bottom"
 const badgeFits = new WeakMap<HTMLElement, { host: HTMLElement; corner: BadgeCorner; keepBottom: boolean }>()
