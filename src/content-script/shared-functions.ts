@@ -1,4 +1,4 @@
-import { installPageFeatureStyle } from "@/utils/page-feature-styles"
+import { BADGE_FONT, installPageFeatureStyle } from "@/utils/page-feature-styles"
 import { sendMessage } from "webext-bridge/content-script"
 import {
 	getLetterboxdSlug,
@@ -855,7 +855,7 @@ function getRatingVoteCount(data: MovieInfo) {
 }
 // A popcorn chip: the score in a pill coloured by how it ranks among what's streaming, then, smaller, friends'
 // Letterboxd average (one dot per friend) and your own status (seen it and what you gave it, or on your watchlist).
-// Keep the source visible; colour adds context rather than carrying the meaning.
+// The source and scale are in the tooltip; colour adds context rather than carrying the meaning.
 const BADGE_INK = "#1b1918"
 const FRIEND_DOT_COLORS = ["#ff7a45", "#8ec5ff", "#f2c94c", "#7ad9a0", "#c9a7ff"]
 function addBadgeSegment(div: HTMLElement, text: string, color = BADGE_INK) {
@@ -864,8 +864,8 @@ function addBadgeSegment(div: HTMLElement, text: string, color = BADGE_INK) {
 		display: "inline-flex",
 		alignItems: "center",
 		gap: "0.3em",
-		padding: "0 0.45em 0 0.15em",
-		fontSize: "max(11px, 0.85em)",
+		padding: "0 0.5em 0 0.2em",
+		fontSize: "max(11px, 0.8em)",
 		fontWeight: "700",
 		color,
 		whiteSpace: "nowrap",
@@ -884,11 +884,12 @@ function friendDots(friends: { name: string }[], count: number) {
 		const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)
 		Object.assign(dot.style, {
 			display: "block",
-			width: "0.8em",
-			height: "0.8em",
-			marginLeft: i ? "-0.3em" : "0",
+			width: "1.05em",
+			height: "1.05em",
+			boxSizing: "border-box",
+			marginLeft: i ? "-0.35em" : "0",
 			borderRadius: "50%",
-			border: "0.12em solid #fbf4ec",
+			border: "0.15em solid #fbf4ec",
 			background: FRIEND_DOT_COLORS[hash % FRIEND_DOT_COLORS.length],
 		})
 		dots.appendChild(dot)
@@ -899,34 +900,30 @@ const formatCount = (count = 0) =>
 	count >= 1e6 ? `${(count / 1e6).toFixed(1)}M` : count >= 1e3 ? `${Math.round(count / 1e3)}K` : String(count)
 function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor: string | undefined) {
 	const main = document.createElement("span")
-	const label = document.createElement("small")
-	Object.assign(label.style, { fontSize: "0.72em", fontWeight: "700", opacity: "0.7", marginRight: "0.3em" })
 	Object.assign(main.style, {
-		padding: "0.3em 0.55em",
+		padding: "0.28em 0.6em",
 		borderRadius: "999px",
-		fontSize: "1.05em",
+		fontSize: "1.15em",
 		fontWeight: "800",
+		letterSpacing: "-0.02em",
 		whiteSpace: "nowrap",
 	})
 	const tooltip: string[] = []
 	let value: string
 	if (data.source === "letterboxd") {
-		label.textContent = prefix + "LB"
-		value = data.rating?.toFixed(2) ?? ""
+		value = data.rating?.toFixed(1) ?? ""
 		main.style.background = getScoreColor("letterboxd", data.rating ?? 0)
 		tooltip.push(`Letterboxd ${data.rating?.toFixed(2)}/5 · ${formatCount(data.rating_count)} ratings`)
 	} else if (data.source === "imdb") {
-		label.textContent = prefix + "IMDb"
 		value = data.rating?.toFixed(1) ?? ""
 		main.style.background = getScoreColor("imdb", data.rating ?? 0)
 		tooltip.push(`IMDb ${data.rating?.toFixed(1)}/10 · ${formatCount(data.rating_count)} ratings`)
 	} else {
-		label.textContent = prefix + "TMDb"
 		value = data.score?.toFixed(1) ?? ""
 		main.style.background = tmdbColor ?? "#b3aaa1"
 		tooltip.push(`TMDb ${data.score?.toFixed(1)}/10 (no Letterboxd or IMDb rating)`)
 	}
-	main.append(label, value)
+	main.append(prefix + value)
 	div.appendChild(main)
 	if (data.source === "letterboxd" && data.friends_rating && settings.value.General.friendsRatings) {
 		const segment = addBadgeSegment(div, data.friends_rating.toFixed(1))
@@ -1009,20 +1006,19 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		color: BADGE_INK,
 		textDecoration: "none",
 		background: "#fbf4ec",
-		boxShadow: "0 2px 0 rgba(0, 0, 0, 0.35), 0 4px 14px rgba(0, 0, 0, 0.3)",
+		// a sticker, not glass: a hard drop shadow lifts it off any artwork
+		boxShadow: "0 3px 0 rgba(0, 0, 0, 0.35)",
 		borderRadius: "1.1em",
 		opacity: "0",
 		transform: "translateY(2px)",
 		transition: "opacity 160ms ease-out, transform 220ms cubic-bezier(0.3, 0.7, 0.2, 1)",
-		padding: "0.18em",
-		fontFamily:
-			'"Bricolage Grotesque Variable", "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif',
+		padding: "0.2em",
+		fontFamily: `${BADGE_FONT}, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif`,
 		fontWeight: "700",
-		letterSpacing: "-0.01em",
 		fontVariantNumeric: "tabular-nums",
 		lineHeight: "1",
 		zIndex: zIndexValue,
-		fontSize: isMobile ? "clamp(12px, 4vw, 18px)" : "clamp(12px, 0.85vw, 15px)",
+		fontSize: isMobile ? "clamp(13px, 4vw, 19px)" : "clamp(13px, 0.95vw, 17px)",
 	})
 
 	requestAnimationFrame(() => Object.assign(div.style, { opacity: "1", transform: "none" }))

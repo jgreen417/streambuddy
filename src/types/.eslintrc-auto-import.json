@@ -1,6 +1,7 @@
 {
   "globals": {
     "Account": true,
+    "BADGE_FONT": true,
     "BooleanObject": true,
     "CheckResult": true,
     "Component": true,

@@ -5,27 +5,24 @@
 <text font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="56" fill="#fbf4ec" letter-spacing="-2"><tspan x="80" y="250">Your friends' ratings,</tspan><tspan x="80" y="314">right on the poster.</tspan></text>
 <text font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="500" font-size="24" fill="#cfc6bc"><tspan x="80" y="380">Letterboxd and IMDb scores on Netflix,</tspan><tspan x="80" y="412">Prime Video and HBO Max.</tspan></text>
 <g><rect x="760" y="70" width="560" height="130" rx="10.4" fill="url(#a)"/><text x="775.6" y="103.80000000000001" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="22.1" fill="#fff" fill-opacity=".92" letter-spacing="-.2">LOW TIDE</text></g>
-<rect x="983.0" y="144.6" width="324.99999999999994" height="46.8" rx="23.4" fill="#000" opacity=".35" style="mix-blend-mode:multiply" />
-<rect x="983.0" y="142" width="324.99999999999994" height="46.8" rx="23.4" fill="#fbf4ec"/>
-<rect x="986.9" y="145.9" width="106.6" height="39.0" rx="19.5" fill="#7ad9a0"/>
-<text x="1001.1999999999999" y="172.42000000000002" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="15.600000000000001" fill="#1b1918" fill-opacity=".7">LB</text>
-<text x="1023.3" y="172.42000000000002" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="22.1" fill="#1b1918" letter-spacing="-.3">4.21</text>
-<circle cx="1110.3999999999999" cy="165.4" r="7.800000000000001" fill="#ff7a45" stroke="#fbf4ec" stroke-width="2.08"/>
-<circle cx="1120.8" cy="165.4" r="7.800000000000001" fill="#8ec5ff" stroke="#fbf4ec" stroke-width="2.08"/>
-<circle cx="1131.1999999999998" cy="165.4" r="7.800000000000001" fill="#f2c94c" stroke="#fbf4ec" stroke-width="2.08"/>
+<rect x="1008.35" y="145.9" width="299.65" height="46.8" rx="23.4" fill="#000" opacity=".35"/>
+<rect x="1008.35" y="142" width="299.65" height="46.8" rx="23.4" fill="#fbf4ec"/>
+<rect x="1012.25" y="145.9" width="73.45" height="39.0" rx="19.5" fill="#7ad9a0"/>
+<text x="1026.55" y="172.42000000000002" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="23.400000000000002" fill="#1b1918" letter-spacing="-.3">4.2</text>
+<circle cx="1103.9" cy="165.4" r="9.1" fill="#ff7a45" stroke="#fbf4ec" stroke-width="2.6"/>
+<circle cx="1115.6000000000001" cy="165.4" r="9.1" fill="#8ec5ff" stroke="#fbf4ec" stroke-width="2.6"/>
+<circle cx="1127.3000000000002" cy="165.4" r="9.1" fill="#f2c94c" stroke="#fbf4ec" stroke-width="2.6"/>
 <text x="1145.5" y="172.42000000000002" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="18.2" fill="#1b1918">4.4</text>
 <text x="1182.55" y="172.42000000000002" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="18.2" fill="#1b1918">✓ you 4.0</text>
 <g><rect x="760" y="215" width="560" height="130" rx="10.4" fill="url(#b)"/><text x="775.6" y="248.8" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="22.1" fill="#fff" fill-opacity=".92" letter-spacing="-.2">GLASS CITY</text></g>
-<rect x="1064.25" y="289.6" width="243.75" height="46.8" rx="23.4" fill="#000" opacity=".35" style="mix-blend-mode:multiply" />
-<rect x="1064.25" y="287" width="243.75" height="46.8" rx="23.4" fill="#fbf4ec"/>
-<rect x="1068.15" y="290.9" width="106.6" height="39.0" rx="19.5" fill="#f2c94c"/>
-<text x="1082.45" y="317.41999999999996" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="15.600000000000001" fill="#1b1918" fill-opacity=".7">LB</text>
-<text x="1104.5500000000002" y="317.41999999999996" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="22.1" fill="#1b1918" letter-spacing="-.3">3.47</text>
-<text x="1182.55" y="317.41999999999996" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="18.2" fill="#2f6fb5">watchlist</text>
+<rect x="1097.4" y="290.9" width="210.6" height="46.8" rx="23.4" fill="#000" opacity=".35"/>
+<rect x="1097.4" y="287" width="210.6" height="46.8" rx="23.4" fill="#fbf4ec"/>
+<rect x="1101.3000000000002" y="290.9" width="73.45" height="39.0" rx="19.5" fill="#f2c94c"/>
+<text x="1115.6000000000001" y="317.41999999999996" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="23.400000000000002" fill="#1b1918" letter-spacing="-.3">3.5</text>
+<text x="1182.5500000000002" y="317.41999999999996" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="18.2" fill="#2f6fb5">watchlist</text>
 <g><rect x="760" y="360" width="560" height="130" rx="10.4" fill="url(#c)"/><text x="775.6" y="393.8" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="22.1" fill="#fff" fill-opacity=".92" letter-spacing="-.2">FIELDWORK</text></g>
-<rect x="1187.75" y="434.6" width="120.25" height="46.8" rx="23.4" fill="#000" opacity=".35" style="mix-blend-mode:multiply" />
-<rect x="1187.75" y="432" width="120.25" height="46.8" rx="23.4" fill="#fbf4ec"/>
-<rect x="1191.65" y="435.9" width="112.45" height="39.0" rx="19.5" fill="#b5e07a"/>
-<text x="1205.95" y="462.41999999999996" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="15.600000000000001" fill="#1b1918" fill-opacity=".7">IMDb</text>
-<text x="1247.5500000000002" y="462.41999999999996" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="22.1" fill="#1b1918" letter-spacing="-.3">8.4</text>
+<rect x="1226.75" y="435.9" width="81.25" height="46.8" rx="23.4" fill="#000" opacity=".35"/>
+<rect x="1226.75" y="432" width="81.25" height="46.8" rx="23.4" fill="#fbf4ec"/>
+<rect x="1230.65" y="435.9" width="73.45" height="39.0" rx="19.5" fill="#b5e07a"/>
+<text x="1244.95" y="462.41999999999996" font-family="'Bricolage Grotesque', 'Bricolage Grotesque Variable', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="23.400000000000002" fill="#1b1918" letter-spacing="-.3">8.4</text>
 </svg>

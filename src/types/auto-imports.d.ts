@@ -8,6 +8,7 @@
 // biome-ignore lint: disable
 export {}
 declare global {
+  const BADGE_FONT: typeof import('../utils/page-feature-styles').BADGE_FONT
   const CreditsRatingPrompt: typeof import('../utils/letterboxd-actions').CreditsRatingPrompt
   const DetailRatings: typeof import('../utils/page-features').DetailRatings
   const EffectScope: typeof import('vue').EffectScope
@@ -428,6 +429,7 @@ import { UnwrapRef } from 'vue'
 declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
+    readonly BADGE_FONT: UnwrapRef<typeof import('../utils/page-feature-styles')['BADGE_FONT']>
     readonly CreditsRatingPrompt: UnwrapRef<typeof import('../utils/letterboxd-actions')['CreditsRatingPrompt']>
     readonly DetailRatings: UnwrapRef<typeof import('../utils/page-features')['DetailRatings']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
