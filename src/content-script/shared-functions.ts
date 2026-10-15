@@ -1219,6 +1219,8 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		card.closest("li")?.classList.remove("imdb")
 		return
 	}
+	// a card picked up again while its lookup was in flight waits on the same lookup; draw its badge only once
+	if (rowCardTitles.get(card) === title && rowCardDecorations.get(card)?.[0]?.isConnected) return
 	let div: HTMLElement
 	if (data?.id) {
 		{
