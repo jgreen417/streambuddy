@@ -881,13 +881,16 @@ function getRatingVoteCount(data: MovieInfo) {
 	return (data?.source === "tmdb" ? data?.vote_count : data?.rating_count) || 0
 }
 // A popcorn chip: the score in a pill coloured by how it ranks among what's streaming, then, smaller, friends'
-// Letterboxd average (one dot per friend) and your own status (seen it and what you gave it, or on your watchlist).
-// The source and scale are in the tooltip; colour adds context rather than carrying the meaning.
+// Letterboxd average and your own status (your rating, seen, or on your watchlist), labelled or as dots per the
+// friendsStyle setting. The exact score and scale are in the tooltip; colour adds context rather than carrying the meaning.
 const BADGE_INK = "#1b1918"
 // colours inside the badge go through variables so the Liquid Glass look can switch them to light-on-glass
 const BADGE_LABEL = "var(--sb-label, #7a716a)"
 const BADGE_TEXT = "var(--sb-ink, #1b1918)"
 const BADGE_WATCHLIST = "var(--sb-watch, #2f6fb5)"
+const BADGE_CHIP = "var(--sb-chip, #fbf4ec)"
+// the small column beside the score: friends/you lines, or the IMDb/TMDb source name
+const LABEL_COLUMN_STYLE = { padding: "0 0.5em 0 0.45em", fontSize: "max(10px, 0.72em)", fontWeight: "800" }
 // the first three are also the fixed trio
 const FRIEND_DOT_COLORS = ["#ff7a45", "#8ec5ff", "#f2c94c", "#7ad9a0", "#c9a7ff"]
 function addBadgeSegment(div: HTMLElement, text: string, color = BADGE_TEXT) {
@@ -919,7 +922,7 @@ function friendDots(colors: string[]) {
 			boxSizing: "border-box",
 			marginLeft: i ? "-0.35em" : "0",
 			borderRadius: "50%",
-			border: "0.15em solid #fbf4ec",
+			border: `0.15em solid ${BADGE_CHIP}`,
 			background: color,
 		})
 		dots.appendChild(dot)
@@ -950,12 +953,10 @@ function addLabelLine(
 	if (!column) {
 		column = document.createElement("span")
 		Object.assign(column.style, {
+			...LABEL_COLUMN_STYLE,
 			display: "inline-flex",
 			flexDirection: "column",
 			gap: "0.2em",
-			padding: "0 0.5em 0 0.45em",
-			fontSize: "max(10px, 0.72em)",
-			fontWeight: "800",
 			lineHeight: "1",
 			whiteSpace: "nowrap",
 		})
@@ -1022,12 +1023,7 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 	// Letterboxd's 0-5 is the default; a 0-10 score from IMDb or TMDb says where it's from in the label column
 	if (data.source !== "letterboxd") {
 		const source = document.createElement("span")
-		Object.assign(source.style, {
-			padding: "0 0.5em 0 0.45em",
-			fontSize: "max(10px, 0.72em)",
-			fontWeight: "800",
-			color: BADGE_LABEL,
-		})
+		Object.assign(source.style, { ...LABEL_COLUMN_STYLE, color: BADGE_LABEL })
 		source.append(data.source === "imdb" ? "IMDb" : "TMDb")
 		div.appendChild(source)
 	}
@@ -1138,11 +1134,9 @@ function watchBadgeResizes() {
 // 0 (clear glass: a hairline edge and highlight) to 100 (thick frosted sea glass). The score pill keeps its colour.
 function applyGlass(div: HTMLElement, frost: number) {
 	const f = Math.min(Math.max(frost, 0), 100) / 100
-	const blur = `blur(${(2 + 14 * f).toFixed(1)}px) saturate(1.6)`
 	Object.assign(div.style, {
 		background: `rgba(251, 244, 236, ${(0.04 + 0.26 * f).toFixed(2)})`,
-		backdropFilter: blur,
-		webkitBackdropFilter: blur,
+		backdropFilter: `blur(${(2 + 14 * f).toFixed(1)}px) saturate(1.6)`,
 		boxShadow:
 			"inset 0 0 0 0.5px rgba(255, 255, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 8px rgba(0, 0, 0, 0.25)",
 		textShadow: "0 1px 2px rgba(0, 0, 0, 0.35)",
@@ -1150,6 +1144,7 @@ function applyGlass(div: HTMLElement, frost: number) {
 	div.style.setProperty("--sb-ink", "#ffffff")
 	div.style.setProperty("--sb-label", "rgba(255, 255, 255, 0.8)")
 	div.style.setProperty("--sb-watch", "#8ec5ff")
+	div.style.setProperty("--sb-chip", "rgba(255, 255, 255, 0.6)")
 }
 
 // Prime composites its own "prime" or channel logo into the artwork's bottom-right corner, and the image URL
@@ -1212,7 +1207,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		rowGap: "0.2em",
 		color: BADGE_TEXT,
 		textDecoration: "none",
-		background: "#fbf4ec",
+		background: BADGE_CHIP,
 		// a sticker, not glass: a hard drop shadow lifts it off any artwork
 		boxShadow: "0 3px 0 rgba(0, 0, 0, 0.35)",
 		borderRadius: "1.1em",

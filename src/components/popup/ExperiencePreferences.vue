@@ -194,7 +194,7 @@ const updateMode = (event: Event) => {
 						min="0"
 						max="100"
 						step="5"
-						aria-valuetext="Clear to frosted"
+						:aria-valuetext="`${settings.General.glassFrost}% frosted`"
 					/>
 				</label>
 				<p
