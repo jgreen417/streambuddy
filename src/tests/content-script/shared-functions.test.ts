@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest"
-import { HBO_fixTitle } from "../../content-script/shared-functions"
+import { describe, it, expect, vi } from "vitest"
+import { sendMessage } from "webext-bridge/content-script"
+import { HBO_fixTitle, isCacheCurrent, lookupMovieInfo, settings } from "../../content-script/shared-functions"
 import { pickBestMatch } from "../../utils/tmdb"
 
 describe("HBO_fixTitle", () => {
@@ -66,5 +67,29 @@ describe("pickBestMatch", () => {
 	it("falls back to the first result", () => {
 		expect(pickBestMatch([{ id: 7, title: "Close" }, { id: 8, title: "Other" }], "Clos").id).toBe(7)
 		expect(pickBestMatch(undefined, "Anything")).toBeUndefined()
+	})
+})
+
+describe("rating source policy", () => {
+	it("labels a lookup with the sources it started under, even if the setting changes mid-lookup", async () => {
+		settings.value.General.ratingSources = "both"
+		let finishLetterboxd: (value: unknown) => void = () => {}
+		vi.mocked(sendMessage).mockImplementation((async (name: string) => {
+			if (name === "fetch") return { results: [{ id: 1, title: "Dune", media_type: "movie", vote_average: 8, vote_count: 900 }] }
+			if (name === "letterboxdRating")
+				return new Promise((resolve) => {
+					finishLetterboxd = resolve
+				})
+			return null
+		}) as never)
+		const lookup = lookupMovieInfo("Dune", "movie", null)
+		await vi.waitFor(() => expect(sendMessage).toHaveBeenCalledWith("letterboxdRating", expect.anything(), "background"))
+		settings.value.General.ratingSources = "imdb"
+		finishLetterboxd({ source: "letterboxd", rating: 4.1, rating_count: 10, url: "https://letterboxd.com/film/dune/" })
+		const info = await lookup
+		expect(info?.source).toBe("letterboxd")
+		expect(info?.sources).toBe("both")
+		expect(isCacheCurrent(info!)).toBe(false)
+		settings.value.General.ratingSources = "both"
 	})
 })

@@ -35,7 +35,8 @@ import {
 console.log("shared-functions loaded")
 // Global Variables
 
-const { data: settings, promise } = useBrowserSyncStorage<settingsType>("settings", defaultSettings)
+// exported for tests
+export const { data: settings, promise } = useBrowserSyncStorage<settingsType>("settings", defaultSettings)
 export const date = new Date()
 const today = date.toISOString().split("T")[0]
 
@@ -95,10 +96,11 @@ type MovieInfo = {
 // bump when lookups change so older entries (wrong matches, fallbacks saved during an outage) are refetched once
 const CACHE_VERSION = 2
 const ratingSources = () => settings.value.General.ratingSources
-const useLetterboxd = () => ratingSources() === "both" || ratingSources() === "letterboxd"
-const useImdb = () => ratingSources() === "both" || ratingSources() === "imdb"
+// a lookup takes the sources setting as it was when it started, so a change mid-lookup can't mislabel its result
+const usesLetterboxd = (sources: RatingSources) => sources === "both" || sources === "letterboxd"
+const usesImdb = (sources: RatingSources) => sources === "both" || sources === "imdb"
 // cached under the current lookup rules and the current choice of sources
-const isCacheCurrent = (entry: MovieInfo | undefined) =>
+export const isCacheCurrent = (entry: MovieInfo | undefined) =>
 	entry?.cacheVersion === CACHE_VERSION && (entry.sources ?? "both") === ratingSources()
 type DBCacheType = {
 	[title: string]: MovieInfo
@@ -189,27 +191,35 @@ async function getMovieInfo(
 	media_type: string | null = null,
 	year: string | null = null,
 ) {
-	const key = `${title}|${media_type ?? ""}|${year ?? ""}`
+	const sources = ratingSources()
+	const key = `${title}|${media_type ?? ""}|${year ?? ""}|${sources}`
 	let lookup = lookupsInFlight.get(key)
 	if (!lookup) {
-		lookup = lookupMovieInfo(title, media_type, year).finally(() => lookupsInFlight.delete(key))
+		lookup = lookupMovieInfo(title, media_type, year, sources).finally(() => lookupsInFlight.delete(key))
 		lookupsInFlight.set(key, lookup)
 	}
 	const info = await lookup
+	// the sources setting changed while this was being looked up: let the next pass look it up again
+	if (sources !== ratingSources()) {
+		card.classList.remove("imdb")
+		if (isPrimeVideo) card.closest("li")?.classList.remove("imdb")
+		return
+	}
 	if (info) setRatingOnCard(card, info, title)
 }
 
-async function lookupMovieInfo(
+export async function lookupMovieInfo(
 	title: string,
 	media_type: string | null,
 	year: string | null,
+	sources: RatingSources = ratingSources(),
 ): Promise<MovieInfo | null> {
 	const locale = htmlLang || navigator?.language || "en-US"
 	const queryType = media_type ?? "multi"
 	let url = `https://api.themoviedb.org/3/search/${queryType}?query=${encodeURIComponent(title)}&include_adult=false&language=${locale}&page=1`
 	if (year) url += `&year=${year}`
 	// start downloading the likely Letterboxd page now; it's verified against TMDb's answer before being used
-	if (media_type !== "tv" && useLetterboxd())
+	if (media_type !== "tv" && usesLetterboxd(sources))
 		Promise.resolve(
 			sendMessage("letterboxdPrefetch", { title, friends: settings.value.General.friendsRatings }, "background"),
 		).catch(() => {})
@@ -221,7 +231,7 @@ async function lookupMovieInfo(
 	if (!movie?.id) return null
 	const resolvedMediaType = queryType == "multi" ? movie?.media_type : queryType
 	const external = movie?.id
-		? await getExternalRating(movie.id, resolvedMediaType, title)
+		? await getExternalRating(movie.id, resolvedMediaType, title, sources)
 		: { rating: null, transient: false }
 	const compiledData: MovieInfo = {
 		id: movie?.id,
@@ -241,7 +251,7 @@ async function lookupMovieInfo(
 		friends_count: external.rating?.friends_count,
 		friends: external.rating?.friends,
 		cacheVersion: CACHE_VERSION,
-		sources: ratingSources(),
+		sources,
 	}
 	// a temporary Letterboxd/IMDb failure must not pin this title to the fallback for a month
 	if (!external.transient) {
@@ -266,11 +276,12 @@ async function getExternalRating(
 	tmdbId: number,
 	media_type: string,
 	title: string,
+	sources: RatingSources,
 ): Promise<{ rating: ExternalRating | null; transient: boolean }> {
 	let transient = false
 	try {
 		// Letterboxd's /tmdb/{id} only understands movie ids, a TV id would resolve to an unrelated film
-		if (media_type === "movie" && useLetterboxd()) {
+		if (media_type === "movie" && usesLetterboxd(sources)) {
 			const letterboxd: ExternalResult = await sendMessage(
 				"letterboxdRating",
 				{ tmdbId, friends: settings.value.General.friendsRatings, title },
@@ -279,7 +290,7 @@ async function getExternalRating(
 			if (isLookupError(letterboxd)) transient = true
 			else if (letterboxd?.rating) return { rating: letterboxd, transient }
 		}
-		if (!useImdb() || (media_type !== "movie" && media_type !== "tv")) return { rating: null, transient }
+		if (!usesImdb(sources) || (media_type !== "movie" && media_type !== "tv")) return { rating: null, transient }
 		const externalIds: { imdb_id?: string; error?: string } = await sendMessage(
 			"fetch",
 			{ url: `https://api.themoviedb.org/3/${media_type}/${tmdbId}/external_ids`, type: "tmdb" },
@@ -303,9 +314,10 @@ const rowCardData = new WeakMap<HTMLElement, MovieInfo>()
 const rowCardTitles = new WeakMap<HTMLElement, string>()
 const rowCardDecorations = new WeakMap<HTMLElement, HTMLElement[]>()
 const netflixShowTitles = new NetflixShowTitles()
-function refreshRowPresentation() {
+// redrawAll: drop every card badge so the next pass draws it again (after a setting that changes how badges look)
+function refreshRowPresentation(redrawAll = false) {
 	const stale = rowPresentation.prune(
-		(card) => getCleanTitle(card, card.dataset.cardTitle ? 0 : 1) === rowCardTitles.get(card),
+		(card) => !redrawAll && getCleanTitle(card, card.dataset.cardTitle ? 0 : 1) === rowCardTitles.get(card),
 	)
 	for (const card of stale) {
 		rowCardDecorations.get(card)?.forEach((decoration) => decoration.remove())
@@ -355,7 +367,23 @@ watch(
 		settings.value.Amazon?.showRating,
 		settings.value.HBO?.showRating,
 	],
-	refreshRowPresentation,
+	() => refreshRowPresentation(),
+)
+// badges read these when they're drawn, so redraw the ones on screen; settled first, as the glass slider fires per step
+let badgeRedrawTimer: ReturnType<typeof setTimeout> | undefined
+watch(
+	() => [
+		settings.value.General.ratingSources,
+		settings.value.General.friendsRatings,
+		settings.value.General.friendsStyle,
+		settings.value.General.badgeStyle,
+		settings.value.General.glassFrost,
+		settings.value.General.markWatched,
+	],
+	() => {
+		clearTimeout(badgeRedrawTimer)
+		badgeRedrawTimer = setTimeout(() => refreshRowPresentation(true), 150)
+	},
 )
 let watchlistSlugs = new Set<string>()
 
