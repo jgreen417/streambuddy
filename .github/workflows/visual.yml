@@ -8,6 +8,8 @@ on:
   push:
     branches: ["main"]
   pull_request:
+    # also started by accept-visuals.yml after it commits new screenshots (its push starts nothing by itself)
+  workflow_dispatch:
 
 permissions:
   contents: read

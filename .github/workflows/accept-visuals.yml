@@ -9,6 +9,7 @@ on:
     types: [labeled]
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
 
@@ -40,6 +41,12 @@ jobs:
             git diff --cached --name-only | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
             git commit -m "Accept new visual baselines"
             git push
+            # a push made with the workflow token starts no workflows, so start the pull request's checks here
+            for workflow in ci.yml visual.yml; do
+              curl -sSf -X POST -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
+                "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/$workflow/dispatches" \
+                -d '{"ref":"${{ github.event.pull_request.head.ref }}"}'
+            done
           fi
       - name: Remove the label
         if: always()
