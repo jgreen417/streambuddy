@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest"
 import { sendMessage } from "webext-bridge/content-script"
-import { isCacheCurrent, lookupMovieInfo, settings } from "../../content-script/shared-functions"
+import { isCacheCurrent, lookupMovieInfo } from "../../content-script/cache"
+import { settings } from "../../content-script/settings"
 import { fixTitle as HBO_fixTitle } from "../../content-script/sites/max"
 import { titleLink as Amazon_titleLink } from "../../content-script/sites/prime"
 import { CheckedCards, isSeasonOnlyTitle, pickBestMatch } from "../../utils/tmdb"
