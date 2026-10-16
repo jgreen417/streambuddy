@@ -231,9 +231,16 @@ export class EpisodeRatings {
 					chip.href = `https://www.imdb.com/title/${rating.id}/`
 					chip.target = "_blank"
 					chip.rel = "noopener noreferrer"
-					chip.textContent = `IMDb ${rating.rating.toFixed(1)}`
+					const score = document.createElement("span")
+					score.className = "sb-episode-score"
+					score.style.background = getScoreColor("imdb", rating.rating)
+					score.textContent = rating.rating.toFixed(1)
+					const source = document.createElement("span")
+					source.className = "sb-episode-source"
+					source.textContent = "IMDb"
+					chip.append(score, source)
 					chip.title = `S${season} E${entry.episode}: ${rating.title} · ${rating.votes.toLocaleString()} ratings`
-					chip.style.color = getScoreColor("imdb", rating.rating)
+					chip.setAttribute("aria-label", `IMDb ${rating.rating.toFixed(1)}, ${chip.title}`)
 					chip.addEventListener("click", (event) => event.stopPropagation())
 					entry.target.append(chip)
 				}
