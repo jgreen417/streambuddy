@@ -105,9 +105,10 @@ async function fetchLetterboxdFilm(path: string, username: string): Promise<Lett
 		source: "letterboxd",
 		...parsed,
 		url: response.url,
-		friends_rating: friends?.rating,
+		// count 0 means none of your friends rated it; undefined means their ratings couldn't be read
+		friends_rating: friends?.count ? friends.rating : undefined,
 		friends_count: friends?.count,
-		friends: friends?.top,
+		friends: friends?.count ? friends.top : undefined,
 		tmdb: parseLetterboxdTmdbId(html),
 	}
 }
@@ -156,12 +157,14 @@ async function fetchFriendsRating(
 	const friends: FriendRating[] = []
 	for (let page = 1; page <= MAX_FRIEND_PAGES; page++) {
 		const response = await fetch(page == 1 ? base : `${base}page/${page}/`)
+		// unknown, as opposed to none of them rated it
+		if (page == 1 && !response.ok) return null
 		if (!response.ok) break
 		const html = await response.text()
 		friends.push(...parseFriendRows(html))
 		if (!html.includes(`/friends/film/${slug}/page/${page + 1}/`)) break
 	}
-	if (friends.length == 0) return null
+	if (friends.length == 0) return { rating: 0, count: 0, top: [] }
 	return {
 		rating: friends.reduce((sum, friend) => sum + friend.rating, 0) / friends.length,
 		count: friends.length,

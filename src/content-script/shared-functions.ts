@@ -20,7 +20,8 @@ import {
 	type FeatureRating,
 	type EpisodeRating,
 } from "@/utils/page-features"
-import { CreditsRatingPrompt } from "@/utils/letterboxd-actions"
+import { CreditsRatingPrompt, creditsLength, inCredits } from "@/utils/credits-review"
+import { fetchNetflixMetadata, parseNetflixCredits, type NetflixCredits } from "@/utils/netflix-credits"
 import { NetflixShowTitles, getEpisodeId } from "@/utils/netflix-shows"
 import {
 	addWatchSeconds,
@@ -393,8 +394,16 @@ watch(
 let watchlistSlugs = new Set<string>()
 
 const searchSorting = new SearchRatingSort()
-const creditsPrompt = new CreditsRatingPrompt()
-let playerLookup: { title: string; sources: RatingSources; data: FeatureRating | null; pending?: Promise<unknown>; retry: number } | null = null
+const creditsPrompt = new CreditsRatingPrompt(() => {
+	Promise.resolve(sendMessage("openAccountSetup", {}, "background")).catch(() => {})
+})
+let playerLookup: {
+	title: string
+	sources: RatingSources
+	data: FeatureRating | null
+	pending?: Promise<unknown>
+	retry: number
+} | null = null
 const detailRatings = new DetailRatings(
 	async (title, type, year) => {
 		const cached = DBCache[title]
@@ -551,18 +560,35 @@ function startPageFeatures() {
 	tick()
 }
 
+// the review pill, once up, stays put until it's dismissed or you're a couple of minutes into something else:
+// Netflix swaps the film for a trailer about 10 seconds into its end screen and then leaves the player, and Prime
+// autoplays the next film in the same video and moves to its page
+let creditsShownFor: number | null = null
+// Netflix's metadata for the title playing, which marks when its credits start
+let netflixPlaying: { id: string; credits?: NetflixCredits | null } | null = null
 function updateCreditsPrompt() {
-	const enabled = settings.value.General.rateOnCredits && !!letterboxdUsername
+	const enabled = settings.value.General.rateOnCredits
 	if (!enabled) {
 		creditsPrompt.tick(null, null, false)
 		return
 	}
+	const video = filmVideo()
+	const watchingSomethingElse =
+		!!video && video.duration !== creditsShownFor && video.currentTime > 2 * 60 && !video.paused
+	if (creditsPrompt.showing && creditsShownFor !== null && !watchingSomethingElse) {
+		placeCreditsReview()
+		return
+	}
+	creditsShownFor = null
 	if (!isOnPlayerPage()) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
-	const video = document.querySelector<HTMLVideoElement>("video")
-	if (!video || !Number.isFinite(video.duration) || video.duration < 1200 || video.currentTime < video.duration - 90) {
+	const netflix = isNetflix ? netflixCredits() : undefined
+	// how long Netflix says the credits run, when it does
+	const marked = video && netflix?.creditsShare ? netflix.creditsShare * video.duration : undefined
+	// look the film up a couple of minutes before its credits, so it's ready when they start
+	if (!video || !inCredits(video, (marked ?? creditsLength(video.duration)) + 2 * 60) || netflix?.movie === false) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
@@ -573,7 +599,9 @@ function updateCreditsPrompt() {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
-	const raw = isNetflix ? document.querySelector('[data-uia="video-title"] h4')?.textContent : document.title
+	const raw = isNetflix
+		? (netflix?.title ?? document.querySelector('[data-uia="video-title"] h4')?.textContent)
+		: document.title
 	const title = raw
 		?.replace(/^Prime Video:\s*/i, "")
 		.split(/\s*[•·|]\s*/)[0]
@@ -596,7 +624,58 @@ function updateCreditsPrompt() {
 				current.retry = Date.now() + 30_000
 			})
 	}
-	creditsPrompt.tick(video, playerLookup.data, true)
+	const slug = playerLookup.data?.source === "letterboxd" ? getLetterboxdSlug(playerLookup.data.rating_url) : undefined
+	// the services' own end screens come up when the credits start, even without a marker in Netflix's metadata;
+	// Prime's next-up row comes up within seconds of the end credits it marks in its own playback data
+	const endScreen = isNetflix
+		? !!document.querySelector('[data-uia="postplay-player-space"]')
+		: isPrimeVideo && video.duration - video.currentTime < 15 * 60 && !!document.querySelector("[class*=nextupcard]")
+	creditsPrompt.tick(
+		video,
+		playerLookup.data,
+		true,
+		{
+			username: letterboxdUsername,
+			watched: slug && letterboxdProfile?.username === letterboxdUsername ? letterboxdProfile.watched[slug] : undefined,
+			friends: settings.value.General.friendsRatings,
+		},
+		endScreen ? video.duration : marked,
+	)
+	if (creditsPrompt.showing) {
+		creditsShownFor = video.duration
+		placeCreditsReview()
+	}
+}
+// the longest video on the page is the film: Prime keeps its detail page's trailer underneath the player
+function filmVideo() {
+	let film: HTMLVideoElement | null = null
+	for (const video of Array.from(document.querySelectorAll("video")))
+		if (Number.isFinite(video.duration) && (!film || video.duration > film.duration)) film = video
+	return film
+}
+// clear of each service's own end-of-film UI: Netflix previews the next title bottom right, so the pill lines up
+// with its back arrow bottom left; Prime's next-up row fills the bottom, so it goes top right
+function placeCreditsReview() {
+	const review = document.querySelector<HTMLElement>(".sb-review")
+	if (!review) return
+	if (isNetflix) {
+		review.classList.add("sb-review-left")
+		const back = document.querySelector('[data-uia="control-nav-back"]')?.getBoundingClientRect()
+		if (back?.width) review.style.setProperty("--sb-review-left", `${Math.round(back.left)}px`)
+	} else if (isPrimeVideo) review.classList.add("sb-review-top")
+}
+// what Netflix's metadata says about the title on /watch/{id}, once it has loaded
+function netflixCredits() {
+	const id = location.pathname.match(/^\/watch\/(\d+)/)?.[1]
+	if (!id) return undefined
+	if (netflixPlaying?.id !== id) {
+		const playing: NonNullable<typeof netflixPlaying> = { id }
+		netflixPlaying = playing
+		fetchNetflixMetadata(id).then((json) => {
+			playing.credits = parseNetflixCredits(json)
+		})
+	}
+	return netflixPlaying.credits ?? undefined
 }
 function setLetterboxdProfile(profile: LetterboxdProfile | null) {
 	letterboxdProfile = profile
