@@ -98,7 +98,7 @@ type MovieInfo = {
 	// the rating-source setting this was looked up under (missing on older entries, which used both)
 	sources?: RatingSources
 }
-// bump when lookups change so older entries (wrong matches, fallbacks saved during an outage) are refetched once
+// bump when lookups change (and the seeded cacheVersion in e2e/visual/ratings.ts) so older entries (wrong matches, fallbacks saved during an outage) are refetched once
 const CACHE_VERSION = 3
 const ratingSources = () => settings.value.General.ratingSources
 // a lookup takes the sources setting as it was when it started, so a change mid-lookup can't mislabel its result
