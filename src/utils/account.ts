@@ -1,14 +1,25 @@
-// The user's own Letterboxd username and TMDb key, entered during onboarding. Nothing is baked into a
-// release build; a sideloaded dev build can still fall back to the values in .env.
-export type Account = { letterboxdUsername: string; tmdbToken: string }
+// The user's Letterboxd username and TMDb key, entered during onboarding. Store builds ship streamBuddy's own
+// TMDb key (from the release secret), so ratings work straight after install; a key the user adds replaces it.
+// A sideloaded dev build falls back to the values in .env.
+export type Account = {
+	letterboxdUsername: string
+	// the key lookups use: the user's own, else the built-in one
+	tmdbToken: string
+	// only what the user entered themselves
+	ownTmdbToken: string
+}
+type StoredAccount = { letterboxdUsername?: string; tmdbToken?: string }
 
 const STORAGE_KEY = "streambuddyAccount"
-const BUILD_DEFAULTS: Account = { letterboxdUsername: __LETTERBOXD_USERNAME__, tmdbToken: __TMDB_TOKEN__ }
+export const BUILT_IN_TMDB_TOKEN: string = __TMDB_TOKEN__
+const BUILD_DEFAULTS = { letterboxdUsername: __LETTERBOXD_USERNAME__, tmdbToken: BUILT_IN_TMDB_TOKEN }
 
-function normalize(stored: Partial<Account> | undefined): Account {
+function normalize(stored: StoredAccount | undefined): Account {
+	const ownTmdbToken = (stored?.tmdbToken ?? "").trim()
 	return {
 		letterboxdUsername: (stored?.letterboxdUsername ?? "").trim() || BUILD_DEFAULTS.letterboxdUsername,
-		tmdbToken: (stored?.tmdbToken ?? "").trim() || BUILD_DEFAULTS.tmdbToken,
+		tmdbToken: ownTmdbToken || BUILD_DEFAULTS.tmdbToken,
+		ownTmdbToken,
 	}
 }
 
@@ -16,14 +27,14 @@ let cached: Promise<Account> | null = null
 export function getAccount(): Promise<Account> {
 	cached ??= Promise.resolve()
 		.then(() => browser.storage.sync.get(STORAGE_KEY))
-		.then((result) => normalize(result?.[STORAGE_KEY] as Partial<Account> | undefined))
+		.then((result) => normalize(result?.[STORAGE_KEY] as StoredAccount | undefined))
 		.catch(() => normalize(undefined))
 	return cached
 }
 
-export async function saveAccount(changes: Partial<Account>): Promise<Account> {
+export async function saveAccount(changes: StoredAccount): Promise<Account> {
 	const { [STORAGE_KEY]: stored } = await browser.storage.sync.get(STORAGE_KEY)
-	const next = { ...(stored as Partial<Account> | undefined), ...changes }
+	const next = { ...(stored as StoredAccount | undefined), ...changes }
 	await browser.storage.sync.set({ [STORAGE_KEY]: next })
 	cached = Promise.resolve(normalize(next))
 	return cached
@@ -32,12 +43,29 @@ export async function saveAccount(changes: Partial<Account>): Promise<Account> {
 export function onAccountChanged(callback: (account: Account) => void) {
 	browser.storage?.onChanged?.addListener((changes, area) => {
 		if (area !== "sync" || !changes[STORAGE_KEY]) return
-		cached = Promise.resolve(normalize(changes[STORAGE_KEY].newValue as Partial<Account> | undefined))
+		cached = Promise.resolve(normalize(changes[STORAGE_KEY].newValue as StoredAccount | undefined))
 		cached.then(callback)
 	})
 }
 
 export const isSetUp = (account: Account) => !!account.tmdbToken
+
+// TMDb turned the built-in key away (revoked, or over its limits): every user without their own key is affected,
+// so the popup asks for one instead of leaving the pages silently empty. Cleared once a lookup works again.
+const KEY_REJECTED = "tmdbKeyRejected"
+export async function setBuiltInKeyRejected(rejected: boolean) {
+	const { [KEY_REJECTED]: current } = await browser.storage.local.get(KEY_REJECTED)
+	if (!!current !== rejected) await browser.storage.local.set({ [KEY_REJECTED]: rejected })
+}
+export async function isBuiltInKeyRejected(): Promise<boolean> {
+	const { [KEY_REJECTED]: rejected } = await browser.storage.local.get(KEY_REJECTED)
+	return !!rejected
+}
+export function onBuiltInKeyRejectedChanged(callback: (rejected: boolean) => void) {
+	browser.storage?.onChanged?.addListener((changes, area) => {
+		if (area === "local" && changes[KEY_REJECTED]) callback(!!changes[KEY_REJECTED].newValue)
+	})
+}
 
 // TMDb hands out two kinds of credential: a 32-character v3 "API key" (query parameter) and a long
 // "API Read Access Token" (bearer header). Accept whichever the user pastes.

@@ -27,7 +27,9 @@ export function pickBestMatch<T extends TMDBTitled>(results: T[] | undefined, qu
 	const exact = candidates.filter((item) =>
 		[item.title, item.original_title, item.name, item.original_name].some((name) => normalizeTitle(name) === wanted),
 	)
-	if (!exact.length) return candidates[0]
+	// No exact title: TMDb's first result can be an unrated fan film or an unreleased show ("Cardboard Star Wars: A
+	// New Hope" before Star Wars, the 2026 Harry Potter series before the film), so skip results nobody has rated.
+	if (!exact.length) return candidates.find((item) => (item.vote_count ?? 0) > 0) ?? candidates[0]
 	return exact.reduce((pick, item) => (reach(item) > REMAKE_OVERRIDE_RATIO * reach(pick) ? item : pick))
 }
 

@@ -44,10 +44,10 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > • Weekly watch time by service, plus watchlist films that are streaming now
 >
 > SETUP TAKES TWO MINUTES
-> Enter your Letterboxd username (optional) and a free TMDb key. A built-in guide shows how to get one. Both stay in your browser.
+> Ratings work straight after install. Add your Letterboxd username (optional) to see friends' ratings, and your own free TMDb key if you like. Both stay in your browser.
 >
 > PRIVATE BY DESIGN
-> No streamBuddy account, no developer server and no analytics. Ratings requests go directly to TMDb, Letterboxd and IMDb. Settings, your optional Letterboxd username and your TMDb key use your browser's sync storage; watch-time stats stay on your device.
+> No streamBuddy account, no developer server and no analytics. Ratings requests go directly to TMDb, Letterboxd and IMDb. Settings, your optional Letterboxd username and optional TMDb key use your browser's sync storage; watch-time stats stay on your device.
 >
 > streamBuddy is free and open source (GPL-3.0). It started from the Streaming enhanced extension by Dreamlinerm. If it helps you pick better films, you can support it at ko-fi.com/joshgreen48454. It is an independent project, not affiliated with or endorsed by Letterboxd, IMDb, Netflix, Amazon or Warner Bros. Discovery. This product uses the TMDb API but is not endorsed or certified by TMDb.
 
@@ -90,7 +90,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 **Data usage** (tick these boxes):
 - **Personally identifiable information:** yes. The optional Letterboxd username is stored in browser sync storage and used to request that public profile from Letterboxd.
 - **Website content:** yes. Title names on streaming pages are sent to TMDb, Letterboxd and IMDb to look up ratings.
-- **Authentication information:** yes. The user's own TMDb key is stored and sent only to api.themoviedb.org.
+- **Authentication information:** yes. streamBuddy's built-in TMDb key, or the user's own if they add one, is sent only to api.themoviedb.org.
 - **Web history:** yes. The extension keeps a local record of recently displayed streaming titles and their URLs for its Stats tab, and reads the current streaming tab to select service settings. It does not read general browser history.
 - **User activity:** yes. Watch time by day and service is recorded locally for the Stats tab. It is never sent to the developer.
 - Everything else (health, financial, location, communications): no.
@@ -150,9 +150,9 @@ Submit at https://addons.mozilla.org/developers/addon/submit/ and choose "On thi
 > 3. `npm run build:release:firefox`
 > 4. The unpacked add-on is in `release/firefox/` and the zip is `release/firefox-1.0.0.zip`.
 >
-> No API keys are needed to build; `.env` is not used for release builds. To see ratings while testing, enter a free TMDb key on the welcome page that opens on install. A Letterboxd username is optional (any public profile works). Ratings appear on title cards on netflix.com, primevideo.com and play.hbomax.com once signed in.
+> Release builds embed streamBuddy's shared TMDb key from the `STREAMBUDDY_TMDB_KEY` environment variable (given in these notes); `.env` is not used. Ratings work without setup. A Letterboxd username is optional (any public profile works). Ratings appear on title cards on netflix.com, primevideo.com and play.hbomax.com once signed in.
 >
-> Permissions: storage and activeTab, plus host access to letterboxd.com and caching.graphql.imdb.com for ratings, and content scripts on Netflix, Prime Video and HBO Max. Data collection: website content (title names sent to TMDb, Letterboxd and IMDb to look up ratings) and authentication info (the user's own TMDb key and Letterboxd username, sent only to those services). Nothing goes to the developer.
+> Permissions: storage and activeTab, plus host access to letterboxd.com and caching.graphql.imdb.com for ratings, and content scripts on Netflix, Prime Video and HBO Max. Data collection: website content (title names sent to TMDb, Letterboxd and IMDb to look up ratings) and authentication info (the built-in or user's own TMDb key and the Letterboxd username, sent only to those services). Nothing goes to the developer.
 >
 > The single linter warning (innerHTML) is in Vue's runtime (`runtime-dom.esm-bundler.js`), not in streamBuddy's code.
 

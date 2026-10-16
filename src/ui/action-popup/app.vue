@@ -13,7 +13,7 @@ const SERVICES: Array<{ pattern: RegExp; service: StreamingService; name: string
 ]
 
 const tab = ref<"settings" | "stats">("settings")
-const { needsSetup } = useAccount()
+const { needsSetup, ratingsPaused } = useAccount()
 const current = ref<(typeof SERVICES)[number] | null>(null)
 // the activeTab permission lets us read the URL of the tab the popup was opened on
 browser.tabs
@@ -90,12 +90,16 @@ function navigateTabs(event: KeyboardEvent) {
 		</header>
 
 		<button
-			v-if="needsSetup"
+			v-if="needsSetup || ratingsPaused"
 			type="button"
 			class="sb-setup-banner"
 			@click="openSettings('/options-page/install')"
 		>
-			<span>
+			<span v-if="ratingsPaused">
+				<strong>Ratings are paused</strong>
+				TMDb stopped accepting streamBuddy’s shared key. Add your own free key to turn ratings back on.
+			</span>
+			<span v-else>
 				<strong>Finish setup to see ratings</strong>
 				Add your free TMDb key. It takes two minutes.
 			</span>

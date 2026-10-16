@@ -21,7 +21,8 @@ export const defineViteConfig = {
 	__DISPLAY_NAME__: jsn(packageJson.displayName),
 	__CHANGELOG__: jsn(changelog),
 	__GITHUB_URL__: jsn(packageJson.repository.url),
-	__TMDB_TOKEN__: jsn(process.env.TMDB_TOKEN || ""),
+	// store builds ship streamBuddy's shared key from the release secret; dev builds use your own from .env
+	__TMDB_TOKEN__: jsn((process.env.RELEASE ? process.env.STREAMBUDDY_TMDB_KEY : process.env.TMDB_TOKEN) || ""),
 	// whose friends' ratings to show on Letterboxd badges (optional)
 	__LETTERBOXD_USERNAME__: jsn(process.env.LETTERBOXD_USERNAME || ""),
 	__BUILD_ID__: jsn(BUILD_ID),

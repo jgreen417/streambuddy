@@ -16,6 +16,8 @@ If a Chrome version is still in review, the upload may be refused until that rev
 
 ## One-time setup
 
+Add `STREAMBUDDY_TMDB_KEY` (streamBuddy's shared TMDb key, best from a TMDb account made just for streamBuddy) as a **repository** secret (Settings → Secrets and variables → Actions): the build job needs it and runs outside the environment. The release stops if it's missing.
+
 Add these as secrets of a GitHub environment named `stores` (Settings → Environments → New environment). Adding yourself as a required reviewer there makes each release wait for your click before anything is submitted.
 
 | Secret | Where it comes from |
@@ -25,7 +27,7 @@ Add these as secrets of a GitHub environment named `stores` (Settings → Enviro
 | `CWS_PUBLISHER_ID` | Chrome Web Store Developer Dashboard → Publisher → Settings. |
 | `AMO_JWT_ISSUER` | addons.mozilla.org → Developer Hub → Manage API Keys → "JWT issuer". |
 | `AMO_JWT_SECRET` | Same page → "JWT secret". |
-| `AMO_APPROVAL_NOTES` | Optional. The confidential notes for Mozilla's reviewers, including the test TMDb token. Only reviewers see them; never put the token in the repo. |
+| `AMO_APPROVAL_NOTES` | Optional. The confidential notes for Mozilla's reviewers, including the shared TMDb key so they can rebuild the package from source with `STREAMBUDDY_TMDB_KEY` set. Only reviewers see them; never put the key in the repo. |
 
 ### Google Cloud setup for Chrome
 

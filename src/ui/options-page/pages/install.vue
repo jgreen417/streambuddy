@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAccount } from "@/components/popup/useAccount"
+import { BUILT_IN_TMDB_TOKEN } from "@/utils/account"
 const { account } = useAccount()
 </script>
 
@@ -11,8 +12,12 @@ const { account } = useAccount()
 		/>
 		<h1>Welcome to streamBuddy</h1>
 		<p class="description">
-			Letterboxd scores on films and IMDb scores on series, right on Netflix, Prime Video and HBO Max. Two quick steps
-			and you’re set.
+			Letterboxd scores on films and IMDb scores on series, right on Netflix, Prime Video and HBO Max.
+			{{
+				BUILT_IN_TMDB_TOKEN
+					? "Ratings are already on. Add your Letterboxd username to see friends’ ratings too."
+					: "Two quick steps and you’re set."
+			}}
 		</p>
 	</div>
 	<AccountSetup />
@@ -22,7 +27,10 @@ const { account } = useAccount()
 	>
 		All set. Reload any open streaming tabs, and use the streamBuddy button in your toolbar to adjust what you see.
 	</p>
-	<p class="description sb-more">
+	<p
+		v-if="!BUILT_IN_TMDB_TOKEN"
+		class="description sb-more"
+	>
 		Stuck on the key?
 		<RouterLink to="/options-page/Guide">Read the two-minute guide</RouterLink>
 		· You can change these later under Account.

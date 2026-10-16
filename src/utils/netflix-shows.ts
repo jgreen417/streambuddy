@@ -1,3 +1,4 @@
+import { logLookupFailure } from "@/utils/log"
 // Netflix's episode cards ("Super Buzzy Pilot Episodes") are labelled with the episode name and show the series
 // only as a logo, so the series title comes from Netflix's own pathEvaluator: videos[episode].ancestor.title.
 const PATH_EVALUATOR = "/nq/website/memberapi/release/pathEvaluator?original_path=%2Fshakti%2Fmre%2FpathEvaluator"
@@ -61,7 +62,7 @@ export class NetflixShowTitles {
 			if (!response.ok) throw new Error(`pathEvaluator ${response.status}`)
 			titles = parseShowTitles(ids, (await response.json()).jsonGraph)
 		} catch (error) {
-			console.log("Netflix show lookup failed:", error)
+			logLookupFailure("Netflix show lookup failed:", error)
 		}
 		// anything Netflix didn't answer for stays null (unrated) rather than retrying on every pass
 		for (const id of ids) {

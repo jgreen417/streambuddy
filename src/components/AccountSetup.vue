@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from "vue"
-import { checkLetterboxdUsername, checkTmdbToken, cleanUsername, saveAccount, type CheckResult } from "@/utils/account"
+import {
+	BUILT_IN_TMDB_TOKEN,
+	checkLetterboxdUsername,
+	checkTmdbToken,
+	cleanUsername,
+	saveAccount,
+	type CheckResult,
+} from "@/utils/account"
 import { useAccount } from "@/components/popup/useAccount"
 
 const { account } = useAccount()
@@ -16,9 +23,9 @@ watch(
 	(value) => {
 		if (!value) return
 		if (!username.value) username.value = value.letterboxdUsername
-		if (!token.value) token.value = value.tmdbToken
+		if (!token.value) token.value = value.ownTmdbToken
 		if (value.letterboxdUsername && !usernameState.value) usernameState.value = "ok"
-		if (value.tmdbToken && !tokenState.value) tokenState.value = "ok"
+		if (value.ownTmdbToken && !tokenState.value) tokenState.value = "ok"
 	},
 	{ immediate: true },
 )
@@ -41,6 +48,12 @@ async function saveUsername() {
 async function saveToken() {
 	const value = token.value.trim()
 	token.value = value
+	// clearing your own key goes back to the built-in one
+	if (!value && BUILT_IN_TMDB_TOKEN) {
+		await saveAccount({ tmdbToken: "" })
+		tokenState.value = ""
+		return
+	}
 	tokenState.value = "checking"
 	const result = await checkTmdbToken(value)
 	tokenState.value = result
@@ -114,12 +127,22 @@ const messages: Record<string, Record<string, string>> = {
 			<div class="sb-step-head">
 				<span class="sb-step-num">2</span>
 				<div>
-					<h2>Your free TMDb key</h2>
-					<p>
-						Needed for ratings. streamBuddy uses The Movie Database to work out which film or show each card is. A key
-						is free and takes about two minutes.
-						<RouterLink to="/options-page/Guide">How to get one →</RouterLink>
-					</p>
+					<template v-if="BUILT_IN_TMDB_TOKEN">
+						<h2>Your own TMDb key</h2>
+						<p>
+							Optional. Ratings already work with streamBuddy’s shared key. Add your own free key only if ratings ever
+							pause.
+							<RouterLink to="/options-page/Guide">How to get one →</RouterLink>
+						</p>
+					</template>
+					<template v-else>
+						<h2>Your free TMDb key</h2>
+						<p>
+							Needed for ratings. streamBuddy uses The Movie Database to work out which film or show each card is. A
+							key is free and takes about two minutes.
+							<RouterLink to="/options-page/Guide">How to get one →</RouterLink>
+						</p>
+					</template>
 				</div>
 			</div>
 			<form
@@ -150,7 +173,7 @@ const messages: Record<string, Record<string, string>> = {
 				</button>
 				<button
 					type="submit"
-					:disabled="tokenState === 'checking' || !token.trim()"
+					:disabled="tokenState === 'checking' || (!token.trim() && !BUILT_IN_TMDB_TOKEN)"
 				>
 					Save
 				</button>
@@ -164,7 +187,8 @@ const messages: Record<string, Record<string, string>> = {
 				{{ messages.token[tokenState] }}
 			</p>
 			<p class="sb-fine">
-				Your key stays in your browser’s extension storage and is only ever sent to api.themoviedb.org.
+				Lookups go straight from your browser to api.themoviedb.org. A key you add stays in your browser’s extension
+				storage. This product uses the TMDb API but is not endorsed or certified by TMDb.
 			</p>
 		</section>
 	</div>

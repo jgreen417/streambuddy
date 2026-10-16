@@ -86,6 +86,19 @@ describe("pickBestMatch", () => {
 		expect(pickBestMatch([{ id: 1, title: "Other" }, { id: 9, title: "The Accountant 2" }], "The Accountant²").id).toBe(9)
 	})
 
+	it("skips unrated results when nothing matches exactly", () => {
+		const starWars = [
+			{ id: 1, title: "Cardboard Star Wars: A New Hope", vote_count: 0, popularity: 2 },
+			{ id: 11, title: "Star Wars", vote_count: 21000, popularity: 60 },
+		]
+		expect(pickBestMatch(starWars, "Star Wars: A New Hope").id).toBe(11)
+		const harryPotter = [
+			{ id: 2, name: "Harry Potter", vote_count: 0, popularity: 90 },
+			{ id: 671, title: "Harry Potter and the Sorcerer's Stone", vote_count: 28000, popularity: 50 },
+		]
+		expect(pickBestMatch(harryPotter, "Harry Potter and the Philosopher's Stone").id).toBe(671)
+	})
+
 	it("falls back to the first result", () => {
 		expect(pickBestMatch([{ id: 7, title: "Close" }, { id: 8, title: "Other" }], "Clos").id).toBe(7)
 		expect(pickBestMatch(undefined, "Anything")).toBeUndefined()

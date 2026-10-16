@@ -1,3 +1,4 @@
+import { debugLog, logLookupFailure } from "@/utils/log"
 import { BADGE_FONT, installPageFeatureStyle } from "@/utils/page-feature-styles"
 import { sendMessage } from "webext-bridge/content-script"
 import {
@@ -36,7 +37,7 @@ import {
 	type WatchTimerState,
 	watchTick,
 } from "@/utils/stats"
-console.log("shared-functions loaded")
+debugLog("shared-functions loaded")
 // Global Variables
 
 // exported for tests
@@ -113,11 +114,11 @@ async function getDBCache() {
 	const result = await browser.storage.local.get("DBCache")
 	DBCache = result?.DBCache as DBCacheType
 	if (typeof DBCache !== "object") {
-		console.log("DBCache not found, creating new one", DBCache)
+		debugLog("DBCache not found, creating new one", DBCache)
 		try {
 			await browser.storage.local.set({ DBCache: {} })
 		} catch (error) {
-			console.log(error)
+			console.error(error)
 		}
 		DBCache = {}
 	}
@@ -134,10 +135,10 @@ async function setDBCache() {
 	const kiloBytes = size / 1024
 	const megaBytes = kiloBytes / 1024
 	if (megaBytes < 5) {
-		console.log("updateDBCache size:", megaBytes.toFixed(4) + " MB")
+		debugLog("updateDBCache size:", megaBytes.toFixed(4) + " MB")
 		await browser.storage.local.set({ DBCache })
 	} else {
-		console.log("DBCache cleared", megaBytes)
+		debugLog("DBCache cleared", megaBytes)
 		DBCache = {}
 		await browser.storage.local.set({ DBCache })
 	}
@@ -148,11 +149,11 @@ const GCdiff = 30
 async function garbageCollection() {
 	// clear every rating older than 30 days
 	// clear every rating where db != tmdb
-	console.log("garbageCollection started, deleting old ratings:")
+	debugLog("garbageCollection started, deleting old ratings:")
 	const keys = Object.keys(DBCache)
 	for (const key of keys) {
 		if (getDiffInDays(DBCache[key].date, date) >= GCdiff || DBCache[key].db != "tmdb") {
-			console.log(DBCache[key].date, key)
+			debugLog(DBCache[key].date, key)
 			delete DBCache[key]
 		}
 	}
@@ -311,7 +312,7 @@ async function getExternalRating(
 		if (isLookupError(imdb)) return { rating: null, transient: true }
 		return { rating: imdb, transient }
 	} catch (error) {
-		console.error("getExternalRating failed", tmdbId, media_type, error)
+		logLookupFailure("getExternalRating failed", error, tmdbId, media_type)
 		return { rating: null, transient: true }
 	}
 }
@@ -779,7 +780,7 @@ async function startShowRatingInterval() {
 	const RatingInterval = setInterval(function () {
 		refreshRowPresentation()
 		if (!ratingsEnabled()) {
-			console.log("stopped adding Rating")
+			debugLog("stopped adding Rating")
 			clearInterval(RatingInterval)
 			stopped = true
 			observer.disconnect()
@@ -814,7 +815,7 @@ function useDBCache(title: string, card: HTMLElement, media_type: string | null)
 	// refresh rating if older than 30 days or release date is in last month and vote count is under 100
 	if (getDiffInDays(DBCache[title].date, date) >= GCdiff || diffInReleaseDate) {
 		if (diffInReleaseDate)
-			console.log(
+			debugLog(
 				"update recent movie:",
 				title,
 				",refresh:",
@@ -824,7 +825,7 @@ function useDBCache(title: string, card: HTMLElement, media_type: string | null)
 				"Vote count:",
 				vote_count,
 			)
-		else console.log("update old rating:", title, ",Age:", getDiffInDays(DBCache[title].date, date))
+		else debugLog("update old rating:", title, ",Age:", getDiffInDays(DBCache[title].date, date))
 		getMovieInfo(title, card, media_type)
 	} else {
 		setRatingOnCard(card, DBCache[title], title)
@@ -1354,7 +1355,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	// nothing to say about this title: show nothing rather than a "?" or a meaningless 0.0
 	const hasRating = (data?.source !== "tmdb" && !!data?.rating) || data?.score > 0
 	if (!hasRating) {
-		console.log("no score found:", title, data, card)
+		debugLog("no score found:", title, data, card)
 		// Prime's card selectors can't skip cards already seen, so remember it. A cached unrated title is looked up
 		// again once the cache refreshes it (a week), which needs a page load anyway; a result left uncached because
 		// Letterboxd/IMDb failed for a moment is retried shortly
