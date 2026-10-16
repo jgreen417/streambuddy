@@ -83,6 +83,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment: stores
+    permissions:
+      contents: read
+      # lets Google trust this run's GitHub identity token, so no service account key is stored anywhere
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -94,9 +98,17 @@ jobs:
         with:
           name: release
           path: release
+      - name: Sign in to Google as the store's service account
+        id: google
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.CWS_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
       - name: Upload and submit for review
         env:
-          CWS_SERVICE_ACCOUNT_JSON: ${{ secrets.CWS_SERVICE_ACCOUNT_JSON }}
+          CWS_ACCESS_TOKEN: ${{ steps.google.outputs.access_token }}
           CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
           CWS_EXTENSION_ID: lieihlkbpleoeoaiagnfcegegjgeeojc
         run: npx tsx scripts/publish-chrome.ts "release/chrome-${{ needs.build.outputs.version }}.zip"
