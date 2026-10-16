@@ -193,6 +193,7 @@ type TMDBResponse = {
 const lookupsInFlight = new Map<string, Promise<MovieInfo | null>>()
 const checkedCards = new CheckedCards()
 // switching rating sources can turn an unrated title into a rated one, so a card is checked again under new sources
+const temporaryResults = new Map<string, MovieInfo>()
 const checkedKey = (title: string) => `${title}|${ratingSources()}`
 async function getMovieInfo(
 	title: string,
@@ -203,8 +204,18 @@ async function getMovieInfo(
 	const sources = ratingSources()
 	const key = `${title}|${media_type ?? ""}|${year ?? ""}|${sources}`
 	let lookup = lookupsInFlight.get(key)
+	// a result kept out of the cache because a provider failed for a moment is reused until it's due a retry, so
+	// other cards with the same title don't start their own lookups in the meantime
+	const recent = temporaryResults.get(key)
+	if (!lookup && recent && (recent.retryAfter ?? 0) > Date.now()) lookup = Promise.resolve(recent)
 	if (!lookup) {
-		lookup = lookupMovieInfo(title, media_type, year, sources).finally(() => lookupsInFlight.delete(key))
+		lookup = lookupMovieInfo(title, media_type, year, sources)
+			.then((info) => {
+				if (info?.retryAfter) temporaryResults.set(key, info)
+				else temporaryResults.delete(key)
+				return info
+			})
+			.finally(() => lookupsInFlight.delete(key))
 		lookupsInFlight.set(key, lookup)
 	}
 	const info = await lookup

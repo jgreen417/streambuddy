@@ -1,6 +1,30 @@
 // Keep the deadline active through body consumption, so a stalled response cannot hold a lookup slot.
 const REQUEST_TIMEOUT_MS = 10_000
 const coolingDown = new Map<string, number>()
+// The background is an MV3 service worker (non-persistent in Firefox), so it can unload mid-cooldown. Cooldowns are
+// kept in storage too, so a restarted worker still waits out a provider's Retry-After.
+const COOLDOWN_KEY = "networkCooldowns"
+let cooldownsLoaded: Promise<void> | undefined
+function loadCooldowns() {
+	cooldownsLoaded ??= (async () => {
+		try {
+			const stored = (await browser.storage.local.get(COOLDOWN_KEY))?.[COOLDOWN_KEY] as
+				Record<string, number> | undefined
+			for (const [host, until] of Object.entries(stored ?? {}))
+				if (until > Date.now()) coolingDown.set(host, Math.max(coolingDown.get(host) ?? 0, until))
+		} catch {
+			// no storage (a test, or a page without extension APIs): cooldowns just don't survive a restart
+		}
+	})()
+	return cooldownsLoaded
+}
+function saveCooldowns() {
+	const now = Date.now()
+	const active = Object.fromEntries([...coolingDown].filter(([, until]) => until > now))
+	Promise.resolve()
+		.then(() => browser.storage.local.set({ [COOLDOWN_KEY]: active }))
+		.catch(() => {})
+}
 export class NetworkRequestError extends Error {
 	override name = "NetworkRequestError"
 }
@@ -11,6 +35,7 @@ export async function request<T>(
 	init: RequestInit = {},
 ): Promise<T> {
 	const host = new URL(url).hostname
+	await loadCooldowns()
 	if ((coolingDown.get(host) ?? 0) > Date.now()) throw new NetworkRequestError("HTTP 429 (retry later)")
 	const controller = new AbortController()
 	let timer: ReturnType<typeof setTimeout> | undefined
@@ -38,6 +63,7 @@ export async function request<T>(
 							Number.isFinite(until) && until >= Date.now() ? until : Date.now() + 30_000,
 						),
 					)
+					saveCooldowns()
 				}
 				return consume(response)
 			})(),

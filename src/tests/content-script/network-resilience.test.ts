@@ -108,6 +108,35 @@ describe("provider rate limits", () => {
 	})
 })
 
+describe("provider cooldowns across background restarts", () => {
+	it("saves a Retry-After cooldown and honours it after a restart", async () => {
+		const browser = await import("webextension-polyfill")
+		let saved: Record<string, unknown> = {}
+		vi.mocked(browser.storage.local.set).mockImplementation(async (items) => {
+			saved = { ...saved, ...items }
+		})
+		vi.mocked(browser.storage.local.get).mockImplementation(async () => saved as never)
+		let calls = 0
+		globalThis.fetch = vi.fn(async () => {
+			calls++
+			return new Response("slow down", { status: 429, headers: { "Retry-After": "60" } })
+		})
+		vi.resetModules()
+		const first = await import("@/utils/network")
+		expect(await first.request("https://letterboxd.com/film/a/", (response) => response.status)).toBe(429)
+		await vi.waitFor(() => expect(saved.networkCooldowns).toBeDefined())
+		// a fresh module is a restarted worker: its in-memory map starts empty
+		vi.resetModules()
+		const restarted = await import("@/utils/network")
+		await expect(restarted.request("https://letterboxd.com/film/b/", (response) => response.status)).rejects.toThrow(
+			"429",
+		)
+		expect(calls).toBe(1)
+		vi.mocked(browser.storage.local.get).mockReset()
+		vi.mocked(browser.storage.local.set).mockReset()
+	})
+})
+
 describe("TMDb setup rate limit", () => {
 	it("returns offline during Retry-After then validates successfully without an automatic retry", async () => {
 		vi.resetModules()
