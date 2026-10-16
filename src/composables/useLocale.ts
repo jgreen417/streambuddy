@@ -1,6 +1,19 @@
+import messages from "@intlify/unplugin-vue-i18n/messages"
 import { watch } from "vue"
+import { createI18n } from "vue-i18n"
 import { useBrowserLocalStorage } from "./useBrowserStorage"
-import { i18n } from "@/utils/i18n" // Adjust the import path according to your project structure
+
+export const i18n = createI18n({
+	globalInjection: true,
+	legacy: false,
+	locale: "en",
+	fallbackLocale: "en",
+	messages,
+})
+
+// restore locale from local storage
+const { data: savedLocale } = useBrowserLocalStorage<string>("user-locale", "en")
+i18n.global.locale.value = savedLocale.value
 
 export function useLocale() {
 	let defaultLocale = "en"

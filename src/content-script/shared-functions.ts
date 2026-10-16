@@ -6,7 +6,8 @@ import { cached, getDiffInDays, isCacheCurrent, loadCache, lookupMovieInfo } fro
 import { updateCreditsPrompt } from "./credits"
 import { watchLetterboxdProfile } from "./profile"
 import { refreshRowPresentation, startCards, updateSearchSorting } from "./scan"
-import { ratingSources, settings, settingsReady } from "./settings"
+import { settings, settingsReady } from "@/stores/settings"
+import { ratingSources } from "./settings"
 import type { RatingsSite } from "./sites/types"
 import { startWatchTimer } from "./watch-stats"
 

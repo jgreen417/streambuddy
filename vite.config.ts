@@ -91,7 +91,6 @@ export default defineConfig({
 				},
 			],
 			dts: "src/types/auto-imports.d.ts",
-			dirs: ["src/composables/**", "src/stores/**", "src/utils/**"],
 			vueTemplate: true,
 			viteOptimizeDeps: true,
 			eslintrc: {

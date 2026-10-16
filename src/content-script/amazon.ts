@@ -1,7 +1,8 @@
 import { startSharedFunctions } from "@/content-script/shared-functions"
 import { primeSite } from "@/content-script/sites/prime"
 import { prime } from "@/playback/sites/prime"
-import { startPlayback, playbackStoreSettings as settings, playbackSettingsReady } from "@/playback/start"
+import { startPlayback } from "@/playback/start"
+import { settings, settingsReady } from "@/stores/settings"
 import { keepTidy, tidyPrime } from "@/playback/tidy"
 
 // Prime Video also lives on Amazon's shopping domains; only act on its pages
@@ -11,7 +12,7 @@ const isPrimeVideo =
 if (isPrimeVideo) {
 	startSharedFunctions(primeSite)
 	startPlayback(prime)
-	playbackSettingsReady.then(() => {
+	settingsReady.then(() => {
 		const tidy = keepTidy(() => tidyPrime(settings.value.Amazon.hidePaid))
 		watch(() => settings.value.Amazon.hidePaid, tidy)
 	})

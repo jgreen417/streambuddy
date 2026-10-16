@@ -3,7 +3,7 @@ import { sendMessage } from "webext-bridge/content-script"
 import { getAccount, onAccountChanged } from "@/utils/account"
 import { isLookupError } from "@/utils/lookup"
 import { getLetterboxdSlug, type LetterboxdProfile, type RatingSource } from "@/utils/ratings"
-import { settings } from "./settings"
+import { settings } from "@/stores/settings"
 
 let profile: LetterboxdProfile | null = null
 let watchlistSlugs = new Set<string>()

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
+import { useOptionsStore } from "@/stores/options.store"
 
 const { t } = useI18n()
 const optionsStore = useOptionsStore()

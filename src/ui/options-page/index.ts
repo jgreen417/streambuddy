@@ -1,5 +1,5 @@
 import "@fontsource-variable/bricolage-grotesque/opsz.css"
-import { i18n } from "@/utils/i18n"
+import { i18n } from "@/composables/useLocale"
 import { pinia } from "@/utils/pinia"
 import { appRouter } from "@/utils/router"
 import { createApp } from "vue"
