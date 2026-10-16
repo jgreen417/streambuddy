@@ -27,6 +27,7 @@ declare global {
   const addSavedSeconds: typeof import('../utils/stats').addSavedSeconds
   const addWatchSeconds: typeof import('../utils/stats').addWatchSeconds
   const appRouter: typeof import('../utils/router/index').appRouter
+  const applyGlass: typeof import('../utils/page-feature-styles').applyGlass
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
   const browser: typeof import('webextension-polyfill')
@@ -479,6 +480,7 @@ declare module 'vue' {
     readonly addSavedSeconds: UnwrapRef<typeof import('../utils/stats')['addSavedSeconds']>
     readonly addWatchSeconds: UnwrapRef<typeof import('../utils/stats')['addWatchSeconds']>
     readonly appRouter: UnwrapRef<typeof import('../utils/router/index')['appRouter']>
+    readonly applyGlass: UnwrapRef<typeof import('../utils/page-feature-styles')['applyGlass']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly browser: UnwrapRef<typeof import('webextension-polyfill')>

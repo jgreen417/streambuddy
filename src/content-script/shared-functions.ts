@@ -1,5 +1,5 @@
 import { debugLog, logLookupFailure } from "@/utils/log"
-import { BADGE_FONT, installPageFeatureStyle } from "@/utils/page-feature-styles"
+import { applyGlass, BADGE_FONT, installPageFeatureStyle } from "@/utils/page-feature-styles"
 import { sendMessage } from "webext-bridge/content-script"
 import {
 	getLetterboxdSlug,
@@ -493,6 +493,7 @@ function startPageFeatures() {
 			.tick(featureSite(), {
 				episodes: settings.value.General.episodeRatings,
 				sources: ratingSources(),
+				glassFrost: settings.value.General.badgeStyle === "glass" ? settings.value.General.glassFrost : undefined,
 			})
 			.catch((error) => console.debug("streamBuddy page ratings:", error))
 		updateSearchSorting()
@@ -1296,23 +1297,6 @@ function watchBadgeResizes() {
 			}
 		}, 200)
 	})
-}
-
-// Liquid Glass: a blurred, lightly tinted pane in place of the cream chip, with light text. frost runs from
-// 0 (clear glass: a hairline edge and highlight) to 100 (thick frosted sea glass). The score pill keeps its colour.
-function applyGlass(div: HTMLElement, frost: number) {
-	const f = Math.min(Math.max(frost, 0), 100) / 100
-	Object.assign(div.style, {
-		background: `rgba(251, 244, 236, ${(0.04 + 0.26 * f).toFixed(2)})`,
-		backdropFilter: `blur(${(2 + 14 * f).toFixed(1)}px) saturate(1.6)`,
-		boxShadow:
-			"inset 0 0 0 0.5px rgba(255, 255, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 8px rgba(0, 0, 0, 0.25)",
-		textShadow: "0 1px 2px rgba(0, 0, 0, 0.35)",
-	})
-	div.style.setProperty("--sb-ink", "#ffffff")
-	div.style.setProperty("--sb-label", "rgba(255, 255, 255, 0.8)")
-	div.style.setProperty("--sb-watch", "#8ec5ff")
-	div.style.setProperty("--sb-chip", "rgba(255, 255, 255, 0.6)")
 }
 
 // Prime composites its own "prime" or channel logo into the artwork's bottom-right corner, and the image URL

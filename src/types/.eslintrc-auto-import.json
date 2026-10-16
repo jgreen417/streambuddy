@@ -63,6 +63,7 @@
     "addSavedSeconds": true,
     "addWatchSeconds": true,
     "appRouter": true,
+    "applyGlass": true,
     "asyncComputed": true,
     "autoResetRef": true,
     "browser": true,
