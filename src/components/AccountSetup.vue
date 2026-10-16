@@ -208,8 +208,8 @@ const messages: Record<string, Record<string, string>> = {
 .sb-step {
 	padding: 18px;
 	border-radius: 12px;
-	background: rgba(251, 244, 236, 0.04);
-	border: 1px solid rgba(251, 244, 236, 0.08);
+	background: var(--sb-surface-sunken);
+	border: 1px solid var(--sb-line);
 }
 .sb-step-head {
 	display: flex;
@@ -220,16 +220,16 @@ const messages: Record<string, Record<string, string>> = {
 	margin: 0 0 2px;
 	font-size: 15px;
 	font-weight: 600;
-	color: #fbf4ec;
+	color: var(--sb-text);
 }
 .sb-step-head p {
 	margin: 0;
 	font-size: 13px;
 	line-height: 1.5;
-	color: #a39b93;
+	color: var(--sb-text-muted);
 }
 .sb-step-head a {
-	color: #8ec5ff;
+	color: var(--sb-info);
 	text-decoration: none;
 	white-space: nowrap;
 }
@@ -240,8 +240,8 @@ const messages: Record<string, Record<string, string>> = {
 	width: 24px;
 	height: 24px;
 	border-radius: 50%;
-	background: rgba(251, 244, 236, 0.1);
-	color: #fbf4ec;
+	background: var(--sb-surface-raised);
+	color: var(--sb-text);
 	font-size: 12px;
 	font-weight: 600;
 }
@@ -252,16 +252,16 @@ const messages: Record<string, Record<string, string>> = {
 	margin: 14px 0 0 36px;
 	padding: 4px;
 	border-radius: 8px;
-	background: #262220;
-	border: 1px solid rgba(251, 244, 236, 0.1);
+	background: var(--sb-field);
+	border: 1px solid var(--sb-line-strong);
 }
 .sb-field:focus-within {
-	border-color: rgba(251, 244, 236, 0.28);
+	border-color: var(--sb-line-active);
 }
 .sb-prefix {
 	padding-left: 8px;
 	font-size: 14px;
-	color: #a39b93;
+	color: var(--sb-text-muted);
 }
 .sb-field input {
 	flex: 1;
@@ -269,7 +269,7 @@ const messages: Record<string, Record<string, string>> = {
 	padding: 6px 4px;
 	border: 0 !important;
 	background: transparent !important;
-	color: #fbf4ec;
+	color: var(--sb-text);
 	font-size: 14px;
 	outline: none;
 }
@@ -278,8 +278,8 @@ const messages: Record<string, Record<string, string>> = {
 	padding: 6px 14px;
 	border-radius: 6px;
 	border: 0;
-	background: #ff7a45;
-	color: #1b1918;
+	background: var(--sb-accent);
+	color: var(--sb-text-on-accent);
 	font-size: 13px;
 	font-weight: 600;
 	cursor: pointer;
@@ -290,31 +290,31 @@ const messages: Record<string, Record<string, string>> = {
 }
 .sb-field button.sb-ghost {
 	background: transparent;
-	color: #a39b93;
+	color: var(--sb-text-muted);
 	font-weight: 500;
 }
 .sb-field button:focus-visible {
-	outline: 2px solid #ffb38f;
+	outline: 2px solid var(--sb-focus);
 	outline-offset: 2px;
 }
 .sb-status {
 	margin: 8px 0 0 36px;
 	font-size: 13px;
-	color: #a39b93;
+	color: var(--sb-text-muted);
 }
 .sb-status.is-ok {
-	color: #7ad9a0;
+	color: var(--sb-up);
 }
 .sb-status.is-invalid {
-	color: #ff8a8a;
+	color: var(--sb-danger);
 }
 .sb-status.is-offline {
-	color: #ffd23f;
+	color: var(--sb-warning);
 }
 .sb-fine {
 	margin: 10px 0 0 36px;
 	font-size: 12px;
-	color: #a39b93;
+	color: var(--sb-text-muted);
 }
 .sr-only {
 	position: absolute;

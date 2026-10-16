@@ -1,3 +1,4 @@
+import { friendColors, palette } from "@/design/tokens"
 import { installPageFeatureStyle } from "./page-feature-styles"
 import type { FeatureRating } from "./page-features"
 import { getLetterboxdSlug, getScoreColor } from "./ratings"
@@ -14,9 +15,7 @@ export type ReviewViewer = {
 
 type ReviewState = "friends" | "nobody" | "logged" | "unlinked" | "plain"
 
-const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#ff7a45"/><circle cx="24" cy="32" r="14" fill="#1b1918"/><circle cx="40" cy="32" r="14" fill="#fbf4ec"/><path d="M32 20.51 A14 14 0 0 1 32 43.49 A14 14 0 0 1 32 20.51 Z" fill="#ff7a45"/></svg>`
-// the badge's friend-dot colours, picked the same way, so a friend keeps their colour from card to credits
-const FACE_COLORS = ["#ff7a45", "#8ec5ff", "#f2c94c", "#7ad9a0", "#c9a7ff"]
+const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="${palette.tangerine}"/><circle cx="24" cy="32" r="14" fill="${palette.couch}"/><circle cx="40" cy="32" r="14" fill="${palette.popcorn}"/><path d="M32 20.51 A14 14 0 0 1 32 43.49 A14 14 0 0 1 32 20.51 Z" fill="${palette.tangerine}"/></svg>`
 const FRIENDS_IN_CARD = 3
 
 // How long the credits probably run, in seconds, when the service doesn't say: about 7% of the runtime, between 3 and
@@ -58,7 +57,7 @@ export function starText(rating: number): { filled: string; empty: string } {
 
 function faceColor(name: string) {
 	const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)
-	return FACE_COLORS[hash % FACE_COLORS.length]
+	return friendColors[hash % friendColors.length]
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text = "") {

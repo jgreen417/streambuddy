@@ -24,7 +24,8 @@
 		"test:coverage": "vitest run --coverage",
 		"test:visual": "playwright test",
 		"test:visual:update": "playwright test --update-snapshots=changed",
-		"typecheck": "vue-tsc --noEmit"
+		"typecheck": "vue-tsc --noEmit",
+		"tokens": "tsx scripts/design-tokens.ts"
 	},
 	"dependencies": {
 		"@fontsource-variable/bricolage-grotesque": "^5.3.0",

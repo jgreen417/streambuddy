@@ -2,13 +2,8 @@
 /* required for vue-devtools
  @use "/node_modules/vite-plugin-vue-devtools/src/overlay/devtools-overlay.css"; */
 @import "tailwindcss";
+@import "../design/tokens.css";
 @tailwind utilities;
-@theme {
-	--color-netflix: #e60010;
-	--color-amazon: #00aeef;
-	--color-disney: #1d1fff;
-	--color-crunchyroll: #f78b24;
-}
 
 @plugin "daisyui";
 @plugin "daisyui/theme" {
@@ -29,17 +24,17 @@
 	prefersdark: true;
 	color-scheme: dark;
 
-	/* streamBuddy "Buddy" palette (matches the popup) */
-	--color-primary: #262220;
-	--color-primary-content: #fbf4ec;
-	--color-secondary: #fbf4ec;
-	--color-secondary-content: #1b1918;
-	--color-accent: #ff7a45;
-	--color-accent-content: #1b1918;
-	--color-neutral: #151312;
-	--color-base-100: #1b1918;
-	--color-error: #ff5861;
-	--color-error-content: #fff;
+	/* daisyUI's roles, from streamBuddy's tokens (src/design/tokens.ts) */
+	--color-primary: var(--sb-field);
+	--color-primary-content: var(--sb-text);
+	--color-secondary: var(--sb-text);
+	--color-secondary-content: var(--sb-bg);
+	--color-accent: var(--sb-accent);
+	--color-accent-content: var(--sb-text-on-accent);
+	--color-neutral: var(--sb-bg-deep);
+	--color-base-100: var(--sb-bg);
+	--color-error: var(--sb-error);
+	--color-error-content: var(--sb-text-on-error);
 }
 
 .description {
@@ -81,7 +76,7 @@ h3 {
 ::-webkit-scrollbar {
 	width: 8px;
 	height: 8px;
-	background-color: #1b1918;
+	background-color: var(--sb-bg);
 }
 ::-webkit-scrollbar-thumb {
 	background: grey;

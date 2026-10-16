@@ -121,7 +121,7 @@ describe("episode ratings", () => {
 		await features.tick("netflix", { episodes: true, glassFrost: 60 })
 		chip = document.querySelector<HTMLElement>(".sb-episode-rating")!
 		expect(chip.style.backdropFilter).toContain("blur")
-		expect(chip.style.getPropertyValue("--sb-label")).not.toBe("")
+		expect(chip.style.getPropertyValue("--sb-badge-label")).not.toBe("")
 	})
 })
 

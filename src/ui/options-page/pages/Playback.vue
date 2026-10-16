@@ -106,38 +106,34 @@ h2 {
 	gap: 12px;
 	padding: 10px 12px;
 	border-radius: 10px;
-	background: rgba(251, 244, 236, 0.04);
-	border: 1px solid rgba(251, 244, 236, 0.08);
+	background: var(--sb-surface-sunken);
+	border: 1px solid var(--sb-line);
 }
 .sb-rules strong {
-	color: #fbf4ec;
+	color: var(--sb-text);
 	font-weight: 600;
 }
 .sb-rules button {
 	padding: 5px 12px;
 	border-radius: 999px;
-	border: 1px solid rgba(251, 244, 236, 0.12);
-	background: rgba(251, 244, 236, 0.06);
-	color: #fbf4ec;
+	border: 1px solid var(--sb-line-raised);
+	background: var(--sb-surface);
+	color: var(--sb-text);
 	font-size: 13px;
 	cursor: pointer;
 }
 .sb-rules button:hover {
-	background: rgba(251, 244, 236, 0.12);
+	background: var(--sb-surface-hover);
 }
 .sb-empty {
-	color: #a39b93;
+	color: var(--sb-text-muted);
 }
 kbd {
 	padding: 1px 6px;
 	border-radius: 4px;
-	border: 1px solid rgba(251, 244, 236, 0.18);
-	background: rgba(251, 244, 236, 0.06);
-	font:
-		600 12px/1.6 ui-monospace,
-		SFMono-Regular,
-		Menlo,
-		monospace;
+	border: 1px solid var(--sb-line-hover);
+	background: var(--sb-surface);
+	font: 600 12px/1.6 var(--sb-font-mono);
 }
 .sb-keys td {
 	padding: 6px 16px 6px 0;

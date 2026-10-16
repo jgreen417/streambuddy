@@ -148,26 +148,20 @@ watch(
 @import "@/assets/base.css";
 /* streamBuddy: same "Buddy" palette and type as the popup */
 body {
-	background: #1b1918;
-	color: #fbf4ec;
-	font-family:
-		"Bricolage Grotesque Variable",
-		"Bricolage Grotesque",
-		-apple-system,
-		BlinkMacSystemFont,
-		"Segoe UI",
-		sans-serif;
+	background: var(--sb-bg);
+	color: var(--sb-text);
+	font-family: var(--sb-font-ui);
 	-webkit-font-smoothing: antialiased;
 }
 .sidenav {
 	@apply h-full px-3 gap-1;
 	min-width: 230px;
-	background: #1b1918;
-	border-right: 1px solid rgba(251, 244, 236, 0.07);
+	background: var(--sb-bg);
+	border-right: 1px solid var(--sb-hairline);
 }
 .menuButton {
 	@apply rounded-lg m-0 px-3 py-2 no-underline whitespace-nowrap cursor-pointer select-none items-center gap-2;
-	color: #a39b93;
+	color: var(--sb-text-muted);
 	font-size: 14px;
 	font-weight: 500;
 	transition:
@@ -175,8 +169,8 @@ body {
 		color 0.15s;
 }
 .menuButton:hover {
-	background-color: rgba(251, 244, 236, 0.05);
-	color: #fbf4ec;
+	background-color: var(--sb-hover);
+	color: var(--sb-text);
 }
 .menuButton p,
 .menuButton div {
@@ -185,8 +179,8 @@ body {
 	font-weight: inherit;
 }
 .menuButton.is-active {
-	background-color: #fbf4ec;
-	color: #1b1918;
+	background-color: var(--sb-text);
+	color: var(--sb-bg);
 	font-weight: 700;
 }
 .IconBox {
@@ -200,23 +194,23 @@ body {
 	font-weight: 800;
 	letter-spacing: -0.035em;
 	line-height: 1.1;
-	color: #fbf4ec;
+	color: var(--sb-text);
 }
 .title span + span {
-	color: #ff7a45;
+	color: var(--sb-accent);
 }
 .version {
 	font-size: 12px;
-	color: #a39b93;
+	color: var(--sb-text-muted);
 }
 .credit {
 	padding: 16px 8px 20px;
 	font-size: 12px;
 	line-height: 1.5;
-	color: #a39b93;
+	color: var(--sb-text-muted);
 }
 .credit a {
-	color: #a39b93;
+	color: var(--sb-text-muted);
 }
 .credit .links {
 	display: block;
@@ -225,12 +219,12 @@ body {
 .credit .support {
 	display: block;
 	margin-bottom: 8px;
-	color: #fbf4ec;
+	color: var(--sb-text);
 	font-weight: 500;
 	text-decoration: none;
 }
 .credit .support:hover {
-	color: #ff7a45;
+	color: var(--sb-accent);
 }
 
 /* settings pages: calmer type, neutral buttons and inputs */
@@ -241,8 +235,8 @@ body {
 .content h1 {
 	font-size: 22px;
 	font-weight: 800;
-	/* service-coloured headings (Netflix red #e60010) fail WCAG contrast on this background */
-	color: #fbf4ec !important;
+	/* service-coloured headings (Netflix red) fail WCAG contrast on this background */
+	color: var(--sb-text) !important;
 	letter-spacing: -0.03em;
 }
 .content h2,
@@ -259,38 +253,38 @@ body {
 .content th,
 .content td {
 	padding: 4px 8px;
-	border-color: rgba(251, 244, 236, 0.08) !important;
+	border-color: var(--sb-line) !important;
 }
 .content table {
-	border-color: rgba(251, 244, 236, 0.08) !important;
+	border-color: var(--sb-line) !important;
 }
 .content th {
 	font-weight: 500;
-	color: #a39b93;
+	color: var(--sb-text-muted);
 }
 .content .description {
-	color: #a39b93;
+	color: var(--sb-text-muted);
 }
 .content hr {
-	border-color: rgba(251, 244, 236, 0.07);
+	border-color: var(--sb-hairline);
 }
 .content .btn {
 	font-size: 14px;
-	background: rgba(251, 244, 236, 0.07);
-	border: 1px solid rgba(251, 244, 236, 0.1);
-	color: #fbf4ec;
+	background: var(--sb-hairline);
+	border: 1px solid var(--sb-line-strong);
+	color: var(--sb-text);
 	box-shadow: none;
 	font-weight: 500;
 }
 .content .btn:hover {
-	background: rgba(251, 244, 236, 0.12);
+	background: var(--sb-surface-hover);
 }
 .content input:not([type="checkbox"]),
 .content select {
-	background: #262220;
-	border: 1px solid rgba(251, 244, 236, 0.1);
+	background: var(--sb-field);
+	border: 1px solid var(--sb-line-strong);
 	border-radius: 6px;
-	color: #fbf4ec;
+	color: var(--sb-text);
 }
 .content {
 	@apply min-w-[200px] min-h-[450px];
@@ -308,7 +302,7 @@ body {
 
 /* Keep every service identifiable when settings move to a small window. */
 .menuButton:focus-visible {
-	outline: 2px solid #ffb38f;
+	outline: 2px solid var(--sb-focus);
 	outline-offset: 2px;
 }
 @media (max-width: 900px), (max-height: 700px) {
@@ -320,7 +314,7 @@ body {
 		min-width: 0;
 		flex-shrink: 0;
 		border-right: 0;
-		border-bottom: 1px solid #fbf4ec12;
+		border-bottom: 1px solid var(--sb-hairline);
 	}
 	.IconBox {
 		display: flex;
