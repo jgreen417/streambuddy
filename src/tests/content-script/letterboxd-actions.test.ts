@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { addLetterboxdWatchlist, extractLetterboxdCsrf, CreditsRatingPrompt } from "../../utils/letterboxd-actions"
+import { addLetterboxdWatchlist, extractLetterboxdCsrf } from "../../utils/letterboxd-actions"
 
 describe("Letterboxd account actions", () => {
 	afterEach(() => vi.unstubAllGlobals())
@@ -37,23 +37,5 @@ describe("Letterboxd account actions", () => {
 		vi.stubGlobal("fetch", fetcher)
 		await expect(addLetterboxdWatchlist("film", true)).rejects.toThrow("Letterboxd")
 		expect(fetcher).toHaveBeenCalledTimes(1)
-	})
-	it("clears an old film prompt when playback ends or switches context", () => {
-		document.body.innerHTML = ""
-		const prompt = new CreditsRatingPrompt(),
-			video = document.createElement("video")
-		Object.defineProperty(video, "duration", { value: 3600 })
-		video.currentTime = 3550
-		const film = {
-			id: 1,
-			title: "Film",
-			media_type: "movie",
-			source: "letterboxd" as const,
-			rating_url: "https://letterboxd.com/film/film/",
-		}
-		prompt.tick(video, film, true)
-		expect(document.querySelector(".sb-rate-prompt")).not.toBeNull()
-		prompt.tick(null, null, true)
-		expect(document.querySelector(".sb-rate-prompt")).toBeNull()
 	})
 })

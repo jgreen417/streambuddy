@@ -108,6 +108,37 @@ describe("temporary failures", () => {
 	})
 })
 
+describe("friends' ratings on a film", () => {
+	const realFetch = globalThis.fetch
+	afterEach(() => {
+		globalThis.fetch = realFetch
+	})
+	const film = wrap('{"@type":"Movie","aggregateRating":{"ratingValue":3.9,"ratingCount":10}}')
+	const respond = (friendsStatus: number) =>
+		(globalThis.fetch = vi.fn(async (input: RequestInfo | URL) =>
+			String(input).includes("/friends/")
+				? ({
+						ok: friendsStatus < 400,
+						status: friendsStatus,
+						url: String(input),
+						text: async () => "<table></table>",
+					} as unknown as Response)
+				: ({
+						ok: true,
+						status: 200,
+						url: "https://letterboxd.com/film/godland/",
+						text: async () => film,
+					} as unknown as Response),
+		))
+
+	it("tells none of your friends rated it apart from not knowing", async () => {
+		respond(200)
+		expect((await fetchLetterboxdRating(900667, "buddy"))?.friends_count).toBe(0)
+		respond(500)
+		expect((await fetchLetterboxdRating(900667, "buddy"))?.friends_count).toBeUndefined()
+	})
+})
+
 describe("getScoreColor", () => {
 	const [red, orange, yellow, lightGreen, green] = SCORE_COLORS
 

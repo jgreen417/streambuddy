@@ -10,7 +10,7 @@ export {}
 declare global {
   const BADGE_FONT: typeof import('../utils/page-feature-styles').BADGE_FONT
   const CheckedCards: typeof import('../utils/tmdb').CheckedCards
-  const CreditsRatingPrompt: typeof import('../utils/letterboxd-actions').CreditsRatingPrompt
+  const CreditsRatingPrompt: typeof import('../utils/credits-review').CreditsRatingPrompt
   const DetailRatings: typeof import('../utils/page-features').DetailRatings
   const EffectScope: typeof import('vue').EffectScope
   const HiddenTitlesPromise: typeof import('../stores/options.store').HiddenTitlesPromise
@@ -53,6 +53,7 @@ declare global {
   const createSharedComposable: typeof import('@vueuse/core').createSharedComposable
   const createTemplatePromise: typeof import('@vueuse/core').createTemplatePromise
   const createUnrefFn: typeof import('@vueuse/core').createUnrefFn
+  const creditsLength: typeof import('../utils/credits-review').creditsLength
   const crunchyListStore: typeof import('../stores/options.store').crunchyListStore
   const customRef: typeof import('vue').customRef
   const debouncedRef: typeof import('@vueuse/core').debouncedRef
@@ -70,6 +71,7 @@ declare global {
   const fetchLetterboxdGuess: typeof import('../utils/ratings').fetchLetterboxdGuess
   const fetchLetterboxdProfile: typeof import('../utils/ratings').fetchLetterboxdProfile
   const fetchLetterboxdRating: typeof import('../utils/ratings').fetchLetterboxdRating
+  const fetchNetflixMetadata: typeof import('../utils/netflix-credits').fetchNetflixMetadata
   const fetchPosterInfo: typeof import('../utils/tmdb').fetchPosterInfo
   const formatDuration: typeof import('../utils/stats').formatDuration
   const getAccount: typeof import('../utils/account').getAccount
@@ -88,6 +90,7 @@ declare global {
   const h: typeof import('vue').h
   const i18n: typeof import('../utils/i18n').i18n
   const ignorableWatch: typeof import('@vueuse/core').ignorableWatch
+  const inCredits: typeof import('../utils/credits-review').inCredits
   const inject: typeof import('vue').inject
   const injectLocal: typeof import('@vueuse/core').injectLocal
   const installPageFeatureStyle: typeof import('../utils/page-feature-styles').installPageFeatureStyle
@@ -137,6 +140,7 @@ declare global {
   const parseFriendRows: typeof import('../utils/ratings').parseFriendRows
   const parseLetterboxdHtml: typeof import('../utils/ratings').parseLetterboxdHtml
   const parseLetterboxdTmdbId: typeof import('../utils/ratings').parseLetterboxdTmdbId
+  const parseNetflixCredits: typeof import('../utils/netflix-credits').parseNetflixCredits
   const parseProfileGrid: typeof import('../utils/ratings').parseProfileGrid
   const parseShowTitles: typeof import('../utils/netflix-shows').parseShowTitles
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
@@ -163,6 +167,7 @@ declare global {
   const refWithControl: typeof import('@vueuse/core').refWithControl
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveRef: typeof import('@vueuse/core').resolveRef
+  const reviewState: typeof import('../utils/credits-review').reviewState
   const saveAccount: typeof import('../utils/account').saveAccount
   const setActivePinia: typeof import('pinia').setActivePinia
   const setMapStoreSuffix: typeof import('pinia').setMapStoreSuffix
@@ -171,6 +176,7 @@ declare global {
   const shallowReactive: typeof import('vue').shallowReactive
   const shallowReadonly: typeof import('vue').shallowReadonly
   const shallowRef: typeof import('vue').shallowRef
+  const starText: typeof import('../utils/credits-review').starText
   const storeToRefs: typeof import('pinia').storeToRefs
   const sumLastDays: typeof import('../utils/stats').sumLastDays
   const summarizeWatchLog: typeof import('../utils/stats').summarizeWatchLog
@@ -410,8 +416,11 @@ declare global {
   export type { Account, CheckResult } from '../utils/account'
   import('../utils/account')
   // @ts-ignore
-  export type { CreditsRatingPrompt } from '../utils/letterboxd-actions'
-  import('../utils/letterboxd-actions')
+  export type { CreditsRatingPrompt, ReviewViewer } from '../utils/credits-review'
+  import('../utils/credits-review')
+  // @ts-ignore
+  export type { NetflixCredits } from '../utils/netflix-credits'
+  import('../utils/netflix-credits')
   // @ts-ignore
   export type { NetflixShowTitles } from '../utils/netflix-shows'
   import('../utils/netflix-shows')
@@ -442,7 +451,7 @@ declare module 'vue' {
   interface ComponentCustomProperties {
     readonly BADGE_FONT: UnwrapRef<typeof import('../utils/page-feature-styles')['BADGE_FONT']>
     readonly CheckedCards: UnwrapRef<typeof import('../utils/tmdb')['CheckedCards']>
-    readonly CreditsRatingPrompt: UnwrapRef<typeof import('../utils/letterboxd-actions')['CreditsRatingPrompt']>
+    readonly CreditsRatingPrompt: UnwrapRef<typeof import('../utils/credits-review')['CreditsRatingPrompt']>
     readonly DetailRatings: UnwrapRef<typeof import('../utils/page-features')['DetailRatings']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly NetflixShowTitles: UnwrapRef<typeof import('../utils/netflix-shows')['NetflixShowTitles']>
@@ -484,6 +493,7 @@ declare module 'vue' {
     readonly createSharedComposable: UnwrapRef<typeof import('@vueuse/core')['createSharedComposable']>
     readonly createTemplatePromise: UnwrapRef<typeof import('@vueuse/core')['createTemplatePromise']>
     readonly createUnrefFn: UnwrapRef<typeof import('@vueuse/core')['createUnrefFn']>
+    readonly creditsLength: UnwrapRef<typeof import('../utils/credits-review')['creditsLength']>
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>
     readonly debouncedRef: UnwrapRef<typeof import('@vueuse/core')['debouncedRef']>
     readonly debouncedWatch: UnwrapRef<typeof import('@vueuse/core')['debouncedWatch']>
@@ -500,6 +510,7 @@ declare module 'vue' {
     readonly fetchLetterboxdGuess: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdGuess']>
     readonly fetchLetterboxdProfile: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdProfile']>
     readonly fetchLetterboxdRating: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdRating']>
+    readonly fetchNetflixMetadata: UnwrapRef<typeof import('../utils/netflix-credits')['fetchNetflixMetadata']>
     readonly formatDuration: UnwrapRef<typeof import('../utils/stats')['formatDuration']>
     readonly getAccount: UnwrapRef<typeof import('../utils/account')['getAccount']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
@@ -517,6 +528,7 @@ declare module 'vue' {
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly i18n: UnwrapRef<typeof import('../utils/i18n')['i18n']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
+    readonly inCredits: UnwrapRef<typeof import('../utils/credits-review')['inCredits']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
     readonly injectLocal: UnwrapRef<typeof import('@vueuse/core')['injectLocal']>
     readonly installPageFeatureStyle: UnwrapRef<typeof import('../utils/page-feature-styles')['installPageFeatureStyle']>
@@ -566,6 +578,7 @@ declare module 'vue' {
     readonly parseFriendRows: UnwrapRef<typeof import('../utils/ratings')['parseFriendRows']>
     readonly parseLetterboxdHtml: UnwrapRef<typeof import('../utils/ratings')['parseLetterboxdHtml']>
     readonly parseLetterboxdTmdbId: UnwrapRef<typeof import('../utils/ratings')['parseLetterboxdTmdbId']>
+    readonly parseNetflixCredits: UnwrapRef<typeof import('../utils/netflix-credits')['parseNetflixCredits']>
     readonly parseProfileGrid: UnwrapRef<typeof import('../utils/ratings')['parseProfileGrid']>
     readonly parseShowTitles: UnwrapRef<typeof import('../utils/netflix-shows')['parseShowTitles']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
@@ -591,6 +604,7 @@ declare module 'vue' {
     readonly refThrottled: UnwrapRef<typeof import('@vueuse/core')['refThrottled']>
     readonly refWithControl: UnwrapRef<typeof import('@vueuse/core')['refWithControl']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
+    readonly reviewState: UnwrapRef<typeof import('../utils/credits-review')['reviewState']>
     readonly saveAccount: UnwrapRef<typeof import('../utils/account')['saveAccount']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>
@@ -599,6 +613,7 @@ declare module 'vue' {
     readonly shallowReactive: UnwrapRef<typeof import('vue')['shallowReactive']>
     readonly shallowReadonly: UnwrapRef<typeof import('vue')['shallowReadonly']>
     readonly shallowRef: UnwrapRef<typeof import('vue')['shallowRef']>
+    readonly starText: UnwrapRef<typeof import('../utils/credits-review')['starText']>
     readonly storeToRefs: UnwrapRef<typeof import('pinia')['storeToRefs']>
     readonly sumLastDays: UnwrapRef<typeof import('../utils/stats')['sumLastDays']>
     readonly summarizeWatchLog: UnwrapRef<typeof import('../utils/stats')['summarizeWatchLog']>
