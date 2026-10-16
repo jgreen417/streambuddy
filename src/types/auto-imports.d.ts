@@ -9,7 +9,7 @@
 export {}
 declare global {
   const BADGE_FONT: typeof import('../utils/page-feature-styles').BADGE_FONT
-  const CreditsRatingPrompt: typeof import('../utils/letterboxd-actions').CreditsRatingPrompt
+  const CreditsRatingPrompt: typeof import('../utils/credits-review').CreditsRatingPrompt
   const DetailRatings: typeof import('../utils/page-features').DetailRatings
   const EffectScope: typeof import('vue').EffectScope
   const HiddenTitlesPromise: typeof import('../stores/options.store').HiddenTitlesPromise
@@ -161,6 +161,7 @@ declare global {
   const refWithControl: typeof import('@vueuse/core').refWithControl
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveRef: typeof import('@vueuse/core').resolveRef
+  const reviewState: typeof import('../utils/credits-review').reviewState
   const saveAccount: typeof import('../utils/account').saveAccount
   const setActivePinia: typeof import('pinia').setActivePinia
   const setMapStoreSuffix: typeof import('pinia').setMapStoreSuffix
@@ -169,6 +170,7 @@ declare global {
   const shallowReactive: typeof import('vue').shallowReactive
   const shallowReadonly: typeof import('vue').shallowReadonly
   const shallowRef: typeof import('vue').shallowRef
+  const starText: typeof import('../utils/credits-review').starText
   const storeToRefs: typeof import('pinia').storeToRefs
   const sumLastDays: typeof import('../utils/stats').sumLastDays
   const summarizeWatchLog: typeof import('../utils/stats').summarizeWatchLog
@@ -408,8 +410,8 @@ declare global {
   export type { Account, CheckResult } from '../utils/account'
   import('../utils/account')
   // @ts-ignore
-  export type { CreditsRatingPrompt } from '../utils/letterboxd-actions'
-  import('../utils/letterboxd-actions')
+  export type { CreditsRatingPrompt, ReviewViewer } from '../utils/credits-review'
+  import('../utils/credits-review')
   // @ts-ignore
   export type { NetflixShowTitles } from '../utils/netflix-shows'
   import('../utils/netflix-shows')
@@ -436,7 +438,7 @@ declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
     readonly BADGE_FONT: UnwrapRef<typeof import('../utils/page-feature-styles')['BADGE_FONT']>
-    readonly CreditsRatingPrompt: UnwrapRef<typeof import('../utils/letterboxd-actions')['CreditsRatingPrompt']>
+    readonly CreditsRatingPrompt: UnwrapRef<typeof import('../utils/credits-review')['CreditsRatingPrompt']>
     readonly DetailRatings: UnwrapRef<typeof import('../utils/page-features')['DetailRatings']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly NetflixShowTitles: UnwrapRef<typeof import('../utils/netflix-shows')['NetflixShowTitles']>
@@ -584,6 +586,7 @@ declare module 'vue' {
     readonly refThrottled: UnwrapRef<typeof import('@vueuse/core')['refThrottled']>
     readonly refWithControl: UnwrapRef<typeof import('@vueuse/core')['refWithControl']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
+    readonly reviewState: UnwrapRef<typeof import('../utils/credits-review')['reviewState']>
     readonly saveAccount: UnwrapRef<typeof import('../utils/account')['saveAccount']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>
@@ -592,6 +595,7 @@ declare module 'vue' {
     readonly shallowReactive: UnwrapRef<typeof import('vue')['shallowReactive']>
     readonly shallowReadonly: UnwrapRef<typeof import('vue')['shallowReadonly']>
     readonly shallowRef: UnwrapRef<typeof import('vue')['shallowRef']>
+    readonly starText: UnwrapRef<typeof import('../utils/credits-review')['starText']>
     readonly storeToRefs: UnwrapRef<typeof import('pinia')['storeToRefs']>
     readonly sumLastDays: UnwrapRef<typeof import('../utils/stats')['sumLastDays']>
     readonly summarizeWatchLog: UnwrapRef<typeof import('../utils/stats')['summarizeWatchLog']>

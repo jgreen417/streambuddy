@@ -1,0 +1,114 @@
+import { describe, expect, it, vi } from "vitest"
+import { CreditsRatingPrompt, reviewState, starText, type ReviewViewer } from "../../utils/credits-review"
+import type { FeatureRating } from "../../utils/page-features"
+
+function video(currentTime = 3550) {
+	const element = document.createElement("video")
+	Object.defineProperty(element, "duration", { value: 3600 })
+	element.currentTime = currentTime
+	return element
+}
+const film: FeatureRating = {
+	id: 1,
+	title: "Past Lives",
+	media_type: "movie",
+	source: "letterboxd",
+	rating: 3.9,
+	rating_url: "https://letterboxd.com/film/past-lives/",
+	friends_rating: 4.2,
+	friends_count: 7,
+	friends: [
+		{ name: "sam", rating: 4.5 },
+		{ name: "alex", rating: 4 },
+		{ name: "priya", rating: 3.5 },
+		{ name: "jo", rating: 3 },
+	],
+}
+const signedIn: ReviewViewer = { username: "buddy", friends: true }
+const review = () => document.querySelector<HTMLElement>(".sb-review")
+const card = () => document.querySelector<HTMLElement>(".sb-review-card")!
+
+describe("credits review", () => {
+	it("picks the state from your account, diary and friends", () => {
+		expect(reviewState(film, signedIn)).toBe("friends")
+		expect(reviewState({ ...film, friends: [], friends_count: 0 }, signedIn)).toBe("nobody")
+		expect(reviewState(film, { ...signedIn, watched: 4.5 })).toBe("logged")
+		expect(reviewState(film, { ...signedIn, watched: 0 })).toBe("logged")
+		expect(reviewState(film, { username: "", friends: true })).toBe("unlinked")
+		expect(reviewState(film, { ...signedIn, friends: false })).toBe("plain")
+	})
+	it("writes half stars and pads to five", () => {
+		expect(starText(4.5)).toEqual({ filled: "★★★★½", empty: "" })
+		expect(starText(3)).toEqual({ filled: "★★★", empty: "★★" })
+	})
+	it("starts as a collapsed pill and expands into the card", () => {
+		document.body.innerHTML = ""
+		new CreditsRatingPrompt().tick(video(), film, true, signedIn)
+		expect(review()?.textContent).toContain("Review Past Lives")
+		expect(review()?.textContent).toContain("7 friends rated it")
+		expect(card().hidden).toBe(true)
+		const toggle = document.querySelector<HTMLButtonElement>(".sb-review-toggle")!
+		expect(toggle.getAttribute("aria-expanded")).toBe("false")
+		toggle.click()
+		expect(card().hidden).toBe(false)
+		expect(toggle.getAttribute("aria-expanded")).toBe("true")
+		expect(card().textContent).toContain("You just finished Past Lives")
+		// three friends in the card, the rest behind "see all"
+		expect(card().querySelectorAll(".sb-review-friend")).toHaveLength(3)
+		expect(card().querySelector<HTMLAnchorElement>(".sb-review-more")!.href).toBe(
+			"https://letterboxd.com/buddy/friends/film/past-lives/",
+		)
+		expect(card().querySelector<HTMLAnchorElement>("a.sb-review-primary")!.href).toBe(film.rating_url)
+	})
+	it("offers to log a film that's already in your diary again", () => {
+		document.body.innerHTML = ""
+		new CreditsRatingPrompt().tick(video(), film, true, { ...signedIn, watched: 4.5 })
+		const again = document.querySelector<HTMLAnchorElement>(".sb-review-action")!
+		expect(again.textContent).toBe("Log again?")
+		expect(again.href).toBe(film.rating_url)
+		expect(review()?.textContent).toContain("You rated it")
+	})
+	it("asks to connect Letterboxd when none is linked", () => {
+		document.body.innerHTML = ""
+		const openSetup = vi.fn()
+		new CreditsRatingPrompt(openSetup).tick(video(), { ...film, friends: undefined, friends_count: undefined }, true, {
+			username: "",
+			friends: true,
+		})
+		expect(review()?.textContent).toContain("No Letterboxd linked")
+		document.querySelector<HTMLButtonElement>("button.sb-review-action")!.click()
+		expect(openSetup).toHaveBeenCalledOnce()
+		expect(review()).toBeNull()
+	})
+	it("Escape closes the card first, then the pill", () => {
+		document.body.innerHTML = ""
+		new CreditsRatingPrompt().tick(video(), film, true, signedIn)
+		document.querySelector<HTMLButtonElement>(".sb-review-chevron")!.click()
+		const escape = () => review()!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))
+		escape()
+		expect(card().hidden).toBe(true)
+		escape()
+		expect(review()).toBeNull()
+	})
+	it("only shows for films in their last minute and a half, once per film", () => {
+		document.body.innerHTML = ""
+		const prompt = new CreditsRatingPrompt()
+		prompt.tick(video(3000), film, true, signedIn)
+		expect(review()).toBeNull()
+		prompt.tick(video(), { ...film, media_type: "tv" }, true, signedIn)
+		expect(review()).toBeNull()
+		prompt.tick(video(), film, true, signedIn)
+		expect(review()).not.toBeNull()
+		document.querySelector<HTMLButtonElement>(".sb-review-close")!.click()
+		prompt.tick(video(), film, true, signedIn)
+		expect(review()).toBeNull()
+	})
+	it("clears an old film's review when playback ends or switches", () => {
+		document.body.innerHTML = ""
+		const prompt = new CreditsRatingPrompt()
+		prompt.tick(video(), film, true, signedIn)
+		expect(review()).not.toBeNull()
+		prompt.tick(null, null, true)
+		expect(review()).toBeNull()
+	})
+})

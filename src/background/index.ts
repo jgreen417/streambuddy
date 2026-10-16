@@ -152,6 +152,10 @@ const syncLetterboxdProfile = createProfileSync(async () => (await getAccount())
 		await browser.storage.local.set({ letterboxdProfile: profile })
 	},
 })
+// the credits review's "Connect" button: open settings at the Letterboxd account step
+onMessage("openAccountSetup", () => {
+	browser.tabs.create({ url: browser.runtime.getURL("src/ui/options-page/index.html#/options-page/Account") })
+})
 onMessage("letterboxdProfile", async (message: { data: { force?: boolean } }) =>
 	syncLetterboxdProfile(!!message.data?.force),
 )

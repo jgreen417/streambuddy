@@ -20,7 +20,7 @@ import {
 	type FeatureRating,
 	type EpisodeRating,
 } from "@/utils/page-features"
-import { CreditsRatingPrompt } from "@/utils/letterboxd-actions"
+import { CreditsRatingPrompt } from "@/utils/credits-review"
 import { NetflixShowTitles, getEpisodeId } from "@/utils/netflix-shows"
 import {
 	addWatchSeconds,
@@ -388,7 +388,9 @@ watch(
 let watchlistSlugs = new Set<string>()
 
 const searchSorting = new SearchRatingSort()
-const creditsPrompt = new CreditsRatingPrompt()
+const creditsPrompt = new CreditsRatingPrompt(() => {
+	Promise.resolve(sendMessage("openAccountSetup", {}, "background")).catch(() => {})
+})
 let playerLookup: { title: string; sources: RatingSources; data: FeatureRating | null; pending?: Promise<unknown>; retry: number } | null = null
 const detailRatings = new DetailRatings(
 	async (title, type, year) => {
@@ -547,7 +549,7 @@ function startPageFeatures() {
 }
 
 function updateCreditsPrompt() {
-	const enabled = settings.value.General.rateOnCredits && !!letterboxdUsername
+	const enabled = settings.value.General.rateOnCredits
 	if (!enabled) {
 		creditsPrompt.tick(null, null, false)
 		return
@@ -591,7 +593,12 @@ function updateCreditsPrompt() {
 				current.retry = Date.now() + 30_000
 			})
 	}
-	creditsPrompt.tick(video, playerLookup.data, true)
+	const slug = playerLookup.data?.source === "letterboxd" ? getLetterboxdSlug(playerLookup.data.rating_url) : undefined
+	creditsPrompt.tick(video, playerLookup.data, true, {
+		username: letterboxdUsername,
+		watched: slug && letterboxdProfile?.username === letterboxdUsername ? letterboxdProfile.watched[slug] : undefined,
+		friends: settings.value.General.friendsRatings,
+	})
 }
 function setLetterboxdProfile(profile: LetterboxdProfile | null) {
 	letterboxdProfile = profile

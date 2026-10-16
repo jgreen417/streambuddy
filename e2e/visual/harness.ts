@@ -19,6 +19,8 @@ export type OpenOptions = {
 	settings?: { General?: Record<string, unknown>; Video?: Record<string, unknown> }
 	// signed in to Letterboxd as PROFILE (your ratings, watchlist, the credits prompt); on by default
 	signedIn?: boolean
+	// with signedIn, a TMDb key but no Letterboxd username linked
+	noLetterboxd?: boolean
 	viewport?: { width: number; height: number }
 }
 
@@ -44,6 +46,70 @@ const TMDB_RESULTS: Record<string, object> = {
 		vote_count: 3100,
 		release_date: "2023-06-02",
 	},
+	Aftersun: {
+		id: 965150,
+		media_type: "movie",
+		title: "Aftersun",
+		vote_average: 7.7,
+		vote_count: 2400,
+		release_date: "2022-10-21",
+	},
+	Godland: {
+		id: 900667,
+		media_type: "movie",
+		title: "Godland",
+		vote_average: 7.1,
+		vote_count: 300,
+		release_date: "2022-12-02",
+	},
+}
+// the film each player URL is playing (netflix-player.html shows this title)
+export const PLAYER_FILMS: Record<string, string> = {
+	"81572765": "Past Lives",
+	"81572766": "Aftersun",
+	"81572767": "Godland",
+}
+// Letterboxd pages for the player's films only (card badges come from the seeded cache): the film page with its
+// average and TMDb id, /tmdb/{id}/ redirecting to it, and which of PROFILE's friends rated it
+const LETTERBOXD_FILMS: Record<string, { tmdb: number; rating: number; friends: { name: string; rating: number }[] }> = {
+	"past-lives": { tmdb: 666277, rating: 3.94, friends: [{ name: "sam", rating: 4.5 }, { name: "alex", rating: 4 }] },
+	aftersun: {
+		tmdb: 965150,
+		rating: 4.12,
+		friends: [
+			{ name: "sam", rating: 4.5 },
+			{ name: "alex", rating: 4 },
+			{ name: "priya", rating: 4 },
+			{ name: "jo", rating: 3.5 },
+		],
+	},
+	godland: { tmdb: 900667, rating: 3.8, friends: [] },
+}
+function letterboxdPage(url: URL) {
+	const tmdb = /^\/tmdb\/(\d+)\/$/.exec(url.pathname)?.[1]
+	if (tmdb) {
+		const slug = Object.keys(LETTERBOXD_FILMS).find((key) => LETTERBOXD_FILMS[key].tmdb === Number(tmdb))
+		return slug ? { status: 302, headers: { location: `https://letterboxd.com/film/${slug}/` } } : null
+	}
+	const film = /^\/film\/([^/]+)\/$/.exec(url.pathname)?.[1]
+	if (film && LETTERBOXD_FILMS[film]) {
+		const { tmdb, rating } = LETTERBOXD_FILMS[film]
+		const ld = JSON.stringify({ aggregateRating: { ratingValue: rating, ratingCount: 250000 } })
+		return {
+			contentType: "text/html",
+			body: `<div data-tmdb-id="${tmdb}" data-tmdb-type="movie"></div><script type="application/ld+json">${ld}</script>`,
+		}
+	}
+	const friends = /^\/[^/]+\/friends\/film\/([^/]+)\/$/.exec(url.pathname)?.[1]
+	if (friends && LETTERBOXD_FILMS[friends]) {
+		const rows = LETTERBOXD_FILMS[friends].friends.map(
+			(friend) =>
+				`<tr><td><a href="/${friend.name}/" class="name">${friend.name}</a></td>` +
+				`<td class="col-rating"><span class="rating rated-${friend.rating * 2}"></span></td></tr>`,
+		)
+		return { contentType: "text/html", body: `<table>${rows.join("")}</table>` }
+	}
+	return null
 }
 
 const WAV = silentWav(22 * 60)
@@ -73,11 +139,20 @@ async function handle(route: Route) {
 		const result = TMDB_RESULTS[url.searchParams.get("query") ?? ""]
 		return route.fulfill({ json: { page: 1, results: result ? [result] : [], total_results: result ? 1 : 0 } })
 	}
+	if (url.hostname === "letterboxd.com") {
+		const page = letterboxdPage(url)
+		if (page) return route.fulfill(page)
+	}
 	if (request.resourceType() === "document") {
 		const page = PAGES.find((entry) => entry.host.test(url.hostname) && entry.path.test(url.pathname))
-		if (page) return route.fulfill({ contentType: "text/html", body: await readFile(path.join(FIXTURES, page.file)) })
+		if (page) {
+			let body = await readFile(path.join(FIXTURES, page.file), "utf8")
+			const film = PLAYER_FILMS[/^\/watch\/(\d+)/.exec(url.pathname)?.[1] ?? ""]
+			if (film) body = body.replace("<h4>Past Lives</h4>", `<h4>${film}</h4>`)
+			return route.fulfill({ contentType: "text/html", body })
+		}
 	}
-	// Letterboxd, IMDb, fonts from the sites, analytics: nothing the fixtures need
+	// the rest of Letterboxd, IMDb, fonts from the sites, analytics: nothing the fixtures need
 	return route.abort("blockedbyclient")
 }
 
@@ -117,6 +192,7 @@ async function launch(options: OpenOptions) {
 	await expect.poll(() => worker.evaluate(() => !!globalThis.chrome?.storage?.local)).toBe(true)
 	const today = new Date().toISOString().split("T")[0]
 	const signedIn = options.signedIn ?? true
+	const letterboxd = signedIn && !options.noLetterboxd
 	await worker.evaluate(
 		async ({ local, sync }) => {
 			await chrome.storage.local.set(local)
@@ -125,14 +201,16 @@ async function launch(options: OpenOptions) {
 		{
 			local: {
 				DBCache: dbCache(today, options.settings?.General?.ratingSources as Parameters<typeof dbCache>[1]),
-				...(signedIn ? { letterboxdProfile: { ...PROFILE, fetchedAt: Date.now() } } : {}),
+				...(letterboxd ? { letterboxdProfile: { ...PROFILE, fetchedAt: Date.now() } } : {}),
 			},
 			sync: {
 				settings: {
 					...options.settings,
 					General: { GCdate: today, ...options.settings?.General },
 				},
-				...(signedIn ? { streambuddyAccount: { letterboxdUsername: PROFILE.username, tmdbToken: "visual-test" } } : {}),
+				...(signedIn
+					? { streambuddyAccount: { letterboxdUsername: letterboxd ? PROFILE.username : "", tmdbToken: "visual-test" } }
+					: {}),
 			},
 		},
 	)
