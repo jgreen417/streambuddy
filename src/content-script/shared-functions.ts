@@ -20,7 +20,8 @@ import {
 	type FeatureRating,
 	type EpisodeRating,
 } from "@/utils/page-features"
-import { CreditsRatingPrompt } from "@/utils/credits-review"
+import { CreditsRatingPrompt, creditsLength, inCredits } from "@/utils/credits-review"
+import { fetchNetflixMetadata, parseNetflixCredits, type NetflixCredits } from "@/utils/netflix-credits"
 import { NetflixShowTitles, getEpisodeId } from "@/utils/netflix-shows"
 import {
 	addWatchSeconds,
@@ -391,7 +392,13 @@ const searchSorting = new SearchRatingSort()
 const creditsPrompt = new CreditsRatingPrompt(() => {
 	Promise.resolve(sendMessage("openAccountSetup", {}, "background")).catch(() => {})
 })
-let playerLookup: { title: string; sources: RatingSources; data: FeatureRating | null; pending?: Promise<unknown>; retry: number } | null = null
+let playerLookup: {
+	title: string
+	sources: RatingSources
+	data: FeatureRating | null
+	pending?: Promise<unknown>
+	retry: number
+} | null = null
 const detailRatings = new DetailRatings(
 	async (title, type, year) => {
 		const cached = DBCache[title]
@@ -548,18 +555,29 @@ function startPageFeatures() {
 	tick()
 }
 
+// the review pill, once up, stays put until it's dismissed or something else plays: Netflix swaps the film for a
+// trailer about 10 seconds into its end screen and then leaves the player
+let creditsShownOn = ""
+// Netflix's metadata for the title playing, which marks when its credits start
+let netflixPlaying: { id: string; credits?: NetflixCredits | null } | null = null
 function updateCreditsPrompt() {
 	const enabled = settings.value.General.rateOnCredits
 	if (!enabled) {
 		creditsPrompt.tick(null, null, false)
 		return
 	}
+	if (creditsPrompt.showing && creditsShownOn && (!isOnPlayerPage() || location.pathname === creditsShownOn)) return
+	creditsShownOn = ""
 	if (!isOnPlayerPage()) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
 	const video = document.querySelector<HTMLVideoElement>("video")
-	if (!video || !Number.isFinite(video.duration) || video.duration < 1200 || video.currentTime < video.duration - 90) {
+	const netflix = isNetflix ? netflixCredits() : undefined
+	// how long Netflix says the credits run, when it does
+	const marked = video && netflix?.creditsShare ? netflix.creditsShare * video.duration : undefined
+	// look the film up a couple of minutes before its credits, so it's ready when they start
+	if (!video || !inCredits(video, (marked ?? creditsLength(video.duration)) + 2 * 60) || netflix?.movie === false) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
@@ -570,7 +588,9 @@ function updateCreditsPrompt() {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
-	const raw = isNetflix ? document.querySelector('[data-uia="video-title"] h4')?.textContent : document.title
+	const raw = isNetflix
+		? (netflix?.title ?? document.querySelector('[data-uia="video-title"] h4')?.textContent)
+		: document.title
 	const title = raw
 		?.replace(/^Prime Video:\s*/i, "")
 		.split(/\s*[•·|]\s*/)[0]
@@ -594,11 +614,33 @@ function updateCreditsPrompt() {
 			})
 	}
 	const slug = playerLookup.data?.source === "letterboxd" ? getLetterboxdSlug(playerLookup.data.rating_url) : undefined
-	creditsPrompt.tick(video, playerLookup.data, true, {
-		username: letterboxdUsername,
-		watched: slug && letterboxdProfile?.username === letterboxdUsername ? letterboxdProfile.watched[slug] : undefined,
-		friends: settings.value.General.friendsRatings,
-	})
+	// Netflix's end screen comes up exactly when the credits start, even without a marker in its metadata
+	const endScreen = isNetflix && !!document.querySelector('[data-uia="postplay-player-space"]')
+	creditsPrompt.tick(
+		video,
+		playerLookup.data,
+		true,
+		{
+			username: letterboxdUsername,
+			watched: slug && letterboxdProfile?.username === letterboxdUsername ? letterboxdProfile.watched[slug] : undefined,
+			friends: settings.value.General.friendsRatings,
+		},
+		endScreen ? video.duration : marked,
+	)
+	if (creditsPrompt.showing) creditsShownOn = location.pathname
+}
+// what Netflix's metadata says about the title on /watch/{id}, once it has loaded
+function netflixCredits() {
+	const id = location.pathname.match(/^\/watch\/(\d+)/)?.[1]
+	if (!id) return undefined
+	if (netflixPlaying?.id !== id) {
+		const playing: NonNullable<typeof netflixPlaying> = { id }
+		netflixPlaying = playing
+		fetchNetflixMetadata(id).then((json) => {
+			playing.credits = parseNetflixCredits(json)
+		})
+	}
+	return netflixPlaying.credits ?? undefined
 }
 function setLetterboxdProfile(profile: LetterboxdProfile | null) {
 	letterboxdProfile = profile

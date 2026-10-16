@@ -19,11 +19,20 @@ const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" heigh
 const FACE_COLORS = ["#ff7a45", "#8ec5ff", "#f2c94c", "#7ad9a0", "#c9a7ff"]
 const FRIENDS_IN_CARD = 3
 
-// When the credits probably start, in seconds before the end: about 7% of the runtime, between 3 and 10 minutes
-// (around 8 minutes for a 2-hour film). Players don't say when credits start, so this errs a little early; the
-// pill stays collapsed, so showing during the last scene of a film with short credits is fine.
+// How long the credits probably run, in seconds, when the service doesn't say: about 7% of the runtime, between 3 and
+// 10 minutes (around 8 minutes for a 2-hour film). It errs a little early; the pill stays collapsed, so showing
+// during the last scene of a film with short credits is fine.
 export function creditsLength(duration: number) {
 	return Math.min(10 * 60, Math.max(3 * 60, duration * 0.07))
+}
+
+// a film long enough to be one, playing its credits. `length` is how long the service says they run, if it does.
+export function inCredits(video: HTMLVideoElement, length?: number) {
+	return (
+		Number.isFinite(video.duration) &&
+		video.duration >= 20 * 60 &&
+		video.currentTime >= video.duration - (length ?? creditsLength(video.duration))
+	)
 }
 
 export function reviewState(data: FeatureRating, viewer: ReviewViewer): ReviewState {
@@ -89,6 +98,10 @@ export class CreditsRatingPrompt {
 	private current = ""
 	constructor(private openSetup: () => void = () => {}) {}
 
+	get showing() {
+		return !!document.querySelector(".sb-review")
+	}
+
 	private clear() {
 		document.querySelectorAll(".sb-review").forEach((element) => element.remove())
 	}
@@ -98,19 +111,13 @@ export class CreditsRatingPrompt {
 		data: FeatureRating | null,
 		enabled: boolean,
 		viewer: ReviewViewer = { username: "", friends: true },
+		// how long the service says the credits run
+		serviceCredits?: number,
 	) {
 		const key = data ? `${data.id}` : ""
 		if (this.current !== key) this.clear()
 		this.current = key
-		if (
-			!enabled ||
-			!video ||
-			!data ||
-			data.media_type !== "movie" ||
-			!Number.isFinite(video.duration) ||
-			video.duration < 20 * 60 ||
-			video.currentTime < video.duration - creditsLength(video.duration)
-		) {
+		if (!enabled || !video || !data || data.media_type !== "movie" || !inCredits(video, serviceCredits)) {
 			this.clear()
 			return
 		}

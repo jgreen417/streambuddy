@@ -115,6 +115,16 @@ describe("credits review", () => {
 		prompt.tick(video(3400), film, true, signedIn)
 		expect(review()).toBeNull()
 	})
+	it("uses the service's own credits start when it has one", () => {
+		document.body.innerHTML = ""
+		const prompt = new CreditsRatingPrompt()
+		// the service says the credits run 8 minutes, so 6 minutes from the end is already in them
+		prompt.tick(video(3240), film, true, signedIn, 480)
+		expect(review()).not.toBeNull()
+		document.body.innerHTML = ""
+		new CreditsRatingPrompt().tick(video(3500), film, true, signedIn, 60)
+		expect(review()).toBeNull()
+	})
 	it("clears an old film's review when playback ends or switches", () => {
 		document.body.innerHTML = ""
 		const prompt = new CreditsRatingPrompt()

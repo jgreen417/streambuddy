@@ -70,6 +70,7 @@ declare global {
   const fetchLetterboxdGuess: typeof import('../utils/ratings').fetchLetterboxdGuess
   const fetchLetterboxdProfile: typeof import('../utils/ratings').fetchLetterboxdProfile
   const fetchLetterboxdRating: typeof import('../utils/ratings').fetchLetterboxdRating
+  const fetchNetflixMetadata: typeof import('../utils/netflix-credits').fetchNetflixMetadata
   const fetchPosterInfo: typeof import('../utils/tmdb').fetchPosterInfo
   const formatDuration: typeof import('../utils/stats').formatDuration
   const getAccount: typeof import('../utils/account').getAccount
@@ -88,6 +89,7 @@ declare global {
   const h: typeof import('vue').h
   const i18n: typeof import('../utils/i18n').i18n
   const ignorableWatch: typeof import('@vueuse/core').ignorableWatch
+  const inCredits: typeof import('../utils/credits-review').inCredits
   const inject: typeof import('vue').inject
   const injectLocal: typeof import('@vueuse/core').injectLocal
   const installPageFeatureStyle: typeof import('../utils/page-feature-styles').installPageFeatureStyle
@@ -136,6 +138,7 @@ declare global {
   const parseFriendRows: typeof import('../utils/ratings').parseFriendRows
   const parseLetterboxdHtml: typeof import('../utils/ratings').parseLetterboxdHtml
   const parseLetterboxdTmdbId: typeof import('../utils/ratings').parseLetterboxdTmdbId
+  const parseNetflixCredits: typeof import('../utils/netflix-credits').parseNetflixCredits
   const parseProfileGrid: typeof import('../utils/ratings').parseProfileGrid
   const parseShowTitles: typeof import('../utils/netflix-shows').parseShowTitles
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
@@ -414,6 +417,9 @@ declare global {
   export type { CreditsRatingPrompt, ReviewViewer } from '../utils/credits-review'
   import('../utils/credits-review')
   // @ts-ignore
+  export type { NetflixCredits } from '../utils/netflix-credits'
+  import('../utils/netflix-credits')
+  // @ts-ignore
   export type { NetflixShowTitles } from '../utils/netflix-shows'
   import('../utils/netflix-shows')
   // @ts-ignore
@@ -498,6 +504,7 @@ declare module 'vue' {
     readonly fetchLetterboxdGuess: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdGuess']>
     readonly fetchLetterboxdProfile: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdProfile']>
     readonly fetchLetterboxdRating: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdRating']>
+    readonly fetchNetflixMetadata: UnwrapRef<typeof import('../utils/netflix-credits')['fetchNetflixMetadata']>
     readonly formatDuration: UnwrapRef<typeof import('../utils/stats')['formatDuration']>
     readonly getAccount: UnwrapRef<typeof import('../utils/account')['getAccount']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
@@ -515,6 +522,7 @@ declare module 'vue' {
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly i18n: UnwrapRef<typeof import('../utils/i18n')['i18n']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
+    readonly inCredits: UnwrapRef<typeof import('../utils/credits-review')['inCredits']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
     readonly injectLocal: UnwrapRef<typeof import('@vueuse/core')['injectLocal']>
     readonly installPageFeatureStyle: UnwrapRef<typeof import('../utils/page-feature-styles')['installPageFeatureStyle']>
@@ -563,6 +571,7 @@ declare module 'vue' {
     readonly parseFriendRows: UnwrapRef<typeof import('../utils/ratings')['parseFriendRows']>
     readonly parseLetterboxdHtml: UnwrapRef<typeof import('../utils/ratings')['parseLetterboxdHtml']>
     readonly parseLetterboxdTmdbId: UnwrapRef<typeof import('../utils/ratings')['parseLetterboxdTmdbId']>
+    readonly parseNetflixCredits: UnwrapRef<typeof import('../utils/netflix-credits')['parseNetflixCredits']>
     readonly parseProfileGrid: UnwrapRef<typeof import('../utils/ratings')['parseProfileGrid']>
     readonly parseShowTitles: UnwrapRef<typeof import('../utils/netflix-shows')['parseShowTitles']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
