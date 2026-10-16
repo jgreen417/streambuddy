@@ -28,4 +28,30 @@ describe("Netflix credits marker", () => {
 		expect(parseNetflixCredits(null)).toBeNull()
 		expect(parseNetflixCredits({ video: {} })).toBeNull()
 	})
+	it("places an episode in its show and says whether it's the last one", () => {
+		// asked about by an episode's id, Netflix answers with the whole show
+		const show = (currentEpisode: number) => ({
+			video: {
+				title: "The Queen's Gambit",
+				type: "show",
+				currentEpisode,
+				seasons: [
+					{
+						seq: 1,
+						title: "Limited Series",
+						episodes: [
+							{ id: 81301708, seq: 1, creditsOffset: 3500, runtime: 3600 },
+							{ id: 81301714, seq: 7, creditsOffset: 3990, runtime: 4083 },
+						],
+					},
+				],
+			},
+		})
+		const finale = parseNetflixCredits(show(81301714))
+		expect(finale?.movie).toBe(false)
+		expect(finale?.episode).toEqual({ season: 1, number: 7, last: true })
+		expect(finale!.creditsShare! * 4083).toBeCloseTo(93)
+		expect(parseNetflixCredits(show(81301708))?.episode).toEqual({ season: 1, number: 1, last: false })
+		expect(parseNetflixCredits(show(1))?.episode).toBeUndefined()
+	})
 })

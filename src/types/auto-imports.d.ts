@@ -68,6 +68,7 @@ declare global {
   const extractLetterboxdCsrf: typeof import('../utils/letterboxd-actions').extractLetterboxdCsrf
   const fetchImdbEpisodes: typeof import('../utils/ratings').fetchImdbEpisodes
   const fetchImdbRating: typeof import('../utils/ratings').fetchImdbRating
+  const fetchLetterboxdByImdb: typeof import('../utils/ratings').fetchLetterboxdByImdb
   const fetchLetterboxdGuess: typeof import('../utils/ratings').fetchLetterboxdGuess
   const fetchLetterboxdProfile: typeof import('../utils/ratings').fetchLetterboxdProfile
   const fetchLetterboxdRating: typeof import('../utils/ratings').fetchLetterboxdRating
@@ -96,6 +97,7 @@ declare global {
   const installPageFeatureStyle: typeof import('../utils/page-feature-styles').installPageFeatureStyle
   const isBelowRatingCutoff: typeof import('../utils/row-presentation').isBelowRatingCutoff
   const isDefined: typeof import('@vueuse/core').isDefined
+  const isLastEpisode: typeof import('../utils/series-finale').isLastEpisode
   const isProxy: typeof import('vue').isProxy
   const isReactive: typeof import('vue').isReactive
   const isReadonly: typeof import('vue').isReadonly
@@ -136,6 +138,7 @@ declare global {
   const onUnmounted: typeof import('vue').onUnmounted
   const onUpdated: typeof import('vue').onUpdated
   const onWatcherCleanup: typeof import('vue').onWatcherCleanup
+  const parseEpisodeLabel: typeof import('../utils/series-finale').parseEpisodeLabel
   const parseFriendRatings: typeof import('../utils/ratings').parseFriendRatings
   const parseFriendRows: typeof import('../utils/ratings').parseFriendRows
   const parseLetterboxdHtml: typeof import('../utils/ratings').parseLetterboxdHtml
@@ -168,6 +171,7 @@ declare global {
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveRef: typeof import('@vueuse/core').resolveRef
   const reviewState: typeof import('../utils/credits-review').reviewState
+  const reviewable: typeof import('../utils/credits-review').reviewable
   const saveAccount: typeof import('../utils/account').saveAccount
   const setActivePinia: typeof import('pinia').setActivePinia
   const setMapStoreSuffix: typeof import('pinia').setMapStoreSuffix
@@ -437,6 +441,9 @@ declare global {
   export type { RowPresentation } from '../utils/row-presentation'
   import('../utils/row-presentation')
   // @ts-ignore
+  export type { PlayingEpisode } from '../utils/series-finale'
+  import('../utils/series-finale')
+  // @ts-ignore
   export type { WatchLog, SeenTitle, SeenTop, WatchTimerState, WatchSummary, SavedLog } from '../utils/stats'
   import('../utils/stats')
   // @ts-ignore
@@ -507,6 +514,7 @@ declare module 'vue' {
     readonly extractLetterboxdCsrf: UnwrapRef<typeof import('../utils/letterboxd-actions')['extractLetterboxdCsrf']>
     readonly fetchImdbEpisodes: UnwrapRef<typeof import('../utils/ratings')['fetchImdbEpisodes']>
     readonly fetchImdbRating: UnwrapRef<typeof import('../utils/ratings')['fetchImdbRating']>
+    readonly fetchLetterboxdByImdb: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdByImdb']>
     readonly fetchLetterboxdGuess: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdGuess']>
     readonly fetchLetterboxdProfile: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdProfile']>
     readonly fetchLetterboxdRating: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdRating']>
@@ -534,6 +542,7 @@ declare module 'vue' {
     readonly installPageFeatureStyle: UnwrapRef<typeof import('../utils/page-feature-styles')['installPageFeatureStyle']>
     readonly isBelowRatingCutoff: UnwrapRef<typeof import('../utils/row-presentation')['isBelowRatingCutoff']>
     readonly isDefined: UnwrapRef<typeof import('@vueuse/core')['isDefined']>
+    readonly isLastEpisode: UnwrapRef<typeof import('../utils/series-finale')['isLastEpisode']>
     readonly isProxy: UnwrapRef<typeof import('vue')['isProxy']>
     readonly isReactive: UnwrapRef<typeof import('vue')['isReactive']>
     readonly isReadonly: UnwrapRef<typeof import('vue')['isReadonly']>
@@ -574,6 +583,7 @@ declare module 'vue' {
     readonly onUnmounted: UnwrapRef<typeof import('vue')['onUnmounted']>
     readonly onUpdated: UnwrapRef<typeof import('vue')['onUpdated']>
     readonly onWatcherCleanup: UnwrapRef<typeof import('vue')['onWatcherCleanup']>
+    readonly parseEpisodeLabel: UnwrapRef<typeof import('../utils/series-finale')['parseEpisodeLabel']>
     readonly parseFriendRatings: UnwrapRef<typeof import('../utils/ratings')['parseFriendRatings']>
     readonly parseFriendRows: UnwrapRef<typeof import('../utils/ratings')['parseFriendRows']>
     readonly parseLetterboxdHtml: UnwrapRef<typeof import('../utils/ratings')['parseLetterboxdHtml']>
@@ -605,6 +615,7 @@ declare module 'vue' {
     readonly refWithControl: UnwrapRef<typeof import('@vueuse/core')['refWithControl']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
     readonly reviewState: UnwrapRef<typeof import('../utils/credits-review')['reviewState']>
+    readonly reviewable: UnwrapRef<typeof import('../utils/credits-review')['reviewable']>
     readonly saveAccount: UnwrapRef<typeof import('../utils/account')['saveAccount']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>

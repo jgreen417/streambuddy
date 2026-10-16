@@ -5,23 +5,55 @@ export type NetflixCredits = {
 	movie: boolean
 	// the share of the runtime the credits take, when Netflix marks them
 	creditsShare?: number
+	// for an episode: where it sits in the show, and whether it's the last one Netflix has
+	episode?: { season: number; number: number; last: boolean }
 }
 
-type Metadata = { video?: { title?: unknown; type?: unknown; creditsOffset?: unknown; runtime?: unknown } }
+type Marked = { creditsOffset?: unknown; runtime?: unknown }
+type Episode = Marked & { id?: unknown; episodeId?: unknown; seq?: unknown }
+type Metadata = {
+	video?: Marked & {
+		title?: unknown
+		type?: unknown
+		// asked about by an episode's id, Netflix answers with the whole show and says which episode that was
+		currentEpisode?: unknown
+		seasons?: Array<{ seq?: unknown; episodes?: Episode[] }>
+	}
+}
+
+// a title with no marker has creditsOffset == runtime. Measured as a share of the runtime, so it doesn't matter
+// whether Netflix gives seconds or milliseconds.
+function creditsShare({ creditsOffset: offset, runtime }: Marked) {
+	const marked = typeof offset === "number" && typeof runtime === "number" && offset > 0 && offset < runtime
+	return marked ? 1 - offset / runtime : undefined
+}
 
 export function parseNetflixCredits(json: unknown): NetflixCredits | null {
 	const video = (json as Metadata | null)?.video
 	if (!video || typeof video.title !== "string") return null
 	const movie = video.type === "movie"
-	const { creditsOffset: offset, runtime } = video
-	// a film with no marker has creditsOffset == runtime. Measured as a share of the runtime, so it doesn't matter
-	// whether Netflix gives seconds or milliseconds.
-	const marked = typeof offset === "number" && typeof runtime === "number" && offset > 0 && offset < runtime
-	return {
-		title: video.title,
-		movie,
-		creditsShare: marked && movie ? 1 - offset / runtime : undefined,
+	if (movie) return { title: video.title, movie, creditsShare: creditsShare(video) }
+	const seasons = Array.isArray(video.seasons) ? video.seasons : []
+	const playing = video.currentEpisode
+	for (const [s, season] of seasons.entries()) {
+		const episodes = Array.isArray(season.episodes) ? season.episodes : []
+		const index = episodes.findIndex(
+			(episode) => playing != null && String(episode.id ?? episode.episodeId) === String(playing),
+		)
+		if (index < 0 || typeof season.seq !== "number") continue
+		const episode = episodes[index]
+		return {
+			title: video.title,
+			movie,
+			creditsShare: creditsShare(episode),
+			episode: {
+				season: season.seq,
+				number: typeof episode.seq === "number" ? episode.seq : index + 1,
+				last: s === seasons.length - 1 && index === episodes.length - 1,
+			},
+		}
 	}
+	return { title: video.title, movie }
 }
 
 const cache = new Map<string, Promise<unknown>>()

@@ -6,7 +6,10 @@ const is_DEV = process.env.NODE_ENV === "development"
 browser.runtime.onInstalled.addListener(async ({ reason }) => {
 	if (reason !== "install" || is_DEV) return
 	await browser.storage.local.clear()
-	browser.tabs.create({ active: true, url: browser.runtime.getURL("src/ui/options-page/index.html#/options-page/install") })
+	browser.tabs.create({
+		active: true,
+		url: browser.runtime.getURL("src/ui/options-page/index.html#/options-page/install"),
+	})
 })
 
 self.onerror = function (message, source, lineno, colno, error) {
@@ -24,6 +27,7 @@ import {
 	fetchImdbEpisodes,
 	fetchLetterboxdGuess,
 	fetchLetterboxdProfile,
+	fetchLetterboxdByImdb,
 	fetchLetterboxdRating,
 	guessLetterboxdSlug,
 	type LetterboxdFilm,
@@ -77,6 +81,16 @@ onMessage("letterboxdRating", async (message: { data: { tmdbId: number; friends:
 		if (guess?.tmdb?.id === tmdbId && guess.tmdb.type === "movie") return guess
 		const username = friends ? (await getAccount()).letterboxdUsername : ""
 		return await withLetterboxdSlot(() => fetchLetterboxdRating(tmdbId, username))
+	} catch (error) {
+		console.error(error)
+		return { error: (error as Error).message }
+	}
+})
+// a show's Letterboxd page, if it has one: only limited series do
+onMessage("letterboxdSeries", async (message: { data: { imdbId: string; friends: boolean } }) => {
+	try {
+		const username = message.data.friends ? (await getAccount()).letterboxdUsername : ""
+		return await withLetterboxdSlot(() => fetchLetterboxdByImdb(message.data.imdbId, username))
 	} catch (error) {
 		console.error(error)
 		return { error: (error as Error).message }

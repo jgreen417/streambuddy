@@ -35,6 +35,10 @@ export function inCredits(video: HTMLVideoElement, length?: number) {
 	)
 }
 
+// a film, or a show Letterboxd lists as a film (a limited series, offered at its last episode)
+export function reviewable(data: FeatureRating) {
+	return data.media_type === "movie" || (data.media_type === "tv" && data.source === "letterboxd")
+}
 export function reviewState(data: FeatureRating, viewer: ReviewViewer): ReviewState {
 	if (!viewer.username) return "unlinked"
 	if (viewer.watched !== undefined) return "logged"
@@ -117,10 +121,10 @@ export class CreditsRatingPrompt {
 		// how long the service says the credits run
 		serviceCredits?: number,
 	) {
-		const key = data ? `${data.id}` : ""
+		const key = data ? `${data.media_type}:${data.id}` : ""
 		if (this.current !== key) this.clear()
 		this.current = key
-		if (!enabled || !video || !data || data.media_type !== "movie" || !inCredits(video, serviceCredits)) {
+		if (!enabled || !video || !data || !reviewable(data) || !inCredits(video, serviceCredits)) {
 			this.clear()
 			return
 		}
