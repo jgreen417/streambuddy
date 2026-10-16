@@ -20,8 +20,35 @@ Add these as secrets of a GitHub environment named `stores` (Settings → Enviro
 
 | Secret | Where it comes from |
 | --- | --- |
-| `CWS_SERVICE_ACCOUNT_JSON` | Google Cloud console: create a project, enable the Chrome Web Store API, create a service account (no roles needed) and download a JSON key. Then add the service account's email in the Chrome Web Store Developer Dashboard under Account. |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | Printed by the Google Cloud setup below. |
+| `CWS_SERVICE_ACCOUNT` | The service account's email, also from the setup below. |
 | `CWS_PUBLISHER_ID` | Chrome Web Store Developer Dashboard → Publisher → Settings. |
 | `AMO_JWT_ISSUER` | addons.mozilla.org → Developer Hub → Manage API Keys → "JWT issuer". |
 | `AMO_JWT_SECRET` | Same page → "JWT secret". |
 | `AMO_APPROVAL_NOTES` | Optional. The confidential notes for Mozilla's reviewers, including the test TMDb token. Only reviewers see them; never put the token in the repo. |
+
+### Google Cloud setup for Chrome
+
+Chrome signs in without a key file: Google trusts GitHub's identity token for runs of this repository and lets them act as a service account (Workload Identity Federation). New Google Cloud accounts block service account keys by default, so this is also the only route that works there.
+
+1. In the [Google Cloud console](https://console.cloud.google.com), create a project, then open Cloud Shell (the `>_` button, top right) and run:
+
+   ```sh
+   PROJECT_ID=$(gcloud config get-value project)
+   PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+   gcloud services enable chromewebstore.googleapis.com iamcredentials.googleapis.com sts.googleapis.com
+   gcloud iam service-accounts create streambuddy-release --display-name="streamBuddy release"
+   gcloud iam workload-identity-pools create github --location=global --display-name="GitHub"
+   gcloud iam workload-identity-pools providers create-oidc streambuddy --location=global \
+     --workload-identity-pool=github --issuer-uri=https://token.actions.githubusercontent.com \
+     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+     --attribute-condition="assertion.repository=='jgreen417/streambuddy'"
+   gcloud iam service-accounts add-iam-policy-binding \
+     "streambuddy-release@$PROJECT_ID.iam.gserviceaccount.com" --role=roles/iam.workloadIdentityUser \
+     --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/jgreen417/streambuddy"
+   echo "GCP_WORKLOAD_IDENTITY_PROVIDER: projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/streambuddy"
+   echo "CWS_SERVICE_ACCOUNT: streambuddy-release@$PROJECT_ID.iam.gserviceaccount.com"
+   ```
+
+2. Copy the two printed values into the `stores` environment secrets.
+3. In the Chrome Web Store Developer Dashboard, open Account and add the `CWS_SERVICE_ACCOUNT` email.
