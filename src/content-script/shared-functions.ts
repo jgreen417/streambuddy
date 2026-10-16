@@ -115,7 +115,8 @@ async function getDBCache() {
 	DBCache = result?.DBCache as DBCacheType
 	if (typeof DBCache !== "object") {
 		debugLog("DBCache not found, creating new one", DBCache)
-		await browser.storage.local.set({ DBCache: {} })
+		// best effort: a full or failing storage still leaves ratings running on the in-memory cache
+		await browser.storage.local.set({ DBCache: {} }).catch(console.error)
 		DBCache = {}
 	}
 	if (ratingsEnabled()) startShowRatingInterval()
