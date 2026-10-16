@@ -8,7 +8,7 @@ every pull request (`.github/workflows/visual.yml`).
 1. Builds the Chrome extension as a store build (`global-setup.ts`).
 2. Loads it into headless Chromium and opens saved copies of the sites (`fixtures/`): Netflix's standard, Top 10,
    Continue Watching, episode and narrow cards; Prime's carousel cards (with and without the prime or a channel logo),
-   large cards, super carousel, Top 10 and hero; Max's posters and landscape tiles; and Netflix's player at the
+   large cards, super carousel (also hovered, when Prime redraws the card around the badge), Top 10 and hero; Max's posters and landscape tiles; and Netflix's player at the
    credits. Every request is answered by `harness.ts`, with ratings seeded from `ratings.ts`, so nothing touches the
    network or needs an account.
 3. Measures every badge against the placement spec (`geometry.ts`): 3px from the artwork's right edge and from its top

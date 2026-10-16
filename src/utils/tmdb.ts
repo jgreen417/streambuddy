@@ -30,3 +30,23 @@ export function pickBestMatch<T extends TMDBTitled>(results: T[] | undefined, qu
 	if (!exact.length) return candidates[0]
 	return exact.reduce((pick, item) => (reach(item) > REMAKE_OVERRIDE_RATIO * reach(pick) ? item : pick))
 }
+
+// A card labelled only "Season 1" (Prime lists seasons as their own cards) names no show, and searching TMDb for it
+// matches whatever happens to be called "... Season 1".
+const SEASON_ONLY = /^\s*(?:season|series|staffel|saison|temporada|stagione|seizoen|s)\s*-?\s*\d+\s*$/i
+export function isSeasonOnlyTitle(title: string) {
+	return SEASON_ONLY.test(title)
+}
+
+// Remembers which title each card was last checked for, so a card whose title has no rating isn't looked up and
+// logged again on every tick. Prime recycles its cards, so a card showing a new title is checked again.
+export class CheckedCards {
+	private checked = new WeakMap<Element, { title: string; until: number }>()
+	isChecked(card: Element, title: string, now = Date.now()) {
+		const entry = this.checked.get(card)
+		return !!entry && entry.title === title && entry.until > now
+	}
+	mark(card: Element, title: string, until = Number.POSITIVE_INFINITY) {
+		this.checked.set(card, { title, until })
+	}
+}

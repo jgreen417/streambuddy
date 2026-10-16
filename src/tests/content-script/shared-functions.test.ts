@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest"
 import { sendMessage } from "webext-bridge/content-script"
 import { Amazon_titleLink, HBO_fixTitle, isCacheCurrent, lookupMovieInfo, settings } from "../../content-script/shared-functions"
-import { pickBestMatch } from "../../utils/tmdb"
+import { CheckedCards, isSeasonOnlyTitle, pickBestMatch } from "../../utils/tmdb"
 
 describe("HBO_fixTitle", () => {
 	it("strips bidi marks, the position and badges", () => {
@@ -113,5 +113,37 @@ describe("rating source policy", () => {
 		expect(info?.sources).toBe("both")
 		expect(isCacheCurrent(info!)).toBe(false)
 		settings.value.General.ratingSources = "both"
+	})
+})
+
+describe("isSeasonOnlyTitle", () => {
+	it("flags cards that only name a season", () => {
+		for (const title of ["Season 1", "season 12", "Staffel 2", "Series 3", "Saison 1", "Temporada 4"])
+			expect(isSeasonOnlyTitle(title)).toBe(true)
+	})
+
+	it("keeps real titles that mention a season", () => {
+		for (const title of ["Code Red Season 1", "The Boys", "Season of the Witch", "1917", "Seasons"])
+			expect(isSeasonOnlyTitle(title)).toBe(false)
+	})
+})
+
+describe("CheckedCards", () => {
+	it("skips an unrated card until its title changes", () => {
+		const checked = new CheckedCards()
+		const card = document.createElement("article")
+		expect(checked.isChecked(card, "Unrated Show")).toBe(false)
+		checked.mark(card, "Unrated Show")
+		expect(checked.isChecked(card, "Unrated Show")).toBe(true)
+		// Prime reused the card for another title
+		expect(checked.isChecked(card, "Another Show")).toBe(false)
+	})
+
+	it("checks again once a timed mark runs out", () => {
+		const checked = new CheckedCards()
+		const card = document.createElement("article")
+		checked.mark(card, "Not Found", 1000)
+		expect(checked.isChecked(card, "Not Found", 999)).toBe(true)
+		expect(checked.isChecked(card, "Not Found", 1000)).toBe(false)
 	})
 })
