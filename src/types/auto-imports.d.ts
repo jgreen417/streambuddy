@@ -421,9 +421,6 @@ declare global {
   export type { Component, Slot, Slots, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, ShallowRef, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
   import('vue')
   // @ts-ignore
-  export type { BooleanObject, MediaType } from '../stores/options.store'
-  import('../stores/options.store')
-  // @ts-ignore
   export type { BadgeStyle, FriendsStyle, RatingSources, settingsType } from '../stores/storeTypes'
   import('../stores/storeTypes')
   // @ts-ignore

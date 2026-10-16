@@ -10,7 +10,7 @@ export function getServiceState(
 ): PreferenceState {
 	const values = targets.flatMap((service) =>
 		keys
-			.map((key) => (settings[service] as unknown as Record<string, unknown>)[key])
+			.map((key) => (settings[service] as Record<string, unknown>)[key])
 			.filter((value) => typeof value === "boolean"),
 	)
 	if (!values.length) return false
@@ -23,7 +23,7 @@ export function setServiceState(
 	value: boolean,
 ) {
 	for (const service of targets) {
-		const entry = settings[service] as unknown as Record<string, unknown>
+		const entry = settings[service] as Record<string, unknown>
 		for (const key of keys) {
 			if (typeof entry[key] !== "boolean") continue
 			entry[key] = value

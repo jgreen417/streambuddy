@@ -9,11 +9,10 @@ async function resetAddon() {
 	if (confirm(t("resetConfirm"))) {
 		await browser.storage.local.clear()
 		await browser.storage.sync.clear()
-		// settings.value = defaultSettings
 		location.reload()
 	}
 }
-let file = new Blob([JSON.stringify(settings.value)], { type: "text/json" })
+const file = new Blob([JSON.stringify(settings.value)], { type: "text/json" })
 const href = URL.createObjectURL(file)
 
 function replaceSettings(event: Event) {
@@ -22,19 +21,16 @@ function replaceSettings(event: Event) {
 	if (file === undefined || file.type !== "application/json") {
 		alert(t("invalidJson"))
 		return
-	} else {
-		const reader = new FileReader()
-		reader.addEventListener("load", (e) => {
-			try {
-				const data = JSON.parse(e.target?.result as string)
-				settings.value = data
-			} catch (e) {
-				alert(t("invalidJson"))
-				return
-			}
-		})
-		reader.readAsText(file)
 	}
+	const reader = new FileReader()
+	reader.addEventListener("load", () => {
+		try {
+			settings.value = JSON.parse(reader.result as string)
+		} catch {
+			alert(t("invalidJson"))
+		}
+	})
+	reader.readAsText(file)
 }
 </script>
 

@@ -25,12 +25,9 @@ const names: Record<StreamingService, string> = {
 	HBO: "HBO Max",
 }
 const targets = computed(() => (selection.value ? [selection.value] : [...streamingServices]))
-const supportsPages = computed(() => true)
 const scope = computed(() => (selection.value ? names[selection.value] : "All services"))
 const has = (key: string) =>
-	targets.value.some(
-		(service) => typeof (settings.value[service] as unknown as Record<string, unknown>)[key] === "boolean",
-	)
+	targets.value.some((service) => typeof (settings.value[service] as Record<string, unknown>)[key] === "boolean")
 function preference(keys: string[]) {
 	return computed({
 		get: () => getServiceState(settings.value, targets.value, keys),
@@ -85,8 +82,8 @@ const cardDependency = computed(() =>
 	cardsInactive.value ? "Turn on card ratings for the selected services." : undefined,
 )
 const mode = computed({
-	get: () => getRatingMode(settings.value, supportsPages.value),
-	set: (value) => setRatingMode(settings.value, value, supportsPages.value),
+	get: () => getRatingMode(settings.value, true),
+	set: (value) => setRatingMode(settings.value, value, true),
 })
 const id = useId()
 const bands = SCORE_BANDS.letterboxd.map((score, index) => ({
@@ -210,12 +207,7 @@ const updateMode = (event: Event) => {
 				</span>
 			</summary>
 			<div class="sb-disclosure-body">
-				<p
-					v-if="supportsPages"
-					class="sb-help"
-				>
-					Title pages, episodes and search work on Netflix, HBO Max and Prime Video.
-				</p>
+				<p class="sb-help">Title pages, episodes and search work on Netflix, HBO Max and Prime Video.</p>
 				<label class="sb-cutoff">
 					Ratings from
 					<select v-model="settings.General.ratingSources">
@@ -229,18 +221,16 @@ const updateMode = (event: Event) => {
 					</select>
 				</label>
 				<p class="sb-help">TMDb fills in when the chosen sites have no rating.</p>
-				<template v-if="supportsPages">
-					<PopupToggle
-						v-model="settings.General.episodeRatings"
-						label="Episode ratings"
-						description="IMDb scores beside individual episodes."
-					/>
-					<PopupToggle
-						v-model="settings.General.searchSort"
-						label="Search sort button"
-						description="Choose rating order on a search page."
-					/>
-				</template>
+				<PopupToggle
+					v-model="settings.General.episodeRatings"
+					label="Episode ratings"
+					description="IMDb scores beside individual episodes."
+				/>
+				<PopupToggle
+					v-model="settings.General.searchSort"
+					label="Search sort button"
+					description="Choose rating order on a search page."
+				/>
 				<fieldset
 					class="sb-filter"
 					:disabled="cardsInactive"
@@ -254,7 +244,7 @@ const updateMode = (event: Event) => {
 					</p>
 					<div class="sb-mode">
 						<label
-							v-for="option in supportsPages ? ['off', 'dim', 'hide'] : ['off', 'dim']"
+							v-for="option in ['off', 'dim', 'hide']"
 							:key="option"
 						>
 							<input
@@ -326,19 +316,17 @@ const updateMode = (event: Event) => {
 						:disabled="cardsInactive"
 						:description="cardDependency"
 					/>
-					<template v-if="supportsPages">
-						<PopupToggle
-							v-model="settings.General.fadeWatched"
-							label="Fade watched films"
-							:disabled="cardsInactive"
-							:description="cardDependency"
-						/>
-						<PopupToggle
-							v-model="settings.General.rateOnCredits"
-							label="Rating prompt near the end"
-							description="Opens Letterboxd during a film’s final 90 seconds."
-						/>
-					</template>
+					<PopupToggle
+						v-model="settings.General.fadeWatched"
+						label="Fade watched films"
+						:disabled="cardsInactive"
+						:description="cardDependency"
+					/>
+					<PopupToggle
+						v-model="settings.General.rateOnCredits"
+						label="Rating prompt near the end"
+						description="Opens Letterboxd during a film’s final 90 seconds."
+					/>
 				</template>
 				<p
 					v-else

@@ -16,15 +16,10 @@ const tab = ref<"settings" | "stats">("settings")
 const { needsSetup, ratingsPaused } = useAccount()
 const current = ref<(typeof SERVICES)[number] | null>(null)
 // the activeTab permission lets us read the URL of the tab the popup was opened on
-browser.tabs
-	.query({ active: true, currentWindow: true })
-	.then(([activeTab]) => {
-		const hostname = activeTab?.url ? new URL(activeTab.url).hostname : ""
-		current.value = SERVICES.find(({ pattern }) => pattern.test(hostname)) ?? null
-	})
-	.catch(() => {
-		current.value = null
-	})
+browser.tabs.query({ active: true, currentWindow: true }).then(([activeTab]) => {
+	const hostname = activeTab?.url ? new URL(activeTab.url).hostname : ""
+	current.value = SERVICES.find(({ pattern }) => pattern.test(hostname)) ?? null
+})
 const context = computed(() => (current.value ? current.value.name : "Choose your service below"))
 
 function openSettings(route = "/options-page/Experience") {

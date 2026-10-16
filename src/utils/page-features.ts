@@ -270,13 +270,14 @@ export class SearchRatingSort {
 			const button = document.createElement("button")
 			button.className = "sb-search-sort sb-feature-button"
 			button.type = "button"
-			state = { sorted: false, button, orders: new Map() }
-			this.grids.set(grid, state)
+			const created = { sorted: false, button, orders: new Map<HTMLElement, [string, string]>() }
 			button.addEventListener("click", () => {
-				state!.sorted = !state!.sorted
+				created.sorted = !created.sorted
 				this.update(grid)
 			})
 			grid.before(button)
+			this.grids.set(grid, created)
+			state = created
 		}
 		const label = state.sorted ? "Restore site order" : "Sort by rating"
 		if (state.button.textContent !== label) state.button.textContent = label

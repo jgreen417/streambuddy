@@ -21,8 +21,8 @@ export const hbo: SiteAdapter = {
 	playerRoot: () => {
 		const video = mainVideo()
 		return (
-			(video?.closest('[data-testid*="player" i], [class*="PlayerRoot" i], [class*="player-root" i]') as HTMLElement | null) ??
-			(video?.parentElement?.parentElement as HTMLElement | null) ??
+			video?.closest<HTMLElement>('[data-testid*="player" i], [class*="PlayerRoot" i], [class*="player-root" i]') ??
+			video?.parentElement?.parentElement ??
 			null
 		)
 	},
