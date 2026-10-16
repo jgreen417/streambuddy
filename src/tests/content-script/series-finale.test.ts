@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
-import { isLastEpisode, parseEpisodeLabel } from "../../utils/series-finale"
+import { describe, expect, it, vi } from "vitest"
+import { isLastEpisode, parseEpisodeLabel, shareLookup } from "../../utils/series-finale"
 
 describe("series finales", () => {
 	it("reads the episode playing from each player's label", () => {
@@ -30,5 +30,22 @@ describe("series finales", () => {
 		).toBe(false)
 		expect(isLastEpisode([], 1, 1)).toBe(false)
 		expect(isLastEpisode(undefined, 1, 1)).toBe(false)
+	})
+	it("shares a lookup, but asks again after a failure or an empty answer", async () => {
+		const lookups = new Map<string, Promise<string | null>>()
+		const find = vi
+			.fn<() => Promise<string | null>>()
+			.mockRejectedValueOnce(new Error("bridge disconnected"))
+			.mockResolvedValueOnce(null)
+			.mockResolvedValue("chernobyl")
+		await expect(shareLookup(lookups, "Chernobyl", find)).rejects.toThrow("bridge disconnected")
+		expect(await shareLookup(lookups, "Chernobyl", find)).toBeNull()
+		const [first, second] = await Promise.all([
+			shareLookup(lookups, "Chernobyl", find),
+			shareLookup(lookups, "Chernobyl", find),
+		])
+		expect([first, second]).toEqual(["chernobyl", "chernobyl"])
+		expect(await shareLookup(lookups, "Chernobyl", find)).toBe("chernobyl")
+		expect(find).toHaveBeenCalledTimes(3)
 	})
 })

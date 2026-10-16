@@ -19,3 +19,26 @@ export function isLastEpisode(seasons: TmdbSeason[] | undefined, season: number,
 	const last = numbered.reduce((pick, item) => (item.season_number! > pick.season_number! ? item : pick))
 	return season === last.season_number && episode === last.episode_count
 }
+
+// shares one lookup per key between callers, but forgets a failed or empty one so the next try asks again
+export function shareLookup<T>(
+	lookups: Map<string, Promise<T | null>>,
+	key: string,
+	find: () => Promise<T | null>,
+): Promise<T | null> {
+	let lookup = lookups.get(key)
+	if (!lookup) {
+		lookup = find().then(
+			(found) => {
+				if (!found) lookups.delete(key)
+				return found
+			},
+			(error) => {
+				lookups.delete(key)
+				throw error
+			},
+		)
+		lookups.set(key, lookup)
+	}
+	return lookup
+}

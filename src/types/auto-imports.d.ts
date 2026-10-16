@@ -180,6 +180,7 @@ declare global {
   const shallowReactive: typeof import('vue').shallowReactive
   const shallowReadonly: typeof import('vue').shallowReadonly
   const shallowRef: typeof import('vue').shallowRef
+  const shareLookup: typeof import('../utils/series-finale').shareLookup
   const starText: typeof import('../utils/credits-review').starText
   const storeToRefs: typeof import('pinia').storeToRefs
   const sumLastDays: typeof import('../utils/stats').sumLastDays
@@ -624,6 +625,7 @@ declare module 'vue' {
     readonly shallowReactive: UnwrapRef<typeof import('vue')['shallowReactive']>
     readonly shallowReadonly: UnwrapRef<typeof import('vue')['shallowReadonly']>
     readonly shallowRef: UnwrapRef<typeof import('vue')['shallowRef']>
+    readonly shareLookup: UnwrapRef<typeof import('../utils/series-finale')['shareLookup']>
     readonly starText: UnwrapRef<typeof import('../utils/credits-review')['starText']>
     readonly storeToRefs: UnwrapRef<typeof import('pinia')['storeToRefs']>
     readonly sumLastDays: UnwrapRef<typeof import('../utils/stats')['sumLastDays']>

@@ -22,7 +22,7 @@ import {
 } from "@/utils/page-features"
 import { CreditsRatingPrompt, creditsLength, inCredits } from "@/utils/credits-review"
 import { fetchNetflixMetadata, parseNetflixCredits, type NetflixCredits } from "@/utils/netflix-credits"
-import { isLastEpisode, parseEpisodeLabel, type PlayingEpisode } from "@/utils/series-finale"
+import { isLastEpisode, parseEpisodeLabel, shareLookup, type PlayingEpisode } from "@/utils/series-finale"
 import { NetflixShowTitles, getEpisodeId } from "@/utils/netflix-shows"
 import {
 	addWatchSeconds,
@@ -675,16 +675,7 @@ function playingEpisode(netflix: NetflixCredits | undefined): PlayingEpisode | n
 const finaleLookups = new Map<string, Promise<MovieInfo | null>>()
 function lookupSeriesFinale(episode: PlayingEpisode): Promise<MovieInfo | null> {
 	const key = `${episode.show}|S${episode.season}E${episode.episode}|${settings.value.General.friendsRatings}`
-	let lookup = finaleLookups.get(key)
-	if (!lookup) {
-		lookup = findSeriesFinale(episode).then((info) => {
-			// nothing found might be a network blip: forget it, so the next try asks again
-			if (!info) finaleLookups.delete(key)
-			return info
-		})
-		finaleLookups.set(key, lookup)
-	}
-	return lookup
+	return shareLookup(finaleLookups, key, () => findSeriesFinale(episode))
 }
 async function findSeriesFinale({ show, season, episode, last }: PlayingEpisode): Promise<MovieInfo | null> {
 	const locale = htmlLang || navigator?.language || "en-US"

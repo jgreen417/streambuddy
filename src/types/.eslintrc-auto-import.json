@@ -215,6 +215,7 @@
     "shallowReactive": true,
     "shallowReadonly": true,
     "shallowRef": true,
+    "shareLookup": true,
     "starText": true,
     "storeToRefs": true,
     "sumLastDays": true,
