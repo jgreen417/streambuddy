@@ -11,23 +11,13 @@ import {
 	type LetterboxdProfile,
 	type RatingSource,
 } from "@/utils/ratings"
-import { CheckedCards, isSeasonOnlyTitle, pickBestMatch } from "@/utils/tmdb"
+import { CheckedCards, pickBestMatch } from "@/utils/tmdb"
 import { getAccount, onAccountChanged } from "@/utils/account"
-import type { StreamingService } from "@/constants/streamingServices"
 import { RowPresentation, normalizeRowScore, isBelowRatingCutoff } from "@/utils/row-presentation"
-import {
-	EpisodeRatings,
-	SearchRatingSort,
-	type FeatureSite,
-	type FeatureRating,
-	type EpisodeRating,
-} from "@/utils/page-features"
+import { EpisodeRatings, SearchRatingSort, type FeatureRating, type EpisodeRating } from "@/utils/page-features"
 import { CreditsRatingPrompt, creditsLength, inCredits } from "@/utils/credits-review"
-import { fetchNetflixMetadata, parseNetflixCredits, type NetflixCredits } from "@/utils/netflix-credits"
-import { isLastEpisode, parseEpisodeLabel, shareLookup, type PlayingEpisode } from "@/utils/series-finale"
-import { NetflixShowTitles, getEpisodeId } from "@/utils/netflix-shows"
-import { hbo } from "@/playback/sites/hbo"
-import { prime } from "@/playback/sites/prime"
+import { isLastEpisode, shareLookup, type PlayingEpisode } from "@/utils/series-finale"
+import type { RatingsSite } from "./sites/types"
 import {
 	addWatchSeconds,
 	localDateKey,
@@ -45,32 +35,18 @@ export const { data: settings, promise } = useBrowserSyncStorage<settingsType>("
 export const date = new Date()
 const today = date.toISOString().split("T")[0]
 
-const ua = navigator.userAgent
-const isMobile = /mobile/i.test(ua)
+const isMobile = /mobile/i.test(navigator.userAgent)
 let url = globalThis.location.href
-const hostname = globalThis.location.hostname
-const title = document.title
-let isPrimeVideo = /amazon|primevideo/i.test(hostname) && (/video/i.test(title) || /video/i.test(url))
-let isNetflix = /netflix/i.test(hostname)
-let isHBO = /max.com/i.test(hostname)
 const htmlLang = document.documentElement.lang
 
 let DBCache: DBCacheType = {}
 
-export enum Platforms {
-	Netflix = "netflix",
-	Amazon = "amazon",
-	HBO = "hbo",
-}
-
-let activePlatform: Platforms | null = null
-export async function startSharedFunctions(platform: Platforms) {
-	activePlatform = platform
-	startWatchTimer(platform)
+// the service this tab is on, set once its content script starts
+let site: RatingsSite | null = null
+export async function startSharedFunctions(service: RatingsSite) {
+	site = service
+	startWatchTimer(service)
 	loadLetterboxdProfile()
-	if (platform == Platforms.Amazon) isPrimeVideo = true
-	if (platform == Platforms.Netflix) isNetflix = true
-	if (platform == Platforms.HBO) isHBO = true
 
 	await promise
 	getDBCache()
@@ -218,8 +194,7 @@ async function getMovieInfo(
 	const info = await lookup
 	// the sources setting changed while this was being looked up: let the next pass look it up again
 	if (sources !== ratingSources()) {
-		card.classList.remove("imdb")
-		if (isPrimeVideo) card.closest("li")?.classList.remove("imdb")
+		releaseCard(card)
 		return
 	}
 	if (info) setRatingOnCard(card, info, title)
@@ -331,7 +306,11 @@ const rowPresentation = new RowPresentation()
 const rowCardData = new WeakMap<HTMLElement, MovieInfo>()
 const rowCardTitles = new WeakMap<HTMLElement, string>()
 const rowCardDecorations = new WeakMap<HTMLElement, HTMLElement[]>()
-const netflixShowTitles = new NetflixShowTitles()
+// let the next pass pick the card up again
+function releaseCard(card: HTMLElement) {
+	card.classList.remove("imdb")
+	card.closest("li")?.classList.remove("imdb")
+}
 // redrawAll: drop every card badge so the next pass draws it again (after a setting that changes how badges look)
 function refreshRowPresentation(redrawAll = false) {
 	const stale = rowPresentation.prune((card) => {
@@ -339,23 +318,16 @@ function refreshRowPresentation(redrawAll = false) {
 		return (
 			!redrawAll &&
 			retryAfter > Date.now() &&
-			getCleanTitle(card, card.dataset.cardTitle ? 0 : 1) === rowCardTitles.get(card)
+			site?.cleanTitle(card, card.dataset.cardTitle ? 0 : 1) === rowCardTitles.get(card)
 		)
 	})
 	for (const card of stale) {
 		rowCardDecorations.get(card)?.forEach((decoration) => decoration.remove())
-		card.classList.remove("imdb")
-		if (isPrimeVideo) card.closest("li")?.classList.remove("imdb")
+		releaseCard(card)
 		rowCardData.delete(card)
 		searchSorting.forgetRating(card)
 	}
-	const enabled = isNetflix
-		? settings.value.Netflix?.showRating
-		: isPrimeVideo
-			? settings.value.Amazon?.showRating
-			: isHBO
-				? settings.value.HBO?.showRating
-				: false
+	const enabled = ratingsEnabled()
 	rowPresentation.refresh(
 		{
 			fadeWatched: !!enabled && settings.value.General.fadeWatched,
@@ -454,43 +426,13 @@ const episodeRatings = new EpisodeRatings(
 	},
 )
 
-function featureSite(): FeatureSite {
-	return isNetflix ? "netflix" : isHBO ? "hbo" : "prime"
-}
 function updateSearchSorting() {
-	if (!settings.value.General.searchSort || !location.pathname.includes("search")) {
+	if (!site || !settings.value.General.searchSort || !location.pathname.includes("search")) {
 		searchSorting.clear()
 		return
 	}
-	const grids = new Set<HTMLElement>()
-	if (isNetflix)
-		document
-			.querySelectorAll<HTMLElement>('[data-uia="search-page"] section[data-uia="gallery"]')
-			.forEach((grid) => grids.add(grid))
-	else {
-		// Find the actual grid/flex container instead of reordering a framework-owned list.
-		const cards = document.querySelectorAll<HTMLElement>(
-			isHBO ? 'a[data-testid$="_tile"]' : 'article[data-card-title], article[data-testid*="-card"]',
-		)
-		cards.forEach((card) => {
-			for (let parent = card.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
-				const display = getComputedStyle(parent).display
-				if (
-					(display === "grid" || display === "flex") &&
-					Array.from(parent.children).filter(
-						(child) =>
-							child === card ||
-							child.contains(card) ||
-							child.querySelector(isHBO ? 'a[data-testid$="_tile"]' : "article"),
-					).length > 1
-				) {
-					grids.add(parent)
-					break
-				}
-			}
-		})
-	}
-	if (!grids.size) {
+	const grids = site.searchGrids()
+	if (!grids.length) {
 		searchSorting.clear()
 		return
 	}
@@ -501,9 +443,9 @@ function startPageFeatures() {
 	if (pageFeaturesStarted) return
 	pageFeaturesStarted = true
 	const tick = () => {
-		if (document.hidden) return
+		if (document.hidden || !site) return
 		episodeRatings
-			.tick(featureSite(), {
+			.tick(site.feature, {
 				episodes: settings.value.General.episodeRatings,
 				sources: ratingSources(),
 				glassFrost: settings.value.General.badgeStyle === "glass" ? settings.value.General.glassFrost : undefined,
@@ -528,9 +470,8 @@ function startPageFeatures() {
 // Netflix swaps the film for a trailer about 10 seconds into its end screen and then leaves the player, and Prime
 // autoplays the next film in the same video and moves to its page
 let creditsShownFor: number | null = null
-// Netflix's metadata for the title playing, which marks when its credits start
-let netflixPlaying: { id: string; credits?: NetflixCredits | null } | null = null
 function updateCreditsPrompt() {
+	if (!site) return
 	const enabled = settings.value.General.rateOnCredits
 	if (!enabled) {
 		creditsPrompt.tick(null, null, false)
@@ -544,29 +485,25 @@ function updateCreditsPrompt() {
 		return
 	}
 	creditsShownFor = null
-	if (!isOnPlayerPage()) {
+	if (!site.isPlayerPage()) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
-	const netflix = isNetflix ? netflixCredits() : undefined
-	// how long Netflix says the credits run, when it does
-	const marked = video && netflix?.creditsShare ? netflix.creditsShare * video.duration : undefined
+	const metadata = site.creditsMetadata?.()
+	// how long the service says the credits run, when it does
+	const marked = video && metadata?.creditsShare ? metadata.creditsShare * video.duration : undefined
 	// look the film up a couple of minutes before its credits, so it's ready when they start
 	if (!video || !inCredits(video, (marked ?? creditsLength(video.duration)) + 2 * 60)) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
 	// films, and the last episode of a limited series; never the rest of a show
-	const episode = playingEpisode(netflix)
+	const episode = site.playingEpisode(metadata)
 	if (episode === null) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
-	const raw = episode
-		? episode.show
-		: isNetflix
-			? (netflix?.title ?? document.querySelector('[data-uia="video-title"] h4')?.textContent)
-			: document.title
+	const raw = episode ? episode.show : site.playingTitle(metadata)
 	const title = raw
 		?.replace(/^Prime Video:\s*/i, "")
 		.split(/\s*[•·|]\s*/)[0]
@@ -593,11 +530,8 @@ function updateCreditsPrompt() {
 			})
 	}
 	const slug = playerLookup.data?.source === "letterboxd" ? getLetterboxdSlug(playerLookup.data.rating_url) : undefined
-	// the services' own end screens come up when the credits start, even without a marker in Netflix's metadata;
-	// Prime's next-up row comes up within seconds of the end credits it marks in its own playback data
-	const endScreen = isNetflix
-		? !!document.querySelector('[data-uia="postplay-player-space"]')
-		: isPrimeVideo && video.duration - video.currentTime < 15 * 60 && !!document.querySelector("[class*=nextupcard]")
+	// the services' own end screens come up when the credits start, even without a marker in their metadata
+	const endScreen = site.endScreenShowing(video)
 	creditsPrompt.tick(
 		video,
 		playerLookup.data,
@@ -613,31 +547,6 @@ function updateCreditsPrompt() {
 		creditsShownFor = video.duration
 		placeCreditsReview()
 	}
-}
-// the episode playing, if it's one: undefined for a film, null for an episode that isn't a limited series' finale
-// (or one that can't be placed in its show)
-function playingEpisode(netflix: NetflixCredits | undefined): PlayingEpisode | null | undefined {
-	if (netflix && !netflix.movie) {
-		const episode = netflix.episode
-		return episode?.last ? { show: netflix.title, season: episode.season, episode: episode.number } : null
-	}
-	if (isNetflix) return undefined
-	const text = (selector: string) => document.querySelector(selector)?.textContent?.trim()
-	// as the playback adapters read them: Prime's newer players label the episode in episode-info, and Max's
-	// player can be missing its show title
-	const place = parseEpisodeLabel(
-		isHBO
-			? text('[data-testid="player-ux-season-episode"]')
-			: text(".atvwebplayersdk-episode-info") || text(".atvwebplayersdk-subtitle-text"),
-	)
-	const show = (isHBO ? hbo : prime).showTitle()
-	if (place && show) return { show, ...place }
-	if (
-		document.querySelector('[data-testid="player-ux-season-episode"]') ||
-		/(?:S\d+\s*:?\s*E\d+|Season\s+\d+|Episode\s+\d+)/i.test(document.title)
-	)
-		return null
-	return undefined
 }
 // a show's last episode gets the pill when Letterboxd has a page for the show, which it only has for limited series.
 // TMDb's episode counts decide, even on Netflix, which marks the newest episode of a weekly release as its last.
@@ -708,29 +617,10 @@ function filmVideo() {
 		if (Number.isFinite(video.duration) && (!film || video.duration > film.duration)) film = video
 	return film
 }
-// clear of each service's own end-of-film UI: Netflix previews the next title bottom right, so the pill lines up
-// with its back arrow bottom left; Prime's next-up row fills the bottom, so it goes top right
+// clear of each service's own end-of-film UI
 function placeCreditsReview() {
 	const review = document.querySelector<HTMLElement>(".sb-review")
-	if (!review) return
-	if (isNetflix) {
-		review.classList.add("sb-review-left")
-		const back = document.querySelector('[data-uia="control-nav-back"]')?.getBoundingClientRect()
-		if (back?.width) review.style.setProperty("--sb-review-left", `${Math.round(back.left)}px`)
-	} else if (isPrimeVideo) review.classList.add("sb-review-top")
-}
-// what Netflix's metadata says about the title on /watch/{id}, once it has loaded
-function netflixCredits() {
-	const id = location.pathname.match(/^\/watch\/(\d+)/)?.[1]
-	if (!id) return undefined
-	if (netflixPlaying?.id !== id) {
-		const playing: NonNullable<typeof netflixPlaying> = { id }
-		netflixPlaying = playing
-		fetchNetflixMetadata(id).then((json) => {
-			playing.credits = parseNetflixCredits(json)
-		})
-	}
-	return netflixPlaying.credits ?? undefined
+	if (review) site?.placeReview(review)
 }
 function setLetterboxdProfile(profile: LetterboxdProfile | null) {
 	letterboxdProfile = profile
@@ -767,19 +657,12 @@ function getPersonalStatus(data: MovieInfo): { watched?: number; watchlist: bool
 	return { watched: letterboxdProfile.watched[slug], watchlist: watchlistSlugs.has(slug) }
 }
 
-// which service the tab is on, and whether its card ratings are switched on
-function currentService(): StreamingService | null {
-	return isNetflix ? "Netflix" : isPrimeVideo ? "Amazon" : isHBO ? "HBO" : null
-}
+// whether card ratings are switched on for the service the tab is on
 function ratingsEnabled() {
-	const service = currentService()
-	return !!service && settings.value[service].showRating
+	return !!site && !!settings.value[site.service]?.showRating
 }
-// Prime's detail pages also list extras and trailers; only rate the "related" tab there
 function showRating() {
-	if (isPrimeVideo && globalThis.location.href.includes("detail"))
-		return document.querySelector('[data-testid="btf-related-tab"]')?.getAttribute("tabIndex") == "0"
-	return true
+	return site?.ratesCards?.() ?? true
 }
 async function startShowRatingInterval() {
 	if (showRating()) addRating()
@@ -788,7 +671,7 @@ async function startShowRatingInterval() {
 	let stopped = false
 	let tickScheduled = false
 	const scheduleTick = () => {
-		if (stopped || tickScheduled || document.hidden || isOnPlayerPage()) return
+		if (stopped || tickScheduled || document.hidden || site?.isPlayerPage()) return
 		tickScheduled = true
 		setTimeout(() => {
 			tickScheduled = false
@@ -852,32 +735,6 @@ function useDBCache(title: string, card: HTMLElement, media_type: string | null)
 		setRatingOnCard(card, DBCache[title], title)
 	}
 }
-export type MediaType = "tv" | "movie" | null
-function Amazon_getMediaType(type: string): MediaType {
-	if (!type) return null
-	if (type.toLowerCase().includes("tv")) return "tv"
-	if (type.toLowerCase().includes("movie")) return "movie"
-	return null
-}
-function getAllTitleCardsTypes(): Array<NodeListOf<Element>> {
-	let AllTitleCardsTypes: Array<NodeListOf<Element>> = []
-	if (isNetflix)
-		AllTitleCardsTypes = [
-			document.querySelectorAll(
-				'a[data-uia="standard-card"]:not(.imdb), a[data-uia="progress-card"]:not(.imdb), a[data-uia="ranked-card"]:not(.imdb), a[data-uia="episodic-card"]:not(.imdb)',
-			),
-		]
-	else if (isHBO) AllTitleCardsTypes = [document.querySelectorAll("a[class*='StyledTileLinkNormal-']:not(.imdb)")]
-	else if (isPrimeVideo)
-		AllTitleCardsTypes = [
-			document.querySelectorAll(
-				// rows hold their cards in li; the search grid's cards are listitems themselves (article[data-testid=card])
-				":is(li article, article[data-testid='card'])[data-card-title]:not([data-card-entity-type='EVENT']):not([data-card-title='Live-TV']):not(:has(#rating))",
-			),
-			document.querySelectorAll("article[data-testid*='-card']:not(:has(#rating))"),
-		]
-	return AllTitleCardsTypes
-}
 // "Visible" includes one screen ahead (below, and to the right for rows), so the next row is usually rated
 // before you scroll to it instead of starting its lookups only once it's on screen.
 const LOOKAHEAD_SCREENS = 1
@@ -894,8 +751,9 @@ function isElementVisible(el: HTMLElement): boolean {
 }
 
 async function addRating() {
+	if (!site) return
 	url = globalThis.location.href
-	const AllTitleCardsTypes = getAllTitleCardsTypes()
+	const AllTitleCardsTypes = site.titleCards()
 	// a card can hold several images of the same title, so only use the first one
 	let lastTitle = ""
 	// for each is not going in order on chrome
@@ -904,21 +762,13 @@ async function addRating() {
 		const titleCards = AllTitleCardsTypes[type]
 		for (let i = 0; i < titleCards.length; i++) {
 			const card = titleCards[i] as HTMLElement
-			// add seen class
-			if (isNetflix || isHBO) card.classList.add("imdb")
-			else if (isPrimeVideo) {
-				if (type == 0) card.closest("li")?.classList.add("imdb")
-				else if (type == 1) card.classList.add("imdb")
-			}
-			const media_type = getMediaType(card)
-			const title = getCleanTitle(card, type)
+			const marker = site.seenMarker(card, type)
+			marker?.classList.add("imdb")
+			const media_type = site.mediaType(card, url)
+			const title = site.cleanTitle(card, type)
 			if (!title) {
-				// an episode card whose show is still being looked up gets another pass once it's known
-				if (
-					isNetflixEpisodeCard(card) &&
-					netflixShowTitles.get(getEpisodeId(card.getAttribute("href")) ?? "") === undefined
-				)
-					card.classList.remove("imdb")
+				// a card whose title is still being worked out gets another pass once it's known
+				if (site.titlePending?.(card)) card.classList.remove("imdb")
 				continue
 			}
 			if (checkedCards.isChecked(card, checkedKey(title))) continue
@@ -934,13 +784,8 @@ async function addRating() {
 				useDBCache(title, card, media_type)
 			}
 			// if element is not visible skip it
-			else if (!isElementVisible(card)) {
-				if (isNetflix || isHBO) card.classList.remove("imdb")
-				else if (isPrimeVideo) {
-					if (type == 0) card.closest("li")?.classList.remove("imdb")
-					else if (type == 1) card.classList.remove("imdb")
-				}
-			} else {
+			else if (!isElementVisible(card)) marker?.classList.remove("imdb")
+			else {
 				getMovieInfo(title, card, media_type)
 				updateDBCache = true
 			}
@@ -948,84 +793,6 @@ async function addRating() {
 	}
 	if (updateDBCache) scheduleCacheSave()
 }
-function getMediaType(card: HTMLElement): MediaType {
-	let media_type: MediaType = null
-	if (isNetflix) {
-		if (isNetflixEpisodeCard(card) || url.includes("genre/83")) media_type = "tv"
-		else if (url.includes("genre/34399")) media_type = "movie"
-	} else if (isHBO) {
-		const href = card.getAttribute("href") || ""
-		if (href.includes("show") || href.includes("series")) media_type = "tv"
-		else if (href.includes("movie")) media_type = "movie"
-	} else if (isPrimeVideo) {
-		if (url.includes("video/tv")) media_type = "tv"
-		else if (url.includes("video/movie")) media_type = "movie"
-		else media_type = Amazon_getMediaType(card.dataset.cardEntityType ?? "")
-	}
-	return media_type
-}
-
-// labelled with the episode name, so the series title is looked up (see netflix-shows.ts)
-function isNetflixEpisodeCard(card: HTMLElement) {
-	return card.dataset.uia === "episodic-card"
-}
-function getCleanTitle(card: HTMLElement, type: number): string | undefined {
-	let title: string | undefined
-	if (isNetflix) {
-		if (isNetflixEpisodeCard(card)) {
-			const episodeId = getEpisodeId(card.getAttribute("href"))
-			return (episodeId && netflixShowTitles.get(episodeId)) || undefined
-		}
-		title = card.getAttribute("aria-label")?.split(" (")[0]
-	} else if (isPrimeVideo) {
-		// detail means not live shows
-		const link = Amazon_titleLink(card)
-		if (link) {
-			if (type == 0) title = Amazon_fixTitle(card.dataset.cardTitle ?? "")
-			else if (type == 1) title = Amazon_fixTitle(link.getAttribute("aria-label") ?? "")
-		}
-		if (title && isSeasonOnlyTitle(title)) title = undefined
-	} else if (isHBO) {
-		const href = card.getAttribute("href") || ""
-		if (
-			href.includes("show") ||
-			href.includes("series") ||
-			href.includes("movie") ||
-			href.includes("topical") ||
-			href.includes("standalone")
-		) {
-			title =
-				HBO_fixTitle(card.getAttribute("aria-label")) ?? card.querySelector("p[class*='md_strong-']")?.textContent ?? ""
-		}
-	}
-	return title
-}
-export function HBO_fixTitle(label: string | null | undefined): string | undefined {
-	if (!label) return undefined
-	const firstPart = label.includes("\u2069") ? label.slice(0, label.indexOf("\u2069")) : label
-	const title = firstPart.replaceAll(/[\u2066-\u2069\u200e\u200f]/g, "").trim()
-	return title || undefined
-}
-// The card's own link to its title page. Not simply its first link: the badge is a link too, and once Prime re-renders a
-// card (the large cards do on hover) the badge can come first, which read as the card having no title and dropped it.
-export function Amazon_titleLink(card: HTMLElement) {
-	const link = card.querySelector<HTMLAnchorElement>("a:not(.sb-card-rating)")
-	return link?.href?.includes("detail") ? link : undefined
-}
-function Amazon_fixTitle(title: string | undefined) {
-	return title
-		?.split(" - ")[0]
-		.split(" – ")[0]
-		.replaceAll(/(S\d+)/g, "")
-		.replaceAll(/ \[.*\]/g, "")
-		.replaceAll(/\s\(.*\)/g, "")
-		.replaceAll(/:?\sStaffel-?\s\d+/g, "")
-		.replaceAll(/:?\sSeason-?\s\d+/g, "")
-		.replaceAll(/ \/ \d/g, "")
-		.split(": Die komplette")[0]
-		.split(": The complete")[0]
-}
-
 // TMDb is only the fallback: colour it on the IMDb scale (both are out of 10), grey when too few people voted
 const TMDB_LOW_RATING = 5.5
 function getTmdbColor(rating: number, lowVoteCount: boolean) {
@@ -1309,28 +1076,10 @@ function watchBadgeResizes() {
 	})
 }
 
-// Prime composites its own "prime" or channel logo into the artwork's bottom-right corner, and the image URL
-// says where: _CLs|W,H|...channels-logo...|...+x,y,w,h. Returns how far up the card the logo reaches (0 when none).
-// Read it off the image on show: the large cards also hold a hidden landscape image with its logo elsewhere.
-function primeLogoHeight(container: HTMLElement) {
-	const area = (el: Element) => el.getBoundingClientRect().width * el.getBoundingClientRect().height
-	const img = Array.from(container.querySelectorAll("img")).reduce<HTMLImageElement | null>(
-		(best, el) => (!best || area(el) > area(best) ? el : best),
-		null,
-	)
-	if (!img) return 0
-	const src = decodeURIComponent(img.currentSrc || img.src || img.srcset)
-	const match = /_CLs\|\d+,(\d+)\|[^|]*channels-logo[^|]*\|(?:\d+,\d+,\d+,\d+\+)*\d+,(\d+),\d+,\d+/.exec(src)
-	if (!match) return 0
-	const height = Number(match[1])
-	return (height - Number(match[2])) / height
-}
-
 async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string) {
-	if (!card.isConnected) return
-	if ((isNetflix || isHBO || isPrimeVideo) && getCleanTitle(card, card.dataset.cardTitle ? 0 : 1) !== title) {
-		card.classList.remove("imdb")
-		card.closest("li")?.classList.remove("imdb")
+	if (!card.isConnected || !site) return
+	if (site.cleanTitle(card, card.dataset.cardTitle ? 0 : 1) !== title) {
+		releaseCard(card)
 		return
 	}
 	// a card picked up again while its lookup was in flight waits on the same lookup; draw its badge only once
@@ -1361,13 +1110,11 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	div.classList.add("sb-card-rating")
 	// which streamBuddy build drew this badge (handy for checking that a rebuild was picked up)
 	div.dataset.sbBuild = __BUILD_ID__
-	const zIndexValue = isPrimeVideo ? "3" : "2"
 	// popcorn chip: score pill first, friends and your status beside it; wraps on narrow cards
 	Object.assign(div.style, {
 		position: "absolute",
-		// Netflix draws its "Recently added" and "Leaving soon" tags into the bottom of the boxart; the top-right is clear
-		...(isNetflix ? { top: `${BADGE_INSET_PX}px` } : { bottom: `${BADGE_INSET_PX}px` }),
-		right: isNetflix ? `calc(0.2vw + ${BADGE_INSET_PX}px)` : `${BADGE_INSET_PX}px`,
+		[site.badge.corner]: `${BADGE_INSET_PX}px`,
+		right: site.badge.right ?? `${BADGE_INSET_PX}px`,
 		maxWidth: `calc(100% - ${2 * BADGE_INSET_PX}px)`,
 		boxSizing: "border-box",
 		display: "flex",
@@ -1388,14 +1135,14 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		fontWeight: "700",
 		fontVariantNumeric: "tabular-nums",
 		lineHeight: "1",
-		zIndex: zIndexValue,
+		zIndex: site.badge.zIndex,
 		fontSize: isMobile ? "clamp(13px, 4vw, 19px)" : "clamp(13px, 0.95vw, 17px)",
 	})
 
 	if (settings.value.General.badgeStyle === "glass") applyGlass(div, settings.value.General.glassFrost)
 	requestAnimationFrame(() => Object.assign(div.style, { opacity: "1", transform: "none" }))
 	fillBadge(div, data, "", getTmdbColor(score, vote_count < 50))
-	if (data.source !== "tmdb" && data.rating && activePlatform) {
+	if (data.source !== "tmdb" && data.rating) {
 		const personal = getPersonalStatus(data)
 		queueSeenTitle(
 			{
@@ -1403,7 +1150,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 				source: data.source,
 				rating: data.rating,
 				url: data.rating_url ?? "",
-				platform: activePlatform,
+				platform: site.statsKey,
 				media_type: data.media_type,
 				seen: localDateKey(new Date()),
 			},
@@ -1434,47 +1181,20 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		pointerEvents: "none",
 		zIndex: 2,
 	})
-	if (isNetflix) {
-		const titleCardContainer = card.closest<HTMLElement>("div[data-virtual-slot]") ?? card.parentElement
-		if (titleCardContainer) {
-			if (getComputedStyle(titleCardContainer).position === "static") titleCardContainer.style.position = "relative"
-			titleCardContainer.appendChild(div)
-			fitBadgeToCorner(div, titleCardContainer, "top")
-			if (isDimmed(data, vote_count < 50)) titleCardContainer.appendChild(greyOverlay)
-		}
-	} else if (isHBO) {
-		// the tile link itself is unpositioned; the poster container is the relative box
-		const position = (card.querySelector('[data-testid$="_tileImage"]') as HTMLElement | null) ?? card
-		position.appendChild(div)
-		fitBadgeToCorner(div, position, "bottom")
-		if (isDimmed(data, vote_count < 50)) position.appendChild(greyOverlay)
-	} else if (isPrimeVideo) {
-		let position: HTMLElement | null = card
-		// the hero's metadata block has no artwork, only the title's logo image, which the badge mustn't cover
-		const heroMetadata = card.dataset.cardTitle
-			? null
-			: card.querySelector<HTMLElement>('div[data-testid="title-metadata-main"]')
-		if (card.dataset.cardTitle) position = card.firstChild?.firstChild as HTMLElement | null
-		else if (heroMetadata) position = heroMetadata
-		const logoHeight = position && !heroMetadata ? primeLogoHeight(position) : 0
-		if (logoHeight) div.style.bottom = `calc(${(logoHeight * 100).toFixed(1)}% + ${BADGE_INSET_PX}px)`
-		if (position) {
-			position.appendChild(div)
-			if (!heroMetadata) fitBadgeToCorner(div, position, "bottom", logoHeight)
-		}
-		if (isDimmed(data, vote_count < 50)) position?.appendChild(greyOverlay)
+	const placement = site.badgeHost(card)
+	if (placement) {
+		const { host, corner, raise = 0, fit = true } = placement
+		if (raise) div.style.bottom = `calc(${(raise * 100).toFixed(1)}% + ${BADGE_INSET_PX}px)`
+		host.appendChild(div)
+		if (fit) fitBadgeToCorner(div, host, corner, raise)
+		if (isDimmed(data, vote_count < 50)) host.appendChild(greyOverlay)
 	}
-	if (div.isConnected && (isNetflix || isHBO || isPrimeVideo)) {
+	if (div.isConnected) {
 		searchSorting.setRating(card, score)
 		rowCardData.set(card, data)
 		rowCardTitles.set(card, title)
 		rowCardDecorations.set(card, [div, greyOverlay])
-		const hideTarget = isNetflix
-			? (card.closest<HTMLElement>("[data-virtual-slot]") ?? card.parentElement ?? card)
-			: isPrimeVideo
-				? (card.closest<HTMLElement>("li") ?? card)
-				: card
-		rowPresentation.track(card, hideTarget)
+		rowPresentation.track(card, site.rowItem(card))
 		refreshRowPresentation()
 	}
 }
@@ -1483,14 +1203,6 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 // so autoplaying previews on the browse pages and paused players don't add up.
 const WATCH_TICK_SECONDS = 15
 const watchState: WatchTimerState = { pendingSeconds: 0, lastVideoTime: -1 }
-function isOnPlayerPage() {
-	const path = globalThis.location.pathname
-	if (isNetflix) return path.startsWith("/watch")
-	// the same two player roots the playback engine looks for; newer players only have #dv-web-player
-	if (isPrimeVideo) return !!document.querySelector(".dv-player-fullscreen video, #dv-web-player video")
-	if (isHBO) return path.includes("/video/watch")
-	return false
-}
 function getPlayingVideo() {
 	let best: HTMLVideoElement | undefined
 	for (const video of Array.from(document.querySelectorAll("video"))) {
@@ -1499,17 +1211,17 @@ function getPlayingVideo() {
 	}
 	return best
 }
-function startWatchTimer(platform: Platforms) {
+function startWatchTimer(service: RatingsSite) {
 	// saved every tick rather than in batches: a tab closed mid-batch used to lose up to a minute,
 	// and pagehide can't be relied on to finish an async storage write
 	setInterval(() => {
-		const video = isOnPlayerPage() ? getPlayingVideo() : undefined
+		const video = service.isPlayerPage() ? getPlayingVideo() : undefined
 		watchTick(watchState, video?.currentTime, WATCH_TICK_SECONDS)
-		flushWatchTime(platform)
+		flushWatchTime(service.statsKey)
 	}, WATCH_TICK_SECONDS * 1000)
-	globalThis.addEventListener("pagehide", () => flushWatchTime(platform))
+	globalThis.addEventListener("pagehide", () => flushWatchTime(service.statsKey))
 }
-async function flushWatchTime(platform: Platforms) {
+async function flushWatchTime(platform: string) {
 	if (!watchState.pendingSeconds) return
 	const seconds = watchState.pendingSeconds
 	watchState.pendingSeconds = 0
