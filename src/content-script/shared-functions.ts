@@ -3,6 +3,15 @@ import { color, ease, font, friendColors as FRIEND_DOT_COLORS, shadow } from "@/
 import { applyGlass, installPageFeatureStyle } from "@/utils/page-feature-styles"
 import { sendMessage } from "webext-bridge/content-script"
 import {
+	findSeriesFinale,
+	fetchEpisodeRatings,
+	getExternalRating,
+	isLookupError,
+	prefetchLetterboxd,
+	searchTitle,
+	usesLetterboxd,
+} from "@/utils/lookup"
+import {
 	getLetterboxdSlug,
 	getScoreBand,
 	getScoreColor,
@@ -11,12 +20,12 @@ import {
 	type LetterboxdProfile,
 	type RatingSource,
 } from "@/utils/ratings"
-import { CheckedCards, pickBestMatch } from "@/utils/tmdb"
+import { CheckedCards } from "@/utils/tmdb"
 import { getAccount, onAccountChanged } from "@/utils/account"
 import { RowPresentation, normalizeRowScore, isBelowRatingCutoff } from "@/utils/row-presentation"
 import { EpisodeRatings, SearchRatingSort, type FeatureRating, type EpisodeRating } from "@/utils/page-features"
 import { CreditsRatingPrompt, creditsLength, inCredits } from "@/utils/credits-review"
-import { isLastEpisode, shareLookup, type PlayingEpisode } from "@/utils/series-finale"
+import { shareLookup, type PlayingEpisode } from "@/utils/series-finale"
 import type { RatingsSite } from "./sites/types"
 import { SERVICES } from "@/constants/streamingServices"
 import {
@@ -39,6 +48,7 @@ const today = date.toISOString().split("T")[0]
 const isMobile = /mobile/i.test(navigator.userAgent)
 let url = globalThis.location.href
 const htmlLang = document.documentElement.lang
+const locale = () => htmlLang || navigator?.language || "en-US"
 
 let DBCache: DBCacheType = {}
 
@@ -79,9 +89,6 @@ type MovieInfo = {
 // bump when lookups change (and the seeded cacheVersion in e2e/visual/ratings.ts) so older entries (wrong matches, fallbacks saved during an outage) are refetched once
 const CACHE_VERSION = 3
 const ratingSources = () => settings.value.General.ratingSources
-// a lookup takes the sources setting as it was when it started, so a change mid-lookup can't mislabel its result
-const usesLetterboxd = (sources: RatingSources) => sources === "both" || sources === "letterboxd"
-const usesImdb = (sources: RatingSources) => sources === "both" || sources === "imdb"
 // cached under the current lookup rules and the current choice of sources
 export const isCacheCurrent = (entry: MovieInfo | undefined) =>
 	!entry?.retryAfter && entry?.cacheVersion === CACHE_VERSION && (entry.sources ?? "both") === ratingSources()
@@ -136,33 +143,6 @@ async function garbageCollection() {
 	setDBCache()
 }
 // #region startSharedFuncs
-type TMDBMovie = {
-	adult: boolean
-	backdrop_path: string
-	genre_ids: Array<number>
-	id: number
-	original_language: string
-	original_title: string
-	original_name: string
-	overview: string
-	popularity: number
-	poster_path: string
-	release_date: string
-	first_air_date: string
-	title: string
-	name: string
-	video: boolean
-	vote_average: number
-	vote_count: number
-	media_type: string
-}
-type TMDBResponse = {
-	page: number
-	results: Array<TMDBMovie>
-	total_pages: number
-	total_results: number
-}
-
 // The same title often sits in several rows; share one lookup between all of its cards
 const lookupsInFlight = new Map<string, Promise<MovieInfo | null>>()
 const checkedCards = new CheckedCards()
@@ -209,23 +189,13 @@ export async function lookupMovieInfo(
 	year: string | null,
 	sources: RatingSources = ratingSources(),
 ): Promise<MovieInfo | null> {
-	const locale = htmlLang || navigator?.language || "en-US"
-	const queryType = media_type ?? "multi"
-	let url = `https://api.themoviedb.org/3/search/${queryType}?query=${encodeURIComponent(title)}&include_adult=false&language=${locale}&page=1`
-	if (year) url += `&year=${year}`
-	// start downloading the likely Letterboxd page now; it's verified against TMDb's answer before being used
-	if (media_type !== "tv" && usesLetterboxd(sources))
-		Promise.resolve(
-			sendMessage("letterboxdPrefetch", { title, friends: settings.value.General.friendsRatings }, "background"),
-		).catch(() => {})
-	const data: TMDBResponse & { error?: string } = await sendMessage("fetch", { url, type: "tmdb" }, "background")
-	// TMDb unreachable: show nothing and leave the title uncached so the next visit retries
-	if (!data || data.error) return null
-	const results = data.results?.filter((item) => item.media_type?.toLowerCase() !== "person")
-	const movie = pickBestMatch(results, title)
-	if (!movie?.id) return null
-	const resolvedMediaType = queryType == "multi" ? movie.media_type : queryType
-	const external = await getExternalRating(movie.id, resolvedMediaType, title, sources)
+	const friends = settings.value.General.friendsRatings
+	if (media_type !== "tv" && usesLetterboxd(sources)) prefetchLetterboxd(title, friends)
+	// no match, or TMDb unreachable: show nothing and leave the title uncached so the next visit retries
+	const movie = await searchTitle(title, media_type, year, locale())
+	if (!movie) return null
+	const resolvedMediaType = media_type ?? movie.media_type
+	const external = await getExternalRating(movie.id, resolvedMediaType, title, sources, friends)
 	const compiledData: MovieInfo = {
 		id: movie.id,
 		media_type: resolvedMediaType,
@@ -261,44 +231,6 @@ function scheduleCacheSave() {
 		cacheSaveTimer = undefined
 		setDBCache()
 	}, 3000)
-}
-
-type ExternalResult = ExternalRating | null | { error: string }
-const isLookupError = (result: ExternalResult): result is { error: string } => !!result && "error" in result
-// Films: Letterboxd. TV, and films Letterboxd has no rating for yet: IMDb. The rating-source setting can drop either.
-async function getExternalRating(
-	tmdbId: number,
-	media_type: string,
-	title: string,
-	sources: RatingSources,
-): Promise<{ rating: ExternalRating | null; transient: boolean }> {
-	let transient = false
-	try {
-		// Letterboxd's /tmdb/{id} only understands movie ids, a TV id would resolve to an unrelated film
-		if (media_type === "movie" && usesLetterboxd(sources)) {
-			const letterboxd: ExternalResult = await sendMessage(
-				"letterboxdRating",
-				{ tmdbId, friends: settings.value.General.friendsRatings, title },
-				"background",
-			)
-			if (isLookupError(letterboxd)) transient = true
-			else if (letterboxd?.rating) return { rating: letterboxd, transient: !!letterboxd.friends_unavailable }
-		}
-		if (!usesImdb(sources) || (media_type !== "movie" && media_type !== "tv")) return { rating: null, transient }
-		const externalIds: { imdb_id?: string; error?: string } = await sendMessage(
-			"fetch",
-			{ url: `https://api.themoviedb.org/3/${media_type}/${tmdbId}/external_ids`, type: "tmdb" },
-			"background",
-		)
-		if (externalIds?.error) return { rating: null, transient: true }
-		if (!externalIds?.imdb_id) return { rating: null, transient }
-		const imdb: ExternalResult = await sendMessage("imdbRating", { imdbId: externalIds.imdb_id }, "background")
-		if (isLookupError(imdb)) return { rating: null, transient: true }
-		return { rating: imdb, transient }
-	} catch (error) {
-		logLookupFailure("getExternalRating failed", error, tmdbId, media_type)
-		return { rating: null, transient: true }
-	}
 }
 
 // The user's Letterboxd diary and watchlist (synced by the background every few hours)
@@ -406,25 +338,7 @@ const episodeRatings = new EpisodeRatings(
 			return cached
 		return lookupMovieInfo(title, type, year)
 	},
-	async (data: FeatureRating, season): Promise<EpisodeRating[]> => {
-		let imdbId = data.rating_url?.match(/imdb\.com\/title\/(tt\d+)/)?.[1]
-		if (!imdbId) {
-			const result: { imdb_id?: string; error?: string } = await sendMessage(
-				"fetch",
-				{
-					url: `https://api.themoviedb.org/3/tv/${data.id}/external_ids`,
-					type: "tmdb",
-				},
-				"background",
-			)
-			imdbId = result?.imdb_id
-		}
-		if (!imdbId) throw new Error("IMDb series unavailable")
-		const result = (await sendMessage("imdbEpisodes", { imdbId, season }, "background")) as
-			EpisodeRating[] | { error: string }
-		if (!Array.isArray(result)) throw new Error("Episode ratings unavailable")
-		return result
-	},
+	(data: FeatureRating, season): Promise<EpisodeRating[]> => fetchEpisodeRatings(data, season),
 )
 
 function updateSearchSorting() {
@@ -549,52 +463,24 @@ function updateCreditsPrompt() {
 		placeCreditsReview()
 	}
 }
-// a show's last episode gets the pill when Letterboxd has a page for the show, which it only has for limited series.
-// TMDb's episode counts decide, even on Netflix, which marks the newest episode of a weekly release as its last.
 const finaleLookups = new Map<string, Promise<MovieInfo | null>>()
 function lookupSeriesFinale(episode: PlayingEpisode): Promise<MovieInfo | null> {
 	const key = `${episode.show}|S${episode.season}E${episode.episode}|${settings.value.General.friendsRatings}`
-	return shareLookup(finaleLookups, key, () => findSeriesFinale(episode)).then((found) => {
+	return shareLookup(finaleLookups, key, () => lookupFinale(episode)).then((found) => {
 		// friends' ratings failed for a moment: let the retry after retryAfter ask again rather than reuse this
 		if (found?.retryAfter) finaleLookups.delete(key)
 		return found
 	})
 }
-async function findSeriesFinale({ show, season, episode }: PlayingEpisode): Promise<MovieInfo | null> {
-	const locale = htmlLang || navigator?.language || "en-US"
-	const search: TMDBResponse & { error?: string } = await sendMessage(
-		"fetch",
-		{
-			url: `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(show)}&include_adult=false&language=${locale}&page=1`,
-			type: "tmdb",
-		},
-		"background",
-	)
-	if (!search || search.error) return null
-	const match = pickBestMatch(search.results, show)
-	if (!match?.id) return null
-	const details: {
-		seasons?: Array<{ season_number?: number; episode_count?: number }>
-		external_ids?: { imdb_id?: string | null }
-		error?: string
-	} = await sendMessage(
-		"fetch",
-		{ url: `https://api.themoviedb.org/3/tv/${match.id}?append_to_response=external_ids`, type: "tmdb" },
-		"background",
-	)
-	if (!details || details.error || !isLastEpisode(details.seasons, season, episode)) return null
-	const imdbId = details.external_ids?.imdb_id
-	if (!imdbId) return null
-	const letterboxd: ExternalResult = await sendMessage(
-		"letterboxdSeries",
-		{ imdbId, friends: settings.value.General.friendsRatings },
-		"background",
-	)
-	if (!letterboxd || isLookupError(letterboxd)) return null
+// the pill's rating for a limited series' last episode
+async function lookupFinale(episode: PlayingEpisode): Promise<MovieInfo | null> {
+	const found = await findSeriesFinale(episode, settings.value.General.friendsRatings, locale())
+	if (!found) return null
+	const { match, letterboxd } = found
 	return {
 		id: match.id,
 		media_type: "tv",
-		title: match.name || match.original_name || show,
+		title: match.name || match.original_name || episode.show,
 		score: match.vote_average,
 		vote_count: match.vote_count,
 		release_date: match.first_air_date,
@@ -648,7 +534,7 @@ async function loadLetterboxdProfile() {
 	if (!letterboxdUsername) return
 	Promise.resolve(sendMessage("letterboxdProfile", {}, "background"))
 		.then((profile) => {
-			if (profile && !("error" in (profile as object))) setLetterboxdProfile(profile as LetterboxdProfile)
+			if (profile && !isLookupError(profile)) setLetterboxdProfile(profile)
 		})
 		.catch(() => {})
 }

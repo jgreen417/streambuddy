@@ -24,8 +24,7 @@ async function sync() {
 	syncing.value = true
 	error.value = ""
 	try {
-		const fresh = (await sendMessage("letterboxdProfile", { force: true }, "background")) as
-			LetterboxdProfile | null | { error: string }
+		const fresh = await sendMessage("letterboxdProfile", { force: true }, "background")
 		if (!fresh || "error" in fresh || !fresh.watched || !Array.isArray(fresh.watchlist))
 			throw new Error("Profile unavailable")
 		profile.value = fresh

@@ -68,6 +68,7 @@ declare global {
   const eagerComputed: typeof import('@vueuse/core').eagerComputed
   const effectScope: typeof import('vue').effectScope
   const extendRef: typeof import('@vueuse/core').extendRef
+  const fetchEpisodeRatings: typeof import('../utils/lookup').fetchEpisodeRatings
   const fetchImdbEpisodes: typeof import('../utils/ratings').fetchImdbEpisodes
   const fetchImdbRating: typeof import('../utils/ratings').fetchImdbRating
   const fetchLetterboxdByImdb: typeof import('../utils/ratings').fetchLetterboxdByImdb
@@ -76,6 +77,7 @@ declare global {
   const fetchLetterboxdRating: typeof import('../utils/ratings').fetchLetterboxdRating
   const fetchNetflixMetadata: typeof import('../utils/netflix-credits').fetchNetflixMetadata
   const fetchPosterInfo: typeof import('../utils/tmdb').fetchPosterInfo
+  const findSeriesFinale: typeof import('../utils/lookup').findSeriesFinale
   const formatDuration: typeof import('../utils/stats').formatDuration
   const getAccount: typeof import('../utils/account').getAccount
   const getActivePinia: typeof import('pinia').getActivePinia
@@ -83,6 +85,7 @@ declare global {
   const getCurrentScope: typeof import('vue').getCurrentScope
   const getCurrentWatcher: typeof import('vue').getCurrentWatcher
   const getEpisodeId: typeof import('../utils/netflix-shows').getEpisodeId
+  const getExternalRating: typeof import('../utils/lookup').getExternalRating
   const getLetterboxdSlug: typeof import('../utils/ratings').getLetterboxdSlug
   const getRatingMode: typeof import('../utils/preferences').getRatingMode
   const getRatingPercentile: typeof import('../utils/stats').getRatingPercentile
@@ -101,6 +104,7 @@ declare global {
   const isBuiltInKeyRejected: typeof import('../utils/account').isBuiltInKeyRejected
   const isDefined: typeof import('@vueuse/core').isDefined
   const isLastEpisode: typeof import('../utils/series-finale').isLastEpisode
+  const isLookupError: typeof import('../utils/lookup').isLookupError
   const isProxy: typeof import('vue').isProxy
   const isReactive: typeof import('vue').isReactive
   const isReadonly: typeof import('vue').isReadonly
@@ -154,6 +158,7 @@ declare global {
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
   const pickBestMatch: typeof import('../utils/tmdb').pickBestMatch
   const pinia: typeof import('../utils/pinia').pinia
+  const prefetchLetterboxd: typeof import('../utils/lookup').prefetchLetterboxd
   const provide: typeof import('vue').provide
   const provideLocal: typeof import('@vueuse/core').provideLocal
   const reactify: typeof import('@vueuse/core').reactify
@@ -181,6 +186,7 @@ declare global {
   const reviewState: typeof import('../utils/credits-review').reviewState
   const reviewable: typeof import('../utils/credits-review').reviewable
   const saveAccount: typeof import('../utils/account').saveAccount
+  const searchTitle: typeof import('../utils/lookup').searchTitle
   const setActivePinia: typeof import('pinia').setActivePinia
   const setBuiltInKeyRejected: typeof import('../utils/account').setBuiltInKeyRejected
   const setMapStoreSuffix: typeof import('pinia').setMapStoreSuffix
@@ -397,6 +403,8 @@ declare global {
   const useWindowFocus: typeof import('@vueuse/core').useWindowFocus
   const useWindowScroll: typeof import('@vueuse/core').useWindowScroll
   const useWindowSize: typeof import('@vueuse/core').useWindowSize
+  const usesImdb: typeof import('../utils/lookup').usesImdb
+  const usesLetterboxd: typeof import('../utils/lookup').usesLetterboxd
   const watch: typeof import('vue').watch
   const watchArray: typeof import('@vueuse/core').watchArray
   const watchAtMost: typeof import('@vueuse/core').watchAtMost
@@ -429,6 +437,12 @@ declare global {
   // @ts-ignore
   export type { CreditsRatingPrompt, ReviewViewer } from '../utils/credits-review'
   import('../utils/credits-review')
+  // @ts-ignore
+  export type { TMDBMovie } from '../utils/lookup'
+  import('../utils/lookup')
+  // @ts-ignore
+  export type { LookupError, FetchRequestType, ProtocolMap } from '../utils/messages'
+  import('../utils/messages')
   // @ts-ignore
   export type { NetflixCredits } from '../utils/netflix-credits'
   import('../utils/netflix-credits')
@@ -523,6 +537,7 @@ declare module 'vue' {
     readonly eagerComputed: UnwrapRef<typeof import('@vueuse/core')['eagerComputed']>
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
+    readonly fetchEpisodeRatings: UnwrapRef<typeof import('../utils/lookup')['fetchEpisodeRatings']>
     readonly fetchImdbEpisodes: UnwrapRef<typeof import('../utils/ratings')['fetchImdbEpisodes']>
     readonly fetchImdbRating: UnwrapRef<typeof import('../utils/ratings')['fetchImdbRating']>
     readonly fetchLetterboxdByImdb: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdByImdb']>
@@ -530,6 +545,7 @@ declare module 'vue' {
     readonly fetchLetterboxdProfile: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdProfile']>
     readonly fetchLetterboxdRating: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdRating']>
     readonly fetchNetflixMetadata: UnwrapRef<typeof import('../utils/netflix-credits')['fetchNetflixMetadata']>
+    readonly findSeriesFinale: UnwrapRef<typeof import('../utils/lookup')['findSeriesFinale']>
     readonly formatDuration: UnwrapRef<typeof import('../utils/stats')['formatDuration']>
     readonly getAccount: UnwrapRef<typeof import('../utils/account')['getAccount']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
@@ -537,6 +553,7 @@ declare module 'vue' {
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
     readonly getCurrentWatcher: UnwrapRef<typeof import('vue')['getCurrentWatcher']>
     readonly getEpisodeId: UnwrapRef<typeof import('../utils/netflix-shows')['getEpisodeId']>
+    readonly getExternalRating: UnwrapRef<typeof import('../utils/lookup')['getExternalRating']>
     readonly getLetterboxdSlug: UnwrapRef<typeof import('../utils/ratings')['getLetterboxdSlug']>
     readonly getRatingMode: UnwrapRef<typeof import('../utils/preferences')['getRatingMode']>
     readonly getRatingPercentile: UnwrapRef<typeof import('../utils/stats')['getRatingPercentile']>
@@ -555,6 +572,7 @@ declare module 'vue' {
     readonly isBuiltInKeyRejected: UnwrapRef<typeof import('../utils/account')['isBuiltInKeyRejected']>
     readonly isDefined: UnwrapRef<typeof import('@vueuse/core')['isDefined']>
     readonly isLastEpisode: UnwrapRef<typeof import('../utils/series-finale')['isLastEpisode']>
+    readonly isLookupError: UnwrapRef<typeof import('../utils/lookup')['isLookupError']>
     readonly isProxy: UnwrapRef<typeof import('vue')['isProxy']>
     readonly isReactive: UnwrapRef<typeof import('vue')['isReactive']>
     readonly isReadonly: UnwrapRef<typeof import('vue')['isReadonly']>
@@ -608,6 +626,7 @@ declare module 'vue' {
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
     readonly pickBestMatch: UnwrapRef<typeof import('../utils/tmdb')['pickBestMatch']>
     readonly pinia: UnwrapRef<typeof import('../utils/pinia')['pinia']>
+    readonly prefetchLetterboxd: UnwrapRef<typeof import('../utils/lookup')['prefetchLetterboxd']>
     readonly provide: UnwrapRef<typeof import('vue')['provide']>
     readonly provideLocal: UnwrapRef<typeof import('@vueuse/core')['provideLocal']>
     readonly reactify: UnwrapRef<typeof import('@vueuse/core')['reactify']>
@@ -634,6 +653,7 @@ declare module 'vue' {
     readonly reviewState: UnwrapRef<typeof import('../utils/credits-review')['reviewState']>
     readonly reviewable: UnwrapRef<typeof import('../utils/credits-review')['reviewable']>
     readonly saveAccount: UnwrapRef<typeof import('../utils/account')['saveAccount']>
+    readonly searchTitle: UnwrapRef<typeof import('../utils/lookup')['searchTitle']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
     readonly setBuiltInKeyRejected: UnwrapRef<typeof import('../utils/account')['setBuiltInKeyRejected']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>
@@ -847,6 +867,8 @@ declare module 'vue' {
     readonly useWindowFocus: UnwrapRef<typeof import('@vueuse/core')['useWindowFocus']>
     readonly useWindowScroll: UnwrapRef<typeof import('@vueuse/core')['useWindowScroll']>
     readonly useWindowSize: UnwrapRef<typeof import('@vueuse/core')['useWindowSize']>
+    readonly usesImdb: UnwrapRef<typeof import('../utils/lookup')['usesImdb']>
+    readonly usesLetterboxd: UnwrapRef<typeof import('../utils/lookup')['usesLetterboxd']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>
     readonly watchArray: UnwrapRef<typeof import('@vueuse/core')['watchArray']>
     readonly watchAtMost: UnwrapRef<typeof import('@vueuse/core')['watchAtMost']>
