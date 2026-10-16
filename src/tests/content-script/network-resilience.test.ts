@@ -87,7 +87,7 @@ describe("provider rate limits", () => {
 		vi.setSystemTime(new Date("2026-10-21T07:28:00Z"))
 		let letterboxdCalls = 0
 		globalThis.fetch = vi.fn(async (input) => {
-			if (String(input).includes("letterboxd.com")) {
+			if (new URL(String(input)).hostname === "letterboxd.com") {
 				letterboxdCalls++
 				return new Response("rate limited", {
 					status: 429,
