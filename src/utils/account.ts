@@ -1,3 +1,4 @@
+import { request } from "./network"
 // The user's own Letterboxd username and TMDb key, entered during onboarding. Nothing is baked into a
 // release build; a sideloaded dev build can still fall back to the values in .env.
 export type Account = { letterboxdUsername: string; tmdbToken: string }
@@ -58,10 +59,12 @@ export type CheckResult = "ok" | "invalid" | "offline"
 export async function checkTmdbToken(token: string): Promise<CheckResult> {
 	if (!token.trim()) return "invalid"
 	try {
-		const request = tmdbRequest("https://api.themoviedb.org/3/configuration", token.trim())
-		const response = await fetch(request.url, { headers: request.headers })
-		if (response.ok) return "ok"
-		return response.status === 401 || response.status === 403 ? "invalid" : "offline"
+		const auth = tmdbRequest("https://api.themoviedb.org/3/configuration", token.trim())
+		return await request(
+			auth.url,
+			(response) => (response.ok ? "ok" : response.status === 401 || response.status === 403 ? "invalid" : "offline"),
+			{ headers: auth.headers },
+		)
 	} catch {
 		return "offline"
 	}
@@ -80,9 +83,9 @@ export async function checkLetterboxdUsername(username: string): Promise<CheckRe
 	if (!/^[a-z0-9_]{2,}$/.test(name)) return "invalid"
 	try {
 		// GET, not HEAD: Letterboxd's bot protection refuses bare HEAD requests
-		const response = await fetch(`https://letterboxd.com/${name}/`)
-		if (response.ok) return "ok"
-		return response.status === 404 ? "invalid" : "offline"
+		return await request(`https://letterboxd.com/${name}/`, (response) =>
+			response.ok ? "ok" : response.status === 404 ? "invalid" : "offline",
+		)
 	} catch {
 		return "offline"
 	}

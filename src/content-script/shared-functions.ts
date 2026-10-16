@@ -93,6 +93,7 @@ type MovieInfo = {
 	friends_rating?: number
 	friends_count?: number
 	friends?: FriendRating[]
+	retryAfter?: number
 	cacheVersion?: number
 	// the rating-source setting this was looked up under (missing on older entries, which used both)
 	sources?: RatingSources
@@ -105,7 +106,7 @@ const usesLetterboxd = (sources: RatingSources) => sources === "both" || sources
 const usesImdb = (sources: RatingSources) => sources === "both" || sources === "imdb"
 // cached under the current lookup rules and the current choice of sources
 export const isCacheCurrent = (entry: MovieInfo | undefined) =>
-	entry?.cacheVersion === CACHE_VERSION && (entry.sources ?? "both") === ratingSources()
+	!entry?.retryAfter && entry?.cacheVersion === CACHE_VERSION && (entry.sources ?? "both") === ratingSources()
 type DBCacheType = {
 	[title: string]: MovieInfo
 }
@@ -260,6 +261,7 @@ export async function lookupMovieInfo(
 		friends_count: external.rating?.friends_count,
 		friends: external.rating?.friends,
 		cacheVersion: CACHE_VERSION,
+		retryAfter: external.transient ? Date.now() + 30_000 : undefined,
 		sources,
 	}
 	// a temporary Letterboxd/IMDb failure must not pin this title to the fallback for a month
@@ -297,7 +299,7 @@ async function getExternalRating(
 				"background",
 			)
 			if (isLookupError(letterboxd)) transient = true
-			else if (letterboxd?.rating) return { rating: letterboxd, transient }
+			else if (letterboxd?.rating) return { rating: letterboxd, transient: !!letterboxd.friends_unavailable }
 		}
 		if (!usesImdb(sources) || (media_type !== "movie" && media_type !== "tv")) return { rating: null, transient }
 		const externalIds: { imdb_id?: string; error?: string } = await sendMessage(
@@ -325,9 +327,14 @@ const rowCardDecorations = new WeakMap<HTMLElement, HTMLElement[]>()
 const netflixShowTitles = new NetflixShowTitles()
 // redrawAll: drop every card badge so the next pass draws it again (after a setting that changes how badges look)
 function refreshRowPresentation(redrawAll = false) {
-	const stale = rowPresentation.prune(
-		(card) => !redrawAll && getCleanTitle(card, card.dataset.cardTitle ? 0 : 1) === rowCardTitles.get(card),
-	)
+	const stale = rowPresentation.prune((card) => {
+		const retryAfter = rowCardData.get(card)?.retryAfter ?? Number.POSITIVE_INFINITY
+		return (
+			!redrawAll &&
+			retryAfter > Date.now() &&
+			getCleanTitle(card, card.dataset.cardTitle ? 0 : 1) === rowCardTitles.get(card)
+		)
+	})
 	for (const card of stale) {
 		rowCardDecorations.get(card)?.forEach((decoration) => decoration.remove())
 		card.classList.remove("imdb")

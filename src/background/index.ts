@@ -1,3 +1,4 @@
+import { request as networkRequest, NetworkRequestError, readJson } from "@/utils/network"
 import { getAccount, tmdbRequest } from "@/utils/account"
 import { createProfileSync } from "@/utils/profile-sync"
 const is_DEV = process.env.NODE_ENV === "development"
@@ -81,7 +82,7 @@ onMessage("letterboxdRating", async (message: { data: { tmdbId: number; friends:
 		const username = friends ? (await getAccount()).letterboxdUsername : ""
 		return await withLetterboxdSlot(() => fetchLetterboxdRating(tmdbId, username))
 	} catch (error) {
-		console.error(error)
+		if (!(error instanceof NetworkRequestError)) console.error(error)
 		return { error: (error as Error).message }
 	}
 })
@@ -91,7 +92,7 @@ onMessage("letterboxdSeries", async (message: { data: { imdbId: string; friends:
 		const username = message.data.friends ? (await getAccount()).letterboxdUsername : ""
 		return await withLetterboxdSlot(() => fetchLetterboxdByImdb(message.data.imdbId, username))
 	} catch (error) {
-		console.error(error)
+		if (!(error instanceof NetworkRequestError)) console.error(error)
 		return { error: (error as Error).message }
 	}
 })
@@ -99,7 +100,7 @@ onMessage("imdbRating", async (message: { data: { imdbId: string } }) => {
 	try {
 		return await fetchImdbRating(message.data.imdbId)
 	} catch (error) {
-		console.error(error)
+		if (!(error instanceof NetworkRequestError)) console.error(error)
 		return { error: (error as Error).message }
 	}
 })
@@ -184,16 +185,16 @@ onMessage("fetch", async (message: { data: { url: string; type: FetchRequestType
 		const authHost = AUTH_HOSTS[data.type]
 		if (authHost && new URL(data.url).hostname !== authHost)
 			throw new Error(`Refusing to send ${data.type} credentials to ${new URL(data.url).hostname}`)
-		const response = await fetch(data.url, {
-			method: "GET",
-			headers,
-		})
-		// rate limits and outages are temporary: report them rather than handing back an error body as "no results"
-		if (!response.ok && response.status !== 404) return { error: `HTTP ${response.status}` }
-		const responseData = await response.json()
-		return responseData
+		return await networkRequest(
+			data.url,
+			async (response) => {
+				if (!response.ok && response.status !== 404) return { error: `HTTP ${response.status}` }
+				return readJson(response)
+			},
+			{ method: "GET", headers },
+		)
 	} catch (error) {
-		console.error(error)
+		if (!(error instanceof NetworkRequestError)) console.error(error)
 		return { error: (error as Error).message }
 	}
 })

@@ -1,3 +1,4 @@
+import { request, NetworkRequestError, readText, readJson } from "./network"
 // External rating sources (Letterboxd for films, IMDb for TV and as a fallback).
 // These run in the background service worker: neither site sends CORS headers to the
 // streaming pages, so the content scripts can't fetch them directly.
@@ -14,12 +15,13 @@ export type ExternalRating = {
 	friends_count?: number
 	// a few of those friends by name, for the badge tooltip
 	friends?: FriendRating[]
+	friends_unavailable?: true
 }
 export type FriendRating = { name: string; rating: number }
 
 // A temporary failure (network error, rate limit, Cloudflare challenge) as opposed to "this title has no rating".
 // Callers must not cache these, or one bad minute pins a title to the fallback rating for a month.
-export class TransientLookupError extends Error {}
+export class TransientLookupError extends NetworkRequestError {}
 function assertNotTransient(response: Response, source: string) {
 	if (!response.ok && response.status !== 404) throw new TransientLookupError(`${source} ${response.status}`)
 }
@@ -89,25 +91,26 @@ export function parseLetterboxdTmdbId(html: string): { id: number; type: string 
 
 export type LetterboxdFilm = ExternalRating & { tmdb?: { id: number; type: string } | null }
 async function fetchLetterboxdFilm(path: string, username: string): Promise<LetterboxdFilm | null> {
-	const response = await fetch(`https://letterboxd.com${path}`)
-	assertNotTransient(response, "Letterboxd")
-	// unknown ids answer 200 without redirecting, so check we actually reached a film page
-	const slug = getLetterboxdSlug(response.url)
-	if (!response.ok || !slug) return null
-	// the slug is known from the URL, so the friends lookup runs while the film page downloads
-	const [html, friends] = await Promise.all([
-		response.text(),
-		username ? fetchFriendsRating(username, slug).catch(() => null) : null,
-	])
+	const film = await request(`https://letterboxd.com${path}`, async (response) => {
+		assertNotTransient(response, "Letterboxd")
+		const slug = getLetterboxdSlug(response.url)
+		if (!response.ok || !slug) return null
+		const friends = username ? fetchFriendsRating(username, slug).catch(() => null) : Promise.resolve(null)
+		return { html: await readText(response), url: response.url, friends }
+	})
+	if (!film) return null
+	const { html } = film
+	const friends = await film.friends
 	const parsed = parseLetterboxdHtml(html)
 	if (!parsed) return null
 	return {
 		source: "letterboxd",
 		...parsed,
-		url: response.url,
+		url: film.url,
 		// count 0 means none of your friends rated it; undefined means their ratings couldn't be read
 		friends_rating: friends?.count ? friends.rating : undefined,
 		friends_count: friends?.count,
+		friends_unavailable: username && friends === null ? true : undefined,
 		friends: friends?.count ? friends.top : undefined,
 		tmdb: parseLetterboxdTmdbId(html),
 	}
@@ -161,11 +164,11 @@ async function fetchFriendsRating(
 	const base = `https://letterboxd.com/${username}/friends/film/${slug}/`
 	const friends: FriendRating[] = []
 	for (let page = 1; page <= MAX_FRIEND_PAGES; page++) {
-		const response = await fetch(page == 1 ? base : `${base}page/${page}/`)
-		// unknown, as opposed to none of them rated it
-		if (page == 1 && !response.ok) return null
-		if (!response.ok) break
-		const html = await response.text()
+		const html = await request(page == 1 ? base : `${base}page/${page}/`, async (response) => {
+			if (!response.ok) return null
+			return readText(response)
+		})
+		if (html === null) return null
 		friends.push(...parseFriendRows(html))
 		if (!html.includes(`/friends/film/${slug}/page/${page + 1}/`)) break
 	}
@@ -204,16 +207,18 @@ function getLastPage(html: string, path: string) {
 // 72 films per page, 28 per watchlist page; 40 pages covers ~2,900 logged films
 const MAX_PROFILE_PAGES = 40
 async function fetchProfileGrid(path: string): Promise<Array<{ slug: string; rating: number }>> {
-	const first = await fetch(`https://letterboxd.com${path}`)
-	assertNotTransient(first, "Letterboxd")
-	if (!first.ok) return []
-	const html = await first.text()
+	const html = await request(`https://letterboxd.com${path}`, async (response) => {
+		assertNotTransient(response, "Letterboxd")
+		return response.ok ? readText(response) : null
+	})
+	if (html === null) return []
 	const lastPage = Math.min(getLastPage(html, path), MAX_PROFILE_PAGES)
 	const rest = await Promise.all(
 		Array.from({ length: lastPage - 1 }, async (_, index) => {
-			const response = await fetch(`https://letterboxd.com${path}page/${index + 2}/`)
-			assertNotTransient(response, "Letterboxd")
-			return response.ok ? parseProfileGrid(await response.text()) : []
+			return request(`https://letterboxd.com${path}page/${index + 2}/`, async (response) => {
+				assertNotTransient(response, "Letterboxd")
+				return response.ok ? parseProfileGrid(await readText(response)) : []
+			})
 		}),
 	)
 	return [parseProfileGrid(html), ...rest].flat()
@@ -234,20 +239,24 @@ export async function fetchLetterboxdProfile(username: string): Promise<Letterbo
 
 export async function fetchImdbRating(imdbId: string): Promise<ExternalRating | null> {
 	if (!/^tt\d+$/.test(imdbId)) return null
-	const response = await fetch("https://caching.graphql.imdb.com/", {
-		method: "POST",
-		headers: {
-			"content-type": "application/json",
-			// requests without this header are rejected with a 403
-			"x-imdb-client-name": "imdb-web-next",
+	const summary = await request(
+		"https://caching.graphql.imdb.com/",
+		async (response) => {
+			assertNotTransient(response, "IMDb")
+			return response.ok ? (await readJson(response))?.data?.title?.ratingsSummary : null
 		},
-		body: JSON.stringify({
-			query: `{ title(id: "${imdbId}") { ratingsSummary { aggregateRating voteCount } } }`,
-		}),
-	})
-	assertNotTransient(response, "IMDb")
-	if (!response.ok) return null
-	const summary = (await response.json())?.data?.title?.ratingsSummary
+		{
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				// requests without this header are rejected with a 403
+				"x-imdb-client-name": "imdb-web-next",
+			},
+			body: JSON.stringify({
+				query: `{ title(id: "${imdbId}") { ratingsSummary { aggregateRating voteCount } } }`,
+			}),
+		},
+	)
 	if (!summary?.aggregateRating) return null
 	return {
 		source: "imdb",
@@ -271,16 +280,21 @@ export async function fetchImdbEpisodes(imdbId: string, season: number): Promise
 	let cursor: string | undefined
 	for (let page = 0; page < 20; page++) {
 		const after = cursor ? `, after: ${JSON.stringify(cursor)}` : ""
-		const response = await fetch("https://caching.graphql.imdb.com/", {
-			method: "POST",
-			headers: { "content-type": "application/json", "x-imdb-client-name": "imdb-web-next" },
-			body: JSON.stringify({
-				query: `{ title(id: "${imdbId}") { episodes { episodes(first: 100${after}, filter: {includeSeasons: ["${season}"]}) { edges { node { id titleText { text } ratingsSummary { aggregateRating voteCount } series { episodeNumber { seasonNumber episodeNumber } } } } pageInfo { hasNextPage endCursor } } } } }`,
-			}),
-		})
-		assertNotTransient(response, "IMDb episodes")
-		if (!response.ok) throw new Error("Series not found")
-		const json = await response.json()
+		const json = await request(
+			"https://caching.graphql.imdb.com/",
+			async (response) => {
+				assertNotTransient(response, "IMDb episodes")
+				if (!response.ok) throw new Error("Series not found")
+				return readJson(response)
+			},
+			{
+				method: "POST",
+				headers: { "content-type": "application/json", "x-imdb-client-name": "imdb-web-next" },
+				body: JSON.stringify({
+					query: `{ title(id: "${imdbId}") { episodes { episodes(first: 100${after}, filter: {includeSeasons: ["${season}"]}) { edges { node { id titleText { text } ratingsSummary { aggregateRating voteCount } series { episodeNumber { seasonNumber episodeNumber } } } } pageInfo { hasNextPage endCursor } } } } }`,
+				}),
+			},
+		)
 		const connection = json?.data?.title?.episodes?.episodes
 		if (json.errors?.length || !connection?.edges) throw new TransientLookupError("Episode ratings unavailable")
 		for (const { node } of connection.edges) {

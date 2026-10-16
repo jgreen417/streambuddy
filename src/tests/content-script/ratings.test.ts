@@ -93,7 +93,9 @@ describe("temporary failures", () => {
 		globalThis.fetch = realFetch
 	})
 	const respond = (status: number, url = "https://letterboxd.com/tmdb/1/") =>
-		(globalThis.fetch = vi.fn(async () => ({ ok: status < 400, status, url, text: async () => "" }) as unknown as Response))
+		(globalThis.fetch = vi.fn(
+			async () => ({ ok: status < 400, status, url, text: async () => "" }) as unknown as Response,
+		))
 
 	it("throws on rate limits and challenges so callers don't cache them", async () => {
 		respond(429)
@@ -103,8 +105,10 @@ describe("temporary failures", () => {
 	})
 
 	it("treats a 404 as no rating", async () => {
+		vi.resetModules()
+		const fresh = await import("@/utils/ratings")
 		respond(404)
-		await expect(fetchLetterboxdRating(550)).resolves.toBeNull()
+		await expect(fresh.fetchLetterboxdRating(550)).resolves.toBeNull()
 	})
 })
 
@@ -132,10 +136,12 @@ describe("friends' ratings on a film", () => {
 		))
 
 	it("tells none of your friends rated it apart from not knowing", async () => {
+		vi.resetModules()
+		const fresh = await import("@/utils/ratings")
 		respond(200)
-		expect((await fetchLetterboxdRating(900667, "buddy"))?.friends_count).toBe(0)
+		expect((await fresh.fetchLetterboxdRating(900667, "buddy"))?.friends_count).toBe(0)
 		respond(500)
-		expect((await fetchLetterboxdRating(900667, "buddy"))?.friends_count).toBeUndefined()
+		expect((await fresh.fetchLetterboxdRating(900667, "buddy"))?.friends_count).toBeUndefined()
 	})
 })
 
