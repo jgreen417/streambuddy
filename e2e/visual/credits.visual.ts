@@ -30,6 +30,9 @@ test("after-credits pill: collapsed", async ({ open }) => {
 	await expect(root.locator(".sb-review-card")).toBeHidden()
 	await expect.soft(page).toHaveScreenshot("credits-pill.png")
 	await clearOfControls(page)
+	// bottom left, lined up with Netflix's back arrow, clear of its next-title preview bottom right
+	const back = (await page.locator('[data-uia="control-nav-back"]').boundingBox())!
+	expect((await root.boundingBox())!.x).toBe(back.x)
 })
 
 test("after-credits pill: expanded", async ({ open }) => {

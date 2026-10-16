@@ -555,9 +555,10 @@ function startPageFeatures() {
 	tick()
 }
 
-// the review pill, once up, stays put until it's dismissed or something else plays: Netflix swaps the film for a
-// trailer about 10 seconds into its end screen and then leaves the player
-let creditsShownOn = ""
+// the review pill, once up, stays put until it's dismissed or you're a couple of minutes into something else:
+// Netflix swaps the film for a trailer about 10 seconds into its end screen and then leaves the player, and Prime
+// autoplays the next film in the same video and moves to its page
+let creditsShownFor: number | null = null
 // Netflix's metadata for the title playing, which marks when its credits start
 let netflixPlaying: { id: string; credits?: NetflixCredits | null } | null = null
 function updateCreditsPrompt() {
@@ -566,13 +567,18 @@ function updateCreditsPrompt() {
 		creditsPrompt.tick(null, null, false)
 		return
 	}
-	if (creditsPrompt.showing && creditsShownOn && (!isOnPlayerPage() || location.pathname === creditsShownOn)) return
-	creditsShownOn = ""
+	const video = filmVideo()
+	const watchingSomethingElse =
+		!!video && video.duration !== creditsShownFor && video.currentTime > 2 * 60 && !video.paused
+	if (creditsPrompt.showing && creditsShownFor !== null && !watchingSomethingElse) {
+		placeCreditsReview()
+		return
+	}
+	creditsShownFor = null
 	if (!isOnPlayerPage()) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
-	const video = document.querySelector<HTMLVideoElement>("video")
 	const netflix = isNetflix ? netflixCredits() : undefined
 	// how long Netflix says the credits run, when it does
 	const marked = video && netflix?.creditsShare ? netflix.creditsShare * video.duration : undefined
@@ -614,8 +620,11 @@ function updateCreditsPrompt() {
 			})
 	}
 	const slug = playerLookup.data?.source === "letterboxd" ? getLetterboxdSlug(playerLookup.data.rating_url) : undefined
-	// Netflix's end screen comes up exactly when the credits start, even without a marker in its metadata
-	const endScreen = isNetflix && !!document.querySelector('[data-uia="postplay-player-space"]')
+	// the services' own end screens come up when the credits start, even without a marker in Netflix's metadata;
+	// Prime's next-up row comes up within seconds of the end credits it marks in its own playback data
+	const endScreen = isNetflix
+		? !!document.querySelector('[data-uia="postplay-player-space"]')
+		: isPrimeVideo && video.duration - video.currentTime < 15 * 60 && !!document.querySelector("[class*=nextupcard]")
 	creditsPrompt.tick(
 		video,
 		playerLookup.data,
@@ -627,7 +636,28 @@ function updateCreditsPrompt() {
 		},
 		endScreen ? video.duration : marked,
 	)
-	if (creditsPrompt.showing) creditsShownOn = location.pathname
+	if (creditsPrompt.showing) {
+		creditsShownFor = video.duration
+		placeCreditsReview()
+	}
+}
+// the longest video on the page is the film: Prime keeps its detail page's trailer underneath the player
+function filmVideo() {
+	let film: HTMLVideoElement | null = null
+	for (const video of Array.from(document.querySelectorAll("video")))
+		if (Number.isFinite(video.duration) && (!film || video.duration > film.duration)) film = video
+	return film
+}
+// clear of each service's own end-of-film UI: Netflix previews the next title bottom right, so the pill lines up
+// with its back arrow bottom left; Prime's next-up row fills the bottom, so it goes top right
+function placeCreditsReview() {
+	const review = document.querySelector<HTMLElement>(".sb-review")
+	if (!review) return
+	if (isNetflix) {
+		review.classList.add("sb-review-left")
+		const back = document.querySelector('[data-uia="control-nav-back"]')?.getBoundingClientRect()
+		if (back?.width) review.style.setProperty("--sb-review-left", `${Math.round(back.left)}px`)
+	} else if (isPrimeVideo) review.classList.add("sb-review-top")
 }
 // what Netflix's metadata says about the title on /watch/{id}, once it has loaded
 function netflixCredits() {

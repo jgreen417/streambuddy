@@ -39,7 +39,10 @@ export function reviewState(data: FeatureRating, viewer: ReviewViewer): ReviewSt
 	if (!viewer.username) return "unlinked"
 	if (viewer.watched !== undefined) return "logged"
 	if (!viewer.friends) return "plain"
-	return data.friends_count ? "friends" : "nobody"
+	if (data.friends_count) return "friends"
+	// only when Letterboxd answered that none of them have: IMDb or TMDb results, or a failed friends lookup, say
+	// nothing about your friends
+	return data.source === "letterboxd" && data.friends_count === 0 ? "nobody" : "plain"
 }
 
 // 4.5 -> "★★★★½" plus the unfilled stars, so ratings line up
@@ -142,10 +145,11 @@ export class CreditsRatingPrompt {
 		root.setAttribute("aria-label", `Review ${data.title}`)
 		const dismiss = () => root.remove()
 
-		// the expanded card, above the pill
+		// the card's contents, which the pill grows to make room for
 		const card = el("div", "sb-review-card")
 		card.id = `sb-review-card-${data.id}`
-		card.hidden = true
+		const inner = el("div", "sb-review-card-inner")
+		card.append(inner)
 		const head = el("div", "sb-review-head")
 		head.insertAdjacentHTML("beforeend", LOGO)
 		head.append(el("span", "sb-review-brand", "streamBuddy"))
@@ -154,7 +158,7 @@ export class CreditsRatingPrompt {
 		close.setAttribute("aria-label", "Close")
 		close.addEventListener("click", dismiss)
 		head.append(close)
-		card.append(head, el("div", "sb-review-heading", `You just finished ${data.title}`))
+		inner.append(head, el("div", "sb-review-heading", `You just finished ${data.title}`))
 
 		const section = el("div", "sb-review-section")
 		if (state === "friends") {
@@ -194,7 +198,7 @@ export class CreditsRatingPrompt {
 				section.append(mine)
 			}
 		}
-		card.append(section)
+		inner.append(section)
 
 		const buttons = el("div", "sb-review-buttons")
 		if (state === "unlinked") {
@@ -214,7 +218,7 @@ export class CreditsRatingPrompt {
 			later.addEventListener("click", dismiss)
 			buttons.append(later)
 		}
-		card.append(buttons, el("p", "sb-review-footnote", "Films only. streamBuddy never logs anything for you."))
+		inner.append(buttons, el("p", "sb-review-footnote", "Films only. streamBuddy never logs anything for you."))
 
 		// the pill
 		const pill = el("div", "sb-review-pill")
@@ -260,7 +264,9 @@ export class CreditsRatingPrompt {
 		pill.append(chevron)
 
 		const setOpen = (open: boolean) => {
-			card.hidden = !open
+			// kept in the page while closed so it can grow open; inert keeps it out of reach
+			card.inert = !open
+			card.setAttribute("aria-hidden", String(!open))
 			root.classList.toggle("sb-review-open", open)
 			for (const button of [toggle, chevron]) {
 				button.setAttribute("aria-expanded", String(open))
@@ -269,8 +275,8 @@ export class CreditsRatingPrompt {
 			chevron.setAttribute("aria-label", open ? "Hide details" : "Show details")
 		}
 		setOpen(false)
-		toggle.addEventListener("click", () => setOpen(card.hidden))
-		chevron.addEventListener("click", () => setOpen(card.hidden))
+		toggle.addEventListener("click", () => setOpen(card.inert))
+		chevron.addEventListener("click", () => setOpen(card.inert))
 		// following a link to Letterboxd is the end of it
 		root.addEventListener("click", (event) => {
 			if ((event.target as Element).closest?.("a")) dismiss()
@@ -278,12 +284,15 @@ export class CreditsRatingPrompt {
 		root.addEventListener("keydown", (event) => {
 			if (event.key !== "Escape") return
 			event.preventDefault()
-			if (!card.hidden) {
+			if (!card.inert) {
 				setOpen(false)
 				toggle.focus()
 			} else dismiss()
 		})
-		root.append(card, pill)
+		// one shape: the pill when closed, the card when open
+		const shell = el("div", "sb-review-shell")
+		shell.append(card, pill)
+		root.append(shell)
 		return root
 	}
 }

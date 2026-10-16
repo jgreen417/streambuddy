@@ -43,6 +43,17 @@ describe("credits review", () => {
 		expect(reviewState(film, { username: "", friends: true })).toBe("unlinked")
 		expect(reviewState(film, { ...signedIn, friends: false })).toBe("plain")
 	})
+	it("only says nobody rated it when Letterboxd said so", () => {
+		const unknown = { ...film, friends: undefined, friends_rating: undefined, friends_count: undefined }
+		// friends' ratings weren't fetched: an IMDb or TMDb result, or the friends lookup failed
+		expect(reviewState({ ...unknown, source: "imdb" }, signedIn)).toBe("plain")
+		expect(reviewState({ ...unknown, source: "tmdb" }, signedIn)).toBe("plain")
+		expect(reviewState(unknown, signedIn)).toBe("plain")
+		document.body.innerHTML = ""
+		new CreditsRatingPrompt().tick(video(), { ...unknown, source: "imdb", rating: 7.8 }, true, signedIn)
+		expect(document.querySelector(".sb-review")!.textContent).not.toContain("Be the first")
+		expect(document.querySelector(".sb-review")!.textContent).not.toContain("None of your friends")
+	})
 	it("writes half stars and pads to five", () => {
 		expect(starText(4.5)).toEqual({ filled: "★★★★½", empty: "" })
 		expect(starText(3)).toEqual({ filled: "★★★", empty: "★★" })
@@ -52,11 +63,11 @@ describe("credits review", () => {
 		new CreditsRatingPrompt().tick(video(), film, true, signedIn)
 		expect(review()?.textContent).toContain("Review Past Lives")
 		expect(review()?.textContent).toContain("7 friends rated it")
-		expect(card().hidden).toBe(true)
+		expect(card().inert).toBe(true)
 		const toggle = document.querySelector<HTMLButtonElement>(".sb-review-toggle")!
 		expect(toggle.getAttribute("aria-expanded")).toBe("false")
 		toggle.click()
-		expect(card().hidden).toBe(false)
+		expect(card().inert).toBe(false)
 		expect(toggle.getAttribute("aria-expanded")).toBe("true")
 		expect(card().textContent).toContain("You just finished Past Lives")
 		// three friends in the card, the rest behind "see all"
@@ -92,7 +103,7 @@ describe("credits review", () => {
 		document.querySelector<HTMLButtonElement>(".sb-review-chevron")!.click()
 		const escape = () => review()!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))
 		escape()
-		expect(card().hidden).toBe(true)
+		expect(card().inert).toBe(true)
 		escape()
 		expect(review()).toBeNull()
 	})
