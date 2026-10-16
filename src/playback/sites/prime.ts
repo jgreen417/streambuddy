@@ -9,7 +9,7 @@ function skipButton(kind: SkipKind): HTMLElement | null {
 	switch (kind) {
 		// Prime uses one "skip element" for both intros and recaps; its label says which
 		case "intro":
-			return buttonWithText("[class*=skipelement]", /intro|vorspann|générique|intro/i) ?? $("[class*=skipelement]")
+			return buttonWithText("[class*=skipelement]", /intro|vorspann|générique/i) ?? $("[class*=skipelement]")
 		case "recap":
 			return buttonWithText("[class*=skipelement]", /recap|rückblick|résumé|riassunto/i)
 		case "credits":

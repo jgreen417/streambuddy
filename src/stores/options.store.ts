@@ -16,7 +16,3 @@ export const useFrontendStore = defineStore("frontend", () => {
 		currentLocale,
 	}
 })
-export type BooleanObject = {
-	[key: string]: boolean
-}
-export type MediaType = "tv" | "movie" | null

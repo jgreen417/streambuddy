@@ -37,7 +37,6 @@ async function sync() {
 }
 
 function relativeTime(timestamp: number) {
-	if (!timestamp) return "Refresh needed"
 	const minutes = Math.round((Date.now() - timestamp) / 60000)
 	if (minutes < 1) return "just now"
 	if (minutes < 60) return `${minutes}m ago`

@@ -13,8 +13,8 @@ export function buttonWithText(selector: string, pattern: RegExp): HTMLElement |
 export function parseClock(text: string | null | undefined): number | null {
 	const match = /(\d+):(\d{2})(?::(\d{2}))?/.exec(text ?? "")
 	if (!match) return null
-	const [a, b, c] = [match[1], match[2], match[3]].map((part) => (part === undefined ? undefined : Number(part)))
-	return c === undefined ? a! * 60 + b! : a! * 3600 + b! * 60 + c
+	const [a, b] = [Number(match[1]), Number(match[2])]
+	return match[3] === undefined ? a * 60 + b : a * 3600 + b * 60 + Number(match[3])
 }
 
 // "S2 E5", "Season 2, Ep. 5", "E5", "Flg. 5" -> 5

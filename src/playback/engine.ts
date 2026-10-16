@@ -148,7 +148,13 @@ export class PlaybackEngine {
 		}
 	}
 
-	private press(kind: SkipKind, button: HTMLElement, video: HTMLVideoElement, show: string | null, settings: PlaybackSettings) {
+	private press(
+		kind: SkipKind,
+		button: HTMLElement,
+		video: HTMLVideoElement,
+		show: string | null,
+		settings: PlaybackSettings,
+	) {
 		const before = video.currentTime
 		const remaining = Number.isFinite(video.duration) ? video.duration - before : 0
 		button.click()
@@ -308,15 +314,11 @@ export class PlaybackEngine {
 	private async flushSaved() {
 		const pending = this.pendingSaved
 		this.pendingSaved = {}
-		try {
-			const { savedLog } = await browser.storage.local.get("savedLog")
-			let log = (savedLog as SavedLog | undefined) ?? {}
-			for (const [kind, seconds] of Object.entries(pending))
-				log = addSavedSeconds(log, new Date(), kind, Math.round(seconds))
-			await browser.storage.local.set({ savedLog: log })
-		} catch {
-			// stats are best effort
-		}
+		const { savedLog } = await browser.storage.local.get("savedLog")
+		let log = (savedLog as SavedLog | undefined) ?? {}
+		for (const [kind, seconds] of Object.entries(pending))
+			log = addSavedSeconds(log, new Date(), kind, Math.round(seconds))
+		await browser.storage.local.set({ savedLog: log })
 	}
 	// #endregion
 }
@@ -335,11 +337,6 @@ async function loadRate(service: string): Promise<number> {
 	}
 }
 async function saveRate(service: string, rate: number) {
-	try {
-		const { playbackSpeed } = await browser.storage.local.get("playbackSpeed")
-		await browser.storage.local.set({ playbackSpeed: { ...(playbackSpeed as object), [service]: rate } })
-	} catch {
-		// remembered speed is a convenience
-	}
+	const { playbackSpeed } = await browser.storage.local.get("playbackSpeed")
+	await browser.storage.local.set({ playbackSpeed: { ...(playbackSpeed as object), [service]: rate } })
 }
-

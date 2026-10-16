@@ -38,7 +38,6 @@ import {
 	watchTick,
 } from "@/utils/stats"
 debugLog("shared-functions loaded")
-// Global Variables
 
 // exported for tests
 export const { data: settings, promise } = useBrowserSyncStorage<settingsType>("settings", defaultSettings)
@@ -116,11 +115,7 @@ async function getDBCache() {
 	DBCache = result?.DBCache as DBCacheType
 	if (typeof DBCache !== "object") {
 		debugLog("DBCache not found, creating new one", DBCache)
-		try {
-			await browser.storage.local.set({ DBCache: {} })
-		} catch (error) {
-			console.error(error)
-		}
+		await browser.storage.local.set({ DBCache: {} })
 		DBCache = {}
 	}
 	if (ratingsEnabled()) startShowRatingInterval()
@@ -251,18 +246,16 @@ export async function lookupMovieInfo(
 	const results = data.results?.filter((item) => item.media_type?.toLowerCase() !== "person")
 	const movie = pickBestMatch(results, title)
 	if (!movie?.id) return null
-	const resolvedMediaType = queryType == "multi" ? movie?.media_type : queryType
-	const external = movie?.id
-		? await getExternalRating(movie.id, resolvedMediaType, title, sources)
-		: { rating: null, transient: false }
+	const resolvedMediaType = queryType == "multi" ? movie.media_type : queryType
+	const external = await getExternalRating(movie.id, resolvedMediaType, title, sources)
 	const compiledData: MovieInfo = {
-		id: movie?.id,
+		id: movie.id,
 		media_type: resolvedMediaType,
-		score: movie?.vote_average,
-		vote_count: movie?.vote_count,
-		release_date: movie?.release_date || movie?.first_air_date,
-		title: movie?.title || movie?.original_title || movie?.name || movie?.original_name,
-		poster_path: movie?.poster_path ?? null,
+		score: movie.vote_average,
+		vote_count: movie.vote_count,
+		release_date: movie.release_date || movie.first_air_date,
+		title: movie.title || movie.original_title || movie.name || movie.original_name,
+		poster_path: movie.poster_path ?? null,
 		date: today,
 		db: "tmdb",
 		source: external.rating?.source ?? "tmdb",
@@ -828,15 +821,15 @@ export function getDiffInDays(firstDate: string, secondDate: Date) {
 // 4. Condition Cached Rating older than 1 day, Vote count under 100 and Release date in the last 50 days -> Fetch Rating
 // 5. Condition if media_type is not matching -> Fetch Rating
 function useDBCache(title: string, card: HTMLElement, media_type: string | null) {
-	if (!DBCache[title]?.date) DBCache[title].date = today
-	const vote_count = DBCache[title]?.vote_count || 100
+	DBCache[title].date ||= today
+	const vote_count = DBCache[title].vote_count || 100
 	const diffInReleaseDate =
-		// vote count is under 80 inaccurate rating
+		// under 100 votes the rating is still settling
 		vote_count < 100 &&
-		// did not refresh rating in the last 0 days
+		// not refreshed in the last day
 		getDiffInDays(DBCache[title].date, date) > 1 &&
-		// release date is in the last 50 days after not many people will
-		getDiffInDays(DBCache[title]?.release_date, date) <= 50
+		// released in the last 50 days
+		getDiffInDays(DBCache[title].release_date, date) <= 50
 
 	// refresh rating if older than 30 days or release date is in last month and vote count is under 100
 	if (getDiffInDays(DBCache[title].date, date) >= GCdiff || diffInReleaseDate) {
@@ -847,7 +840,7 @@ function useDBCache(title: string, card: HTMLElement, media_type: string | null)
 				",refresh:",
 				getDiffInDays(DBCache[title].date, date),
 				",Age:",
-				getDiffInDays(DBCache[title]?.release_date, date),
+				getDiffInDays(DBCache[title].release_date, date),
 				"Vote count:",
 				vote_count,
 			)
@@ -887,7 +880,6 @@ function getAllTitleCardsTypes(): Array<NodeListOf<Element>> {
 // before you scroll to it instead of starting its lookups only once it's on screen.
 const LOOKAHEAD_SCREENS = 1
 function isElementVisible(el: HTMLElement): boolean {
-	if (!el) return false
 	const rect = el.getBoundingClientRect()
 	const height = window.innerHeight || document.documentElement.clientHeight
 	const width = window.innerWidth || document.documentElement.clientWidth
@@ -913,8 +905,8 @@ async function addRating() {
 			// add seen class
 			if (isNetflix || isHBO) card.classList.add("imdb")
 			else if (isPrimeVideo) {
-				if (type == 0) card?.closest("li")?.classList.add("imdb")
-				else if (type == 1) card?.classList.add("imdb")
+				if (type == 0) card.closest("li")?.classList.add("imdb")
+				else if (type == 1) card.classList.add("imdb")
 			}
 			const media_type = getMediaType(card)
 			const title = getCleanTitle(card, type)
@@ -928,31 +920,27 @@ async function addRating() {
 				continue
 			}
 			if (checkedCards.isChecked(card, checkedKey(title))) continue
-			{
-				// sometimes more than one image is loaded for the same title
-				if (lastTitle != title && !title.includes("Netflix") && !title.includes("Prime Video")) {
-					lastTitle = title
-					if (
-						isCacheCurrent(DBCache[title]) &&
-						// a Letterboxd/IMDb rating counts even when TMDb has no votes; unrated titles are retried after a week
-						(DBCache[title]?.rating || DBCache[title]?.score || getDiffInDays(DBCache[title]?.date, date) <= 7) &&
-						(!media_type || DBCache[title]?.media_type == media_type)
-					) {
-						useDBCache(title, card, media_type)
-					}
-					// if element is not visible skip it
-					else if (!isElementVisible(card)) {
-						if (isNetflix || isHBO) card.classList.remove("imdb")
-						else if (isPrimeVideo) {
-							if (type == 0) card?.closest("li")?.classList.remove("imdb")
-							else if (type == 1) card?.classList.remove("imdb")
-						}
-						continue
-					} else {
-						getMovieInfo(title, card, media_type)
-						updateDBCache = true
-					}
+			// sometimes more than one image is loaded for the same title
+			if (lastTitle == title || title.includes("Netflix") || title.includes("Prime Video")) continue
+			lastTitle = title
+			if (
+				isCacheCurrent(DBCache[title]) &&
+				// a Letterboxd/IMDb rating counts even when TMDb has no votes; unrated titles are retried after a week
+				(DBCache[title].rating || DBCache[title].score || getDiffInDays(DBCache[title].date, date) <= 7) &&
+				(!media_type || DBCache[title].media_type == media_type)
+			) {
+				useDBCache(title, card, media_type)
+			}
+			// if element is not visible skip it
+			else if (!isElementVisible(card)) {
+				if (isNetflix || isHBO) card.classList.remove("imdb")
+				else if (isPrimeVideo) {
+					if (type == 0) card.closest("li")?.classList.remove("imdb")
+					else if (type == 1) card.classList.remove("imdb")
 				}
+			} else {
+				getMovieInfo(title, card, media_type)
+				updateDBCache = true
 			}
 		}
 	}
@@ -986,7 +974,7 @@ function getCleanTitle(card: HTMLElement, type: number): string | undefined {
 			const episodeId = getEpisodeId(card.getAttribute("href"))
 			return (episodeId && netflixShowTitles.get(episodeId)) || undefined
 		}
-		title = card?.getAttribute("aria-label")?.split(" (")[0]
+		title = card.getAttribute("aria-label")?.split(" (")[0]
 	} else if (isPrimeVideo) {
 		// detail means not live shows
 		const link = Amazon_titleLink(card)
@@ -1023,20 +1011,17 @@ export function Amazon_titleLink(card: HTMLElement) {
 	return link?.href?.includes("detail") ? link : undefined
 }
 function Amazon_fixTitle(title: string | undefined) {
-	return (
-		title
-			?.split(" - ")[0]
-			?.split(" – ")[0]
-			?.replaceAll(/(S\d+)/g, "")
-			?.replaceAll(/ \[.*\]/g, "")
-			?.replaceAll(/\s\(.*\)/g, "")
-			?.replaceAll(/:?\sStaffel-?\s\d+/g, "")
-			?.replaceAll(/:?\sSeason-?\s\d+/g, "")
-			?.replaceAll(/ \/ \d/g, "")
-			?.split(": Die komplette")[0]
-			// nicht sicher
-			?.split(": The complete")[0]
-	)
+	return title
+		?.split(" - ")[0]
+		.split(" – ")[0]
+		.replaceAll(/(S\d+)/g, "")
+		.replaceAll(/ \[.*\]/g, "")
+		.replaceAll(/\s\(.*\)/g, "")
+		.replaceAll(/:?\sStaffel-?\s\d+/g, "")
+		.replaceAll(/:?\sSeason-?\s\d+/g, "")
+		.replaceAll(/ \/ \d/g, "")
+		.split(": Die komplette")[0]
+		.split(": The complete")[0]
 }
 
 // TMDb is only the fallback: colour it on the IMDb scale (both are out of 10), grey when too few people voted
@@ -1047,20 +1032,20 @@ function getTmdbColor(rating: number, lowVoteCount: boolean) {
 // Letterboxd and IMDb dim by colour band (the cut-off is picked in the popup); TMDb keeps the old threshold
 function isDimmed(data: MovieInfo, lowVoteCount: boolean) {
 	if (!settings.value.Video?.dimLowRatings) return false
-	if (data?.source !== "tmdb" && data?.rating)
+	if (data.source !== "tmdb" && data.rating)
 		return getScoreBand(data.source, data.rating) < settings.value.General.dimBelowBand
-	return !lowVoteCount && (!data?.score || data.score <= TMDB_LOW_RATING)
+	return !lowVoteCount && (!data.score || data.score <= TMDB_LOW_RATING)
 }
 function getTMDBUrl(id: string | number, media_type: string) {
 	return `https://www.themoviedb.org/${media_type}/${id}`
 }
 // on a 0-10 scale so the dim-low-ratings thresholds work for every source
 function getNormalizedScore(data: MovieInfo) {
-	if (data?.source !== "tmdb" && data.rating) return normalizeRowScore(data.source, data.rating)
-	return data?.score
+	if (data.source !== "tmdb" && data.rating) return normalizeRowScore(data.source, data.rating)
+	return data.score
 }
 function getRatingVoteCount(data: MovieInfo) {
-	return (data?.source === "tmdb" ? data?.vote_count : data?.rating_count) || 0
+	return (data.source === "tmdb" ? data.vote_count : data.rating_count) || 0
 }
 // A popcorn chip: the score in a pill coloured by how it ranks among what's streaming, then, smaller, friends'
 // Letterboxd average and your own status (your rating, seen, or on your watchlist), labelled or as dots per the
@@ -1352,18 +1337,16 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	// a card picked up again while its lookup was in flight waits on the same lookup; draw its badge only once
 	if (rowCardTitles.get(card) === title && rowCardDecorations.get(card)?.[0]?.isConnected) return
 	let div: HTMLElement
-	if (data?.id) {
-		{
-			const a = document.createElement("a")
-			a.href = data.rating_url ?? getTMDBUrl(data.id, data.media_type)
-			a.target = "_blank"
-			a.rel = "noopener noreferrer"
-			a.addEventListener("click", (event) => event.stopPropagation())
-			div = a
-		}
+	if (data.id) {
+		const a = document.createElement("a")
+		a.href = data.rating_url ?? getTMDBUrl(data.id, data.media_type)
+		a.target = "_blank"
+		a.rel = "noopener noreferrer"
+		a.addEventListener("click", (event) => event.stopPropagation())
+		div = a
 	} else div = document.createElement("div")
 	// nothing to say about this title: show nothing rather than a "?" or a meaningless 0.0
-	const hasRating = (data?.source !== "tmdb" && !!data?.rating) || data?.score > 0
+	const hasRating = (data.source !== "tmdb" && !!data.rating) || data.score > 0
 	if (!hasRating) {
 		debugLog("no score found:", title, data, card)
 		// Prime's card selectors can't skip cards already seen, so remember it. A cached unrated title is looked up
@@ -1374,7 +1357,6 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	}
 	const vote_count = getRatingVoteCount(data)
 	const score = getNormalizedScore(data)
-	// right: 1.5vw;
 	installPageFeatureStyle()
 	div.id = "rating"
 	div.classList.add("sb-card-rating")
@@ -1414,37 +1396,35 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 
 	if (settings.value.General.badgeStyle === "glass") applyGlass(div, settings.value.General.glassFrost)
 	requestAnimationFrame(() => Object.assign(div.style, { opacity: "1", transform: "none" }))
-	{
-		fillBadge(div, data, "", getTmdbColor(score, vote_count < 50))
-		if (data.source !== "tmdb" && data.rating && activePlatform) {
-			const personal = getPersonalStatus(data)
-			queueSeenTitle(
-				{
-					title: data.title || title,
-					source: data.source,
-					rating: data.rating,
-					url: data.rating_url ?? "",
-					platform: activePlatform,
-					media_type: data.media_type,
-					seen: localDateKey(new Date()),
-				},
-				{ watched: personal.watched !== undefined, watchlist: personal.watchlist },
-			)
-		}
-		div.setAttribute(
-			"alt",
-			"Filtered title: " +
-				title +
-				", Fetched title: " +
-				data?.title +
-				", media_type: " +
-				data?.media_type +
-				", source: " +
-				data?.source +
-				", Vote count: " +
-				vote_count,
+	fillBadge(div, data, "", getTmdbColor(score, vote_count < 50))
+	if (data.source !== "tmdb" && data.rating && activePlatform) {
+		const personal = getPersonalStatus(data)
+		queueSeenTitle(
+			{
+				title: data.title || title,
+				source: data.source,
+				rating: data.rating,
+				url: data.rating_url ?? "",
+				platform: activePlatform,
+				media_type: data.media_type,
+				seen: localDateKey(new Date()),
+			},
+			{ watched: personal.watched !== undefined, watchlist: personal.watchlist },
 		)
 	}
+	div.setAttribute(
+		"alt",
+		"Filtered title: " +
+			title +
+			", Fetched title: " +
+			data.title +
+			", media_type: " +
+			data.media_type +
+			", source: " +
+			data.source +
+			", Vote count: " +
+			vote_count,
+	)
 	const greyOverlay = document.createElement("div")
 	Object.assign(greyOverlay.style, {
 		position: "absolute",
@@ -1452,18 +1432,17 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		left: 0,
 		right: 0,
 		bottom: 0,
-		background: "rgba(40, 40, 40, 0.7)" /* grey with 70% opacity */,
-		pointerEvents: "none" /* allows clicks to pass through */,
+		background: "rgba(40, 40, 40, 0.7)",
+		pointerEvents: "none",
 		zIndex: 2,
 	})
 	if (isNetflix) {
-		const titleCardContainer = (card.closest("div[data-virtual-slot]") ?? card.parentElement) as HTMLElement
+		const titleCardContainer = card.closest<HTMLElement>("div[data-virtual-slot]") ?? card.parentElement
 		if (titleCardContainer) {
 			if (getComputedStyle(titleCardContainer).position === "static") titleCardContainer.style.position = "relative"
 			titleCardContainer.appendChild(div)
 			fitBadgeToCorner(div, titleCardContainer, "top")
 			if (isDimmed(data, vote_count < 50)) titleCardContainer.appendChild(greyOverlay)
-			// titleCardContainer.style.opacity = getTransparencyForRating(data?.score, vote_count < 50)
 		}
 	} else if (isHBO) {
 		// the tile link itself is unpositioned; the poster container is the relative box
@@ -1471,14 +1450,13 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		position.appendChild(div)
 		fitBadgeToCorner(div, position, "bottom")
 		if (isDimmed(data, vote_count < 50)) position.appendChild(greyOverlay)
-		// card.style.opacity = getTransparencyForRating(data?.score, vote_count < 50)
 	} else if (isPrimeVideo) {
-		let position: HTMLElement = card
+		let position: HTMLElement | null = card
 		// the hero's metadata block has no artwork, only the title's logo image, which the badge mustn't cover
 		const heroMetadata = card.dataset.cardTitle
 			? null
 			: card.querySelector<HTMLElement>('div[data-testid="title-metadata-main"]')
-		if (card.dataset.cardTitle) position = card?.firstChild?.firstChild as HTMLElement
+		if (card.dataset.cardTitle) position = card.firstChild?.firstChild as HTMLElement | null
 		else if (heroMetadata) position = heroMetadata
 		const logoHeight = position && !heroMetadata ? primeLogoHeight(position) : 0
 		if (logoHeight) div.style.bottom = `calc(${(logoHeight * 100).toFixed(1)}% + ${BADGE_INSET_PX}px)`
@@ -1487,7 +1465,6 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 			if (!heroMetadata) fitBadgeToCorner(div, position, "bottom", logoHeight)
 		}
 		if (isDimmed(data, vote_count < 50)) position?.appendChild(greyOverlay)
-		// card.closest("li")?.style.setProperty("opacity", getTransparencyForRating(data?.score, vote_count < 50))
 	}
 	if (div.isConnected && (isNetflix || isHBO || isPrimeVideo)) {
 		searchSorting.setRating(card, score)

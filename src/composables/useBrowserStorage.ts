@@ -1,13 +1,14 @@
 import { ref, watch, nextTick } from "vue"
-function mergeDeep(defaults: any, source: any): any {
+type PlainObject = Record<string, unknown>
+function mergeDeep(defaults: PlainObject, source: PlainObject): PlainObject {
 	// Merge the default options with the stored options
 	const output = { ...defaults } // Start with defaults
 
 	Object.keys(defaults).forEach((key) => {
 		const defaultValue = defaults[key]
-		const sourceValue = source?.[key]
+		const sourceValue = source[key]
 
-		if (isObject(defaultValue) && sourceValue != null) {
+		if (isObject(defaultValue) && isObject(sourceValue)) {
 			// Recursively merge nested objects
 			output[key] = mergeDeep(defaultValue, sourceValue)
 		} else if (checkType(defaultValue, sourceValue)) {
@@ -22,7 +23,7 @@ function mergeDeep(defaults: any, source: any): any {
 	return output
 }
 
-function checkType(defaultValue: any, value: any): boolean {
+function checkType(defaultValue: unknown, value: unknown): boolean {
 	// Check if the value type is the same type as the default value or null
 	// there are only strings, booleans, nulls and arrays as types left
 	return (
@@ -31,7 +32,7 @@ function checkType(defaultValue: any, value: any): boolean {
 		(typeof value === typeof defaultValue && Array.isArray(value) == Array.isArray(defaultValue))
 	)
 }
-function isObject(value: any): boolean {
+function isObject(value: unknown): value is PlainObject {
 	return value !== null && value instanceof Object && !Array.isArray(value)
 }
 
@@ -53,7 +54,7 @@ function useBrowserStorage<T>(key: string, defaultValue: T, storageType: "sync" 
 		const result = await browser.storage[storageType].get(key)
 		if (result?.[key] !== undefined) {
 			if (defaultIsObject && isObject(result[key])) {
-				data.value = merge ? mergeDeep(defaultValue, result[key]) : result[key]
+				data.value = (merge ? mergeDeep(defaultValue as PlainObject, result[key]) : result[key]) as T
 			} else if (checkType(defaultValue, result[key])) {
 				data.value = result[key]
 			}
