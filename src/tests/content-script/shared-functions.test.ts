@@ -99,6 +99,14 @@ describe("pickBestMatch", () => {
 		expect(pickBestMatch(harryPotter, "Harry Potter and the Philosopher's Stone").id).toBe(671)
 	})
 
+	it("keeps an unrated first result when the rated ones are unrelated", () => {
+		const newRelease = [
+			{ id: 5, title: "Brand New Film (Director's Cut)", vote_count: 0 },
+			{ id: 6, title: "Something Else Entirely", vote_count: 900 },
+		]
+		expect(pickBestMatch(newRelease, "Brand New Film").id).toBe(5)
+	})
+
 	it("falls back to the first result", () => {
 		expect(pickBestMatch([{ id: 7, title: "Close" }, { id: 8, title: "Other" }], "Clos").id).toBe(7)
 		expect(pickBestMatch(undefined, "Anything")).toBeUndefined()

@@ -1,5 +1,5 @@
 import { debugLog, logLookupFailure } from "@/utils/log"
-import { BUILT_IN_TMDB_TOKEN, getAccount, setBuiltInKeyRejected, tmdbRequest } from "@/utils/account"
+import { BUILT_IN_TMDB_TOKEN, getAccount, onAccountChanged, setBuiltInKeyRejected, tmdbRequest } from "@/utils/account"
 import { createProfileSync } from "@/utils/profile-sync"
 const is_DEV = process.env.NODE_ENV === "development"
 
@@ -158,6 +158,9 @@ onMessage("letterboxdProfile", async (message: { data: { force?: boolean } }) =>
 )
 
 type FetchRequestType = "tmdb" | "noAuth"
+// a key or username saved on the settings page takes effect here straight away, not on the next worker restart
+onAccountChanged(() => {})
+
 // API keys only ever go to the API they belong to, whatever URL a content script asks for
 const AUTH_HOSTS: Partial<Record<FetchRequestType, string>> = {
 	tmdb: "api.themoviedb.org",
@@ -191,7 +194,7 @@ onMessage("fetch", async (message: { data: { url: string; type: FetchRequestType
 			method: "GET",
 			headers,
 		})
-		if (usesBuiltInKey) void setBuiltInKeyRejected(response.status === 401).catch(() => {})
+		if (usesBuiltInKey) void setBuiltInKeyRejected(response.status === 401 || response.status === 403).catch(() => {})
 		// rate limits and outages are temporary: report them rather than handing back an error body as "no results"
 		if (!response.ok && response.status !== 404) return { error: `HTTP ${response.status}` }
 		const responseData = await response.json()
