@@ -1,14 +1,21 @@
 // The review pill shows at the end of a film, or at the end of the last episode of a limited series: Letterboxd lists
 // limited series as films, and has no page for ongoing shows.
 
-export type PlayingEpisode = { show: string; season: number; episode: number; last?: boolean }
+export type PlayingEpisode = { show: string; season: number; episode: number }
 
-// "S1 E8:", "S1:E8", "Season 1, Ep. 10", "Season 1 Episode 3", as the players label the episode playing
+const SEASON = String.raw`(?:Season|Staffel|Saison|Temporada|Stagione|Seizoen)`
+const EPISODE = String.raw`(?:Ep\.?|Episode|Épisode|Ép\.?|Episodio|Folge|Flg\.?|Aflevering|Afl\.?)`
+const LABELS = [
+	/\bS(\d+)\s*:?\s*E(\d+)\b/i,
+	new RegExp(String.raw`${SEASON}\s+(\d+)\s*[,:.]?\s*${EPISODE}\s*(\d+)`, "i"),
+]
+// "S1 E8:", "S1:E8", "Season 1, Ep. 10", "Staffel 2, Flg. 5", as the players label the episode playing
 export function parseEpisodeLabel(text: string | null | undefined) {
-	const match =
-		/\bS(\d+)\s*:?\s*E(\d+)\b/i.exec(text ?? "") ??
-		/\bSeason\s+(\d+)\s*[,:.]?\s*(?:Ep\.?|Episode)\s*(\d+)/i.exec(text ?? "")
-	return match ? { season: Number(match[1]), episode: Number(match[2]) } : null
+	for (const label of LABELS) {
+		const match = label.exec(text ?? "")
+		if (match) return { season: Number(match[1]), episode: Number(match[2]) }
+	}
+	return null
 }
 
 type TmdbSeason = { season_number?: number; episode_count?: number }

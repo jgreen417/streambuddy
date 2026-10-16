@@ -24,6 +24,8 @@ import { CreditsRatingPrompt, creditsLength, inCredits } from "@/utils/credits-r
 import { fetchNetflixMetadata, parseNetflixCredits, type NetflixCredits } from "@/utils/netflix-credits"
 import { isLastEpisode, parseEpisodeLabel, shareLookup, type PlayingEpisode } from "@/utils/series-finale"
 import { NetflixShowTitles, getEpisodeId } from "@/utils/netflix-shows"
+import { hbo } from "@/playback/sites/hbo"
+import { prime } from "@/playback/sites/prime"
 import {
 	addWatchSeconds,
 	localDateKey,
@@ -600,14 +602,18 @@ function updateCreditsPrompt() {
 function playingEpisode(netflix: NetflixCredits | undefined): PlayingEpisode | null | undefined {
 	if (netflix && !netflix.movie) {
 		const episode = netflix.episode
-		return episode?.last ? { show: netflix.title, season: episode.season, episode: episode.number, last: true } : null
+		return episode?.last ? { show: netflix.title, season: episode.season, episode: episode.number } : null
 	}
 	if (isNetflix) return undefined
 	const text = (selector: string) => document.querySelector(selector)?.textContent?.trim()
+	// as the playback adapters read them: Prime's newer players label the episode in episode-info, and Max's
+	// player can be missing its show title
 	const place = parseEpisodeLabel(
-		isHBO ? text('[data-testid="player-ux-season-episode"]') : text(".atvwebplayersdk-subtitle-text"),
+		isHBO
+			? text('[data-testid="player-ux-season-episode"]')
+			: text(".atvwebplayersdk-episode-info") || text(".atvwebplayersdk-subtitle-text"),
 	)
-	const show = isHBO ? text('[data-testid="player-ux-asset-title"]') : text(".atvwebplayersdk-title-text")
+	const show = (isHBO ? hbo : prime).showTitle()
 	if (place && show) return { show, ...place }
 	if (
 		document.querySelector('[data-testid="player-ux-season-episode"]') ||
@@ -617,13 +623,13 @@ function playingEpisode(netflix: NetflixCredits | undefined): PlayingEpisode | n
 	return undefined
 }
 // a show's last episode gets the pill when Letterboxd has a page for the show, which it only has for limited series.
-// Netflix says itself whether an episode is the last; elsewhere TMDb's episode counts do.
+// TMDb's episode counts decide, even on Netflix, which marks the newest episode of a weekly release as its last.
 const finaleLookups = new Map<string, Promise<MovieInfo | null>>()
 function lookupSeriesFinale(episode: PlayingEpisode): Promise<MovieInfo | null> {
 	const key = `${episode.show}|S${episode.season}E${episode.episode}|${settings.value.General.friendsRatings}`
 	return shareLookup(finaleLookups, key, () => findSeriesFinale(episode))
 }
-async function findSeriesFinale({ show, season, episode, last }: PlayingEpisode): Promise<MovieInfo | null> {
+async function findSeriesFinale({ show, season, episode }: PlayingEpisode): Promise<MovieInfo | null> {
 	const locale = htmlLang || navigator?.language || "en-US"
 	const search: TMDBResponse & { error?: string } = await sendMessage(
 		"fetch",
@@ -645,7 +651,7 @@ async function findSeriesFinale({ show, season, episode, last }: PlayingEpisode)
 		{ url: `https://api.themoviedb.org/3/tv/${match.id}?append_to_response=external_ids`, type: "tmdb" },
 		"background",
 	)
-	if (!details || details.error || !(last ?? isLastEpisode(details.seasons, season, episode))) return null
+	if (!details || details.error || !isLastEpisode(details.seasons, season, episode)) return null
 	const imdbId = details.external_ids?.imdb_id
 	if (!imdbId) return null
 	const letterboxd: ExternalResult = await sendMessage(
