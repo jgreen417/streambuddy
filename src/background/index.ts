@@ -3,6 +3,7 @@ import { debugLog, logLookupFailure } from "@/utils/log"
 import { BUILT_IN_TMDB_TOKEN, getAccount, onAccountChanged, setBuiltInKeyRejected, tmdbRequest } from "@/utils/account"
 import { createProfileSync } from "@/utils/profile-sync"
 import { onMessage } from "webext-bridge/background"
+import type { FetchRequestType, LookupError } from "@/utils/messages"
 import {
 	fetchImdbRating,
 	fetchImdbEpisodes,
@@ -11,6 +12,7 @@ import {
 	fetchLetterboxdByImdb,
 	fetchLetterboxdRating,
 	guessLetterboxdSlug,
+	type ImdbEpisodeRating,
 	type LetterboxdFilm,
 	type LetterboxdProfile,
 } from "@/utils/ratings"
@@ -58,7 +60,7 @@ async function withLetterboxdSlot<T>(task: () => Promise<T>): Promise<T> {
 // Letterboxd page (plus friends) downloads while TMDb is searching. Kept for 30s for the real request to claim.
 const guesses = new Map<string, Promise<LetterboxdFilm | null>>()
 const guessKey = (title: string, friends: boolean) => `${guessLetterboxdSlug(title)}|${friends}`
-onMessage("letterboxdPrefetch", (message: { data: { title: string; friends: boolean } }) => {
+onMessage("letterboxdPrefetch", (message) => {
 	const slug = guessLetterboxdSlug(message.data.title)
 	const key = guessKey(message.data.title, message.data.friends)
 	if (!slug || guesses.has(key)) return
@@ -73,7 +75,7 @@ onMessage("letterboxdPrefetch", (message: { data: { title: string; friends: bool
 })
 
 // null = no rating for this title; { error } = temporary failure the caller shouldn't cache
-onMessage("letterboxdRating", async (message: { data: { tmdbId: number; friends: boolean; title?: string } }) => {
+onMessage("letterboxdRating", async (message) => {
 	const { tmdbId, friends, title } = message.data
 	try {
 		// use the guessed page only if Letterboxd says it is this exact TMDb film
@@ -87,7 +89,7 @@ onMessage("letterboxdRating", async (message: { data: { tmdbId: number; friends:
 	}
 })
 // a show's Letterboxd page, if it has one: only limited series do
-onMessage("letterboxdSeries", async (message: { data: { imdbId: string; friends: boolean } }) => {
+onMessage("letterboxdSeries", async (message) => {
 	try {
 		const username = message.data.friends ? (await getAccount()).letterboxdUsername : ""
 		return await withLetterboxdSlot(() => fetchLetterboxdByImdb(message.data.imdbId, username))
@@ -96,7 +98,7 @@ onMessage("letterboxdSeries", async (message: { data: { imdbId: string; friends:
 		return { error: (error as Error).message }
 	}
 })
-onMessage("imdbRating", async (message: { data: { imdbId: string } }) => {
+onMessage("imdbRating", async (message) => {
 	try {
 		return await fetchImdbRating(message.data.imdbId)
 	} catch (error) {
@@ -105,8 +107,8 @@ onMessage("imdbRating", async (message: { data: { imdbId: string } }) => {
 	}
 })
 
-const episodeLookups = new Map<string, { expires: number; pending: Promise<unknown> }>()
-onMessage("imdbEpisodes", async (message: { data: { imdbId: string; season: number } }) => {
+const episodeLookups = new Map<string, { expires: number; pending: Promise<ImdbEpisodeRating[] | LookupError> }>()
+onMessage("imdbEpisodes", async (message) => {
 	const { imdbId, season } = message.data
 	const key = `${imdbId}|${season}`
 	const cached = episodeLookups.get(key)
@@ -153,11 +155,10 @@ const syncLetterboxdProfile = createProfileSync(async () => (await getAccount())
 onMessage("openAccountSetup", () => {
 	browser.tabs.create({ url: browser.runtime.getURL("src/ui/options-page/index.html#/options-page/Account") })
 })
-onMessage("letterboxdProfile", async (message: { data: { force?: boolean } }) =>
+onMessage("letterboxdProfile", async (message) =>
 	syncLetterboxdProfile(!!message.data?.force),
 )
 
-type FetchRequestType = "tmdb" | "noAuth"
 // a key or username saved on the settings page takes effect here straight away, not on the next worker restart
 onAccountChanged(() => {})
 
@@ -166,7 +167,7 @@ const AUTH_HOSTS: Partial<Record<FetchRequestType, string>> = {
 	tmdb: "api.themoviedb.org",
 }
 
-onMessage("fetch", async (message: { data: { url: string; type: FetchRequestType } }) => {
+onMessage("fetch", async (message) => {
 	const { data } = message
 	try {
 		let headers: Record<string, string>
