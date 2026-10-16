@@ -15,12 +15,6 @@ export type SeenTitle = {
 }
 export type SeenTop = Record<string, SeenTitle>
 
-export const PLATFORM_NAMES: Record<string, string> = {
-	netflix: "Netflix",
-	amazon: "Prime Video",
-	hbo: "HBO Max",
-}
-
 const WATCH_LOG_DAYS = 120
 const SEEN_DAYS = 7
 const SEEN_KEEP = 25

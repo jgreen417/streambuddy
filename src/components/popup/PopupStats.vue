@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { SERVICE_NAMES_BY_STATS_KEY as PLATFORM_NAMES } from "@/constants/streamingServices"
 import { computed, ref } from "vue"
 import { storeToRefs } from "pinia"
 import { useOptionsStore, SettingsPromise } from "@/stores/options.store"
@@ -8,7 +9,6 @@ import { useLetterboxdProfile } from "./useLetterboxdProfile"
 import {
 	formatDuration,
 	getRatingPercentile,
-	PLATFORM_NAMES,
 	summarizeWatchLog,
 	recentSeenTitles,
 	sumLastDays,

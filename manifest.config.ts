@@ -1,6 +1,7 @@
 import { env } from "node:process"
 import type { ManifestV3Export } from "@crxjs/vite-plugin"
 import packageJson from "./package.json" with { type: "json" }
+import { SERVICES } from "./src/constants/streamingServices.ts"
 
 const { version, name, description, displayName } = packageJson
 // Convert from Semver (example: 0.1.0-beta6)
@@ -25,26 +26,7 @@ export default {
 	action: {
 		default_popup: "src/ui/action-popup/index.html",
 	},
-	content_scripts: [
-		{
-			js: ["src/content-script/amazon.ts"],
-			matches: [
-				"*://*.primevideo.com/*",
-				"*://*.amazon.com/*",
-				"*://*.amazon.co.jp/*",
-				"*://*.amazon.de/*",
-				"*://*.amazon.co.uk/*",
-			],
-		},
-		{
-			js: ["src/content-script/netflix.ts"],
-			matches: ["*://*.netflix.com/*", "*://*.netflix.ca/*", "*://*.netflix.com.au/*"],
-		},
-		{
-			js: ["src/content-script/max.ts"],
-			matches: ["*://*.max.com/*", "*://*.hbomax.com/*"],
-		},
-	],
+	content_scripts: Object.values(SERVICES).map(({ script, matches }) => ({ js: [script], matches: [...matches] })),
 	options_page: "src/ui/options-page/index.html",
 	// alarms only drives the sideloaded copy's reload-on-rebuild check; store builds don't need it
 	permissions: env.RELEASE ? ["storage", "activeTab"] : ["storage", "activeTab", "alarms"],
