@@ -1,5 +1,9 @@
 # Changelog
 
+# Unreleased
+
+- Removed the rating panel and "Add to Letterboxd watchlist" button from title pages on Netflix, Prime Video and HBO Max, along with their settings. Card badges, episode ratings and the end-credits prompt are unchanged.
+
 # streamBuddy 1.0.1
 
 - A new look: a new logo (two friends on the couch), a warm dark palette with tangerine highlights and the Bricolage Grotesque typeface in the popup and settings.

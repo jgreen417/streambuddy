@@ -11,8 +11,8 @@ declare global {
   const BADGE_FONT: typeof import('../utils/page-feature-styles').BADGE_FONT
   const CheckedCards: typeof import('../utils/tmdb').CheckedCards
   const CreditsRatingPrompt: typeof import('../utils/credits-review').CreditsRatingPrompt
-  const DetailRatings: typeof import('../utils/page-features').DetailRatings
   const EffectScope: typeof import('vue').EffectScope
+  const EpisodeRatings: typeof import('../utils/page-features').EpisodeRatings
   const HiddenTitlesPromise: typeof import('../stores/options.store').HiddenTitlesPromise
   const NetflixShowTitles: typeof import('../utils/netflix-shows').NetflixShowTitles
   const PLATFORM_NAMES: typeof import('../utils/stats').PLATFORM_NAMES
@@ -23,7 +23,6 @@ declare global {
   const SettingsPromise: typeof import('../stores/options.store').SettingsPromise
   const TransientLookupError: typeof import('../utils/ratings').TransientLookupError
   const acceptHMRUpdate: typeof import('pinia').acceptHMRUpdate
-  const addLetterboxdWatchlist: typeof import('../utils/letterboxd-actions').addLetterboxdWatchlist
   const addSavedSeconds: typeof import('../utils/stats').addSavedSeconds
   const addWatchSeconds: typeof import('../utils/stats').addWatchSeconds
   const appRouter: typeof import('../utils/router/index').appRouter
@@ -65,7 +64,6 @@ declare global {
   const eagerComputed: typeof import('@vueuse/core').eagerComputed
   const effectScope: typeof import('vue').effectScope
   const extendRef: typeof import('@vueuse/core').extendRef
-  const extractLetterboxdCsrf: typeof import('../utils/letterboxd-actions').extractLetterboxdCsrf
   const fetchImdbEpisodes: typeof import('../utils/ratings').fetchImdbEpisodes
   const fetchImdbRating: typeof import('../utils/ratings').fetchImdbRating
   const fetchLetterboxdByImdb: typeof import('../utils/ratings').fetchLetterboxdByImdb
@@ -430,7 +428,7 @@ declare global {
   export type { NetflixShowTitles } from '../utils/netflix-shows'
   import('../utils/netflix-shows')
   // @ts-ignore
-  export type { DetailRatings, SearchRatingSort, FeatureSite, DetailContext, FeatureRating, EpisodeRating, PersonalStatus } from '../utils/page-features'
+  export type { EpisodeRatings, SearchRatingSort, FeatureSite, DetailContext, FeatureRating, EpisodeRating } from '../utils/page-features'
   import('../utils/page-features')
   // @ts-ignore
   export type { PreferenceState, RatingMode } from '../utils/preferences'
@@ -460,8 +458,8 @@ declare module 'vue' {
     readonly BADGE_FONT: UnwrapRef<typeof import('../utils/page-feature-styles')['BADGE_FONT']>
     readonly CheckedCards: UnwrapRef<typeof import('../utils/tmdb')['CheckedCards']>
     readonly CreditsRatingPrompt: UnwrapRef<typeof import('../utils/credits-review')['CreditsRatingPrompt']>
-    readonly DetailRatings: UnwrapRef<typeof import('../utils/page-features')['DetailRatings']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
+    readonly EpisodeRatings: UnwrapRef<typeof import('../utils/page-features')['EpisodeRatings']>
     readonly NetflixShowTitles: UnwrapRef<typeof import('../utils/netflix-shows')['NetflixShowTitles']>
     readonly PLATFORM_NAMES: UnwrapRef<typeof import('../utils/stats')['PLATFORM_NAMES']>
     readonly RowPresentation: UnwrapRef<typeof import('../utils/row-presentation')['RowPresentation']>
@@ -471,7 +469,6 @@ declare module 'vue' {
     readonly SettingsPromise: UnwrapRef<typeof import('../stores/options.store')['SettingsPromise']>
     readonly TransientLookupError: UnwrapRef<typeof import('../utils/ratings')['TransientLookupError']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
-    readonly addLetterboxdWatchlist: UnwrapRef<typeof import('../utils/letterboxd-actions')['addLetterboxdWatchlist']>
     readonly addSavedSeconds: UnwrapRef<typeof import('../utils/stats')['addSavedSeconds']>
     readonly addWatchSeconds: UnwrapRef<typeof import('../utils/stats')['addWatchSeconds']>
     readonly appRouter: UnwrapRef<typeof import('../utils/router/index')['appRouter']>
@@ -512,7 +509,6 @@ declare module 'vue' {
     readonly eagerComputed: UnwrapRef<typeof import('@vueuse/core')['eagerComputed']>
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
-    readonly extractLetterboxdCsrf: UnwrapRef<typeof import('../utils/letterboxd-actions')['extractLetterboxdCsrf']>
     readonly fetchImdbEpisodes: UnwrapRef<typeof import('../utils/ratings')['fetchImdbEpisodes']>
     readonly fetchImdbRating: UnwrapRef<typeof import('../utils/ratings')['fetchImdbRating']>
     readonly fetchLetterboxdByImdb: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdByImdb']>

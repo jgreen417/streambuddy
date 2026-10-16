@@ -31,7 +31,6 @@ export type EpisodeRating = {
 	rating: number
 	votes: number
 }
-export type PersonalStatus = { watched?: number; watchlist?: boolean }
 // sites wrap labels in invisible direction marks (U+200E, U+2066…), which break ^-anchored matches
 const BIDI_MARKS = /[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g
 const clean = (value: string | null | undefined) => (value ?? "").replace(BIDI_MARKS, "").trim()
@@ -143,7 +142,8 @@ export function readEpisodeCards(site: FeatureSite, root: HTMLElement) {
 	return cards
 }
 
-export class DetailRatings {
+// IMDb scores beside each episode on a series' title page
+export class EpisodeRatings {
 	private info = new Map<string, Promise<FeatureRating | null>>()
 	private episodes = new Map<string, Promise<EpisodeRating[]>>()
 	private nextRetry = new Map<string, number>()
@@ -151,26 +151,23 @@ export class DetailRatings {
 	constructor(
 		private lookup: (title: string, type: "movie" | "tv" | null, year: string | null) => Promise<FeatureRating | null>,
 		private lookupEpisodes: (data: FeatureRating, season: number) => Promise<EpisodeRating[]>,
-		private personal: (data: FeatureRating) => PersonalStatus,
-		private actions?: (panel: HTMLElement, data: FeatureRating) => void,
 	) {}
 	async tick(
 		site: FeatureSite,
 		// sources: the rating-source setting; results looked up under another one are not reused
-		options: { panel: boolean; episodes: boolean; actions?: boolean; friends?: boolean; sources?: string },
+		options: { episodes: boolean; sources?: string },
 		path = location.pathname,
 	) {
 		const context = readDetailContext(site, path)
-		const active = `${site}|${path}|${context?.title}|${context?.mediaType}|${context?.year}|${options.panel}|${options.episodes}|${options.actions}|${options.friends}|${options.sources}`
+		const active = `${site}|${path}|${context?.title}|${context?.mediaType}|${context?.year}|${options.episodes}|${options.sources}`
 		if (this.active !== active) {
-			document.querySelectorAll(".sb-detail-panel,.sb-episode-rating").forEach((el) => el.remove())
+			document.querySelectorAll(".sb-episode-rating").forEach((el) => el.remove())
 			document.querySelectorAll(".sb-episode-host").forEach((el) => el.classList.remove("sb-episode-host"))
 		}
 		this.active = active
-		if (!options.panel) document.querySelectorAll(".sb-detail-panel").forEach((el) => el.remove())
-		if (!options.episodes) document.querySelectorAll(".sb-episode-rating").forEach((el) => el.remove())
-		if (!options.panel && !options.episodes) return
-		if (!context) return
+		if (!options.episodes) return
+		// films have no episodes to rate
+		if (!context || context.mediaType === "movie") return
 		const key = `${context.title}|${context.mediaType}|${context.year}`
 		const lookupKey = `${key}|${options.sources ?? ""}`
 		if ((this.nextRetry.get(lookupKey) ?? 0) > Date.now()) return
@@ -193,16 +190,8 @@ export class DetailRatings {
 			`${current.title}|${current.mediaType}|${current.year}` !== key
 		)
 			return
+		if (data.media_type !== "tv") return
 		installPageFeatureStyle()
-		if (options.panel)
-			this.renderPanel(
-				context,
-				options.friends === false
-					? { ...data, friends_rating: undefined, friends_count: undefined, friends: undefined }
-					: data,
-				`${key}|${options.actions}|${options.friends}|${options.sources}`,
-			)
-		if (!options.episodes || data.media_type !== "tv") return
 		const cards = readEpisodeCards(site, context.root)
 		const currentEpisodes = new Map(cards.map((entry) => [entry.target, `${data.id}|${entry.season}|${entry.episode}`]))
 		context.root.querySelectorAll<HTMLElement>(".sb-episode-rating").forEach((chip) => {
@@ -250,41 +239,6 @@ export class DetailRatings {
 				}
 			}),
 		)
-	}
-	private renderPanel(context: DetailContext, data: FeatureRating, key: string) {
-		const personal = this.personal(data)
-		const signature = `${key}|${JSON.stringify(personal)}|${data.friends_rating}`
-		let panel = context.target.querySelector<HTMLElement>(".sb-detail-panel")
-		if (panel?.dataset.signature === signature) return
-		panel?.remove()
-		panel = document.createElement("div")
-		panel.className = "sb-detail-panel"
-		panel.dataset.signature = signature
-		const score = document.createElement("a")
-		score.className = "sb-detail-score"
-		const rating = data.source === "tmdb" ? data.score : data.rating
-		score.href = data.rating_url ?? `https://www.themoviedb.org/${data.media_type}/${data.id}`
-		score.target = "_blank"
-		score.rel = "noopener noreferrer"
-		const label = data.source === "letterboxd" ? "Letterboxd" : data.source === "imdb" ? "IMDb" : "TMDb"
-		score.textContent = rating
-			? `${label} ${rating.toFixed(data.source === "letterboxd" ? 2 : 1)}/${data.source === "letterboxd" ? 5 : 10}`
-			: "No rating available"
-		if (rating && data.source !== "tmdb") score.style.color = getScoreColor(data.source, rating)
-		panel.append(score)
-		const notes = document.createElement("small")
-		const lines = []
-		if (data.rating_count) lines.push(`${data.rating_count.toLocaleString()} ratings`)
-		if (data.friends_rating) lines.push(`Friends ${data.friends_rating.toFixed(1)}/5 (${data.friends_count ?? 0})`)
-		if (personal.watched !== undefined) lines.push(personal.watched ? `You ${personal.watched.toFixed(1)}/5` : "Seen")
-		else if (personal.watchlist) lines.push("On your watchlist")
-		notes.textContent = lines.join(" · ")
-		if (data.friends?.length)
-			notes.title = data.friends.map((friend) => `${friend.name}: ${friend.rating}/5`).join("\n")
-		panel.append(notes)
-		this.actions?.(panel, data)
-		if (context.before?.parentElement === context.target) context.target.insertBefore(panel, context.before)
-		else context.target.append(panel)
 	}
 }
 

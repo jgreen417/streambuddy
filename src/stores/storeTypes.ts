@@ -42,10 +42,8 @@ export type settingsType = {
 		markWatched: boolean
 		fadeWatched: boolean
 		hideBelowRating: boolean
-		detailRatings: boolean
 		episodeRatings: boolean
 		searchSort: boolean
-		letterboxdActions: boolean
 		rateOnCredits: boolean
 		// a notice with Undo whenever something is skipped
 		skipNotices: boolean
@@ -85,10 +83,8 @@ export const defaultSettings: settingsType = {
 		markWatched: true,
 		fadeWatched: true,
 		hideBelowRating: false,
-		detailRatings: true,
 		episodeRatings: true,
 		searchSort: true,
-		letterboxdActions: true,
 		rateOnCredits: true,
 		skipNotices: true,
 		keepFirstIntro: false,

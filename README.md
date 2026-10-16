@@ -11,10 +11,9 @@ streamBuddy puts a small score on every title card. Films show their Letterboxd 
 
 ## Features
 
-- **Ratings on every card.** Letterboxd for films and IMDb for series, on home rows, search results and title pages.
+- **Ratings on every card.** Letterboxd for films and IMDb for series, on home rows and search results.
 - **Friends' ratings.** Your Letterboxd friends' average, and who rated it, on each film.
 - **Your diary.** Films you've logged show your stars, and watchlisted films are marked. Watched films can fade back.
-- **Title-page panel.** Letterboxd average, your status, friends' stars and a one-click "add to watchlist".
 - **Episode ratings.** IMDb ratings for every episode of the season you're viewing.
 - **Find the good stuff.** An optional cut-off that hides low-rated titles, and sort-by-rating on search pages.
 - **Stats.** Weekly watch time by service, plus watchlist films that are streaming now.
