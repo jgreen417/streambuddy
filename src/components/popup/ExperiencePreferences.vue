@@ -205,10 +205,6 @@ const updateMode = (event: Event) => {
 				</p>
 				<template v-if="supportsPages">
 					<PopupToggle
-						v-model="settings.General.detailRatings"
-						label="Ratings on title pages"
-					/>
-					<PopupToggle
 						v-model="settings.General.episodeRatings"
 						label="Episode ratings"
 						description="IMDb scores beside individual episodes."
@@ -310,16 +306,6 @@ const updateMode = (event: Event) => {
 							label="Fade watched films"
 							:disabled="cardsInactive"
 							:description="cardDependency"
-						/>
-						<PopupToggle
-							v-model="settings.General.letterboxdActions"
-							label="Watchlist button on title pages"
-							:disabled="!settings.General.detailRatings"
-							:description="
-								!settings.General.detailRatings
-									? 'Turn on title-page ratings to use this.'
-									: 'Confirms the film before using your signed-in account.'
-							"
 						/>
 						<PopupToggle
 							v-model="settings.General.rateOnCredits"

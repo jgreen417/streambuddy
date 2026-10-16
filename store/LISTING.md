@@ -22,11 +22,9 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > YOUR FRIENDS, ON THE POSTER (connect Letterboxd, optional)
 > • Friends' average rating on matched films, and who rated them
 > • Your own stars on films you've logged, with watchlisted films marked
-> • Add to your Letterboxd watchlist from a title page
 > • A reminder to rate a film as the credits roll
 >
 > FIND THE GOOD STUFF FASTER
-> • A rating panel on title pages, with friends' stars
 > • IMDb ratings for every episode of a season
 > • An optional cut-off that hides low-rated titles
 > • Ratings and sort-by-rating on search pages
@@ -63,10 +61,9 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 **Screenshot list** (1280×800, in this order):
 1. Netflix home rows with badges, including labelled "friends" and "you" lines
-2. A Netflix title pop-up with the rating panel and the "＋ Watchlist" button
-3. An HBO Max or Prime Video series page with episode rating chips
-4. The popup, Settings tab, next to a streaming page
-5. The welcome page (two-step setup)
+2. An HBO Max or Prime Video series page with episode rating chips
+3. The popup, Settings tab, next to a streaming page
+4. The welcome page (two-step setup)
 
 Tip: in Dia, set the window to 1280×800, or capture larger and scale down. Avoid showing other people's full names from friends' tooltips.
 
@@ -85,7 +82,7 @@ Tip: in Dia, set the window to 1280×800, or capture larger and scale down. Avoi
 |---|---|
 | `storage` | Saves the user's settings, Letterboxd username and TMDb key, and a local cache of ratings so titles aren't looked up repeatedly. |
 | `activeTab` | Lets the toolbar popup see which streaming service the current tab is on, so it can show that service's settings. |
-| Host: `letterboxd.com` | Fetches public film pages for ratings and, if the user enters a username, their public diary, watchlist and friends' ratings. Adds to the watchlist only when the user clicks and confirms. |
+| Host: `letterboxd.com` | Fetches public film pages for ratings and, if the user enters a username, their public diary, watchlist and friends' ratings. |
 | Host: `caching.graphql.imdb.com` | Fetches IMDb ratings for series and episodes. |
 | Content scripts on Netflix, Prime Video/Amazon and HBO Max | Reads title names to place rating badges, and finds the player's skip buttons and ad timer to skip intros, credits and ads. Prime Video is hosted on Amazon's domains, so those are included. |
 
