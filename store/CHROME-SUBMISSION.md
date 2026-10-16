@@ -25,3 +25,13 @@ The user approved `joshmdg04@gmail.com` as the public publisher contact and comp
 Local confirmation screenshot: `release/chrome-submission-receipt.png` (not included in the extension ZIP).
 
 Firefox submission is deferred until further testing.
+
+## Next update: one batch with the review pill
+
+Planned 16 October 2026. Chrome reviews every submission, listing edits included, so the 1.0.1 changes, the review pill and the new screenshots go up together once the review pill is merged.
+
+1. Bump the version (Firefox already has 1.0.1, so use 1.0.2), then `npm run build:release` for `release/chrome-1.0.2.zip`.
+2. Package tab: upload the zip.
+3. Store listing tab: paste the description from `LISTING.md`, replace the screenshot with the four in `store/screenshots/` in the order listed there, and re-upload the icon and both promo tiles, which still show the pre-Buddy look.
+4. Privacy tab: no permission changes since 1.0.0, so nothing to edit.
+5. Submit for review.
