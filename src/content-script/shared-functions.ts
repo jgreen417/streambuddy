@@ -649,7 +649,11 @@ function playingEpisode(netflix: NetflixCredits | undefined): PlayingEpisode | n
 const finaleLookups = new Map<string, Promise<MovieInfo | null>>()
 function lookupSeriesFinale(episode: PlayingEpisode): Promise<MovieInfo | null> {
 	const key = `${episode.show}|S${episode.season}E${episode.episode}|${settings.value.General.friendsRatings}`
-	return shareLookup(finaleLookups, key, () => findSeriesFinale(episode))
+	return shareLookup(finaleLookups, key, () => findSeriesFinale(episode)).then((found) => {
+		// friends' ratings failed for a moment: let the retry after retryAfter ask again rather than reuse this
+		if (found?.retryAfter) finaleLookups.delete(key)
+		return found
+	})
 }
 async function findSeriesFinale({ show, season, episode }: PlayingEpisode): Promise<MovieInfo | null> {
 	const locale = htmlLang || navigator?.language || "en-US"
@@ -699,6 +703,7 @@ async function findSeriesFinale({ show, season, episode }: PlayingEpisode): Prom
 		friends_rating: letterboxd.friends_rating,
 		friends_count: letterboxd.friends_count,
 		friends: letterboxd.friends,
+		retryAfter: letterboxd.friends_unavailable ? Date.now() + 30_000 : undefined,
 	}
 }
 // the longest video on the page is the film: Prime keeps its detail page's trailer underneath the player

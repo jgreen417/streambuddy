@@ -124,7 +124,7 @@ describe("provider cooldowns across background restarts", () => {
 		vi.resetModules()
 		const first = await import("@/utils/network")
 		expect(await first.request("https://letterboxd.com/film/a/", (response) => response.status)).toBe(429)
-		await vi.waitFor(() => expect(saved.networkCooldowns).toBeDefined())
+		await vi.waitFor(() => expect(saved["networkCooldown:letterboxd.com"]).toBeDefined())
 		// a fresh module is a restarted worker: its in-memory map starts empty
 		vi.resetModules()
 		const restarted = await import("@/utils/network")
@@ -157,13 +157,10 @@ describe("provider cooldowns shared by several extension contexts", () => {
 		vi.resetModules()
 		const background = await import("@/utils/network")
 		await background.request("https://letterboxd.com/film/a/", (response) => response.status)
-		await vi.waitFor(() => expect(Object.keys((saved.networkCooldowns as object) ?? {})).toContain("letterboxd.com"))
+		await vi.waitFor(() => expect(saved["networkCooldown:letterboxd.com"]).toBeDefined())
 		await options.request("https://api.themoviedb.org/3/configuration", (response) => response.status)
-		await vi.waitFor(() =>
-			expect(Object.keys(saved.networkCooldowns as object)).toEqual(
-				expect.arrayContaining(["letterboxd.com", "api.themoviedb.org"]),
-			),
-		)
+		await vi.waitFor(() => expect(saved["networkCooldown:api.themoviedb.org"]).toBeDefined())
+		expect(saved["networkCooldown:letterboxd.com"]).toBeDefined()
 		vi.resetModules()
 		const restarted = await import("@/utils/network")
 		await expect(restarted.request("https://letterboxd.com/film/b/", (response) => response.status)).rejects.toThrow(
@@ -204,7 +201,7 @@ describe("cooldown edge cases", () => {
 		vi.resetModules()
 		const { request } = await import("@/utils/network")
 		await request("https://api.themoviedb.org/3/configuration", (response) => response.status)
-		listener?.({ networkCooldowns: { newValue: { "api.themoviedb.org": Date.now() + 60_000 } } }, "local")
+		listener?.({ "networkCooldown:api.themoviedb.org": { newValue: Date.now() + 60_000 } }, "local")
 		await expect(request("https://api.themoviedb.org/3/configuration", (response) => response.status)).rejects.toThrow(
 			"429",
 		)

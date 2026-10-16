@@ -1,44 +1,45 @@
 // Keep the deadline active through body consumption, so a stalled response cannot hold a lookup slot.
 const REQUEST_TIMEOUT_MS = 10_000
 const coolingDown = new Map<string, number>()
-// The background is an MV3 service worker (non-persistent in Firefox), so it can unload mid-cooldown. Cooldowns are
-// kept in storage too, so a restarted worker still waits out a provider's Retry-After.
-const COOLDOWN_KEY = "networkCooldowns"
-let cooldownsLoaded: Promise<void> | undefined
-function adoptCooldowns(stored: Record<string, number> | undefined) {
-	for (const [host, until] of Object.entries(stored ?? {}))
-		if (until > Date.now()) coolingDown.set(host, Math.max(coolingDown.get(host) ?? 0, until))
+// The background is an MV3 service worker (non-persistent in Firefox), so it can unload mid-cooldown. Each host's
+// cooldown is also kept in storage under its own key, so a restarted worker still waits out a provider's Retry-After,
+// and two contexts (the options page and the background) saving different hosts at once can't overwrite each other.
+const COOLDOWN_PREFIX = "networkCooldown:"
+const hostsLoaded = new Map<string, Promise<void>>()
+let listening = false
+function adoptCooldown(host: string, until: unknown) {
+	if (typeof until === "number" && until > Date.now())
+		coolingDown.set(host, Math.max(coolingDown.get(host) ?? 0, until))
 }
-function loadCooldowns() {
-	cooldownsLoaded ??= (async () => {
-		try {
-			const stored = (await browser.storage.local.get(COOLDOWN_KEY))?.[COOLDOWN_KEY] as
-				Record<string, number> | undefined
-			adoptCooldowns(stored)
-			// another context (the options page, or the background) may save a cooldown later: pick it up too
-			browser.storage.onChanged.addListener((changes, area) => {
-				if (area === "local" && changes[COOLDOWN_KEY])
-					adoptCooldowns(changes[COOLDOWN_KEY].newValue as Record<string, number>)
-			})
-		} catch {
-			// no storage (a test, or a page without extension APIs): cooldowns just don't survive a restart
-		}
-	})()
-	return cooldownsLoaded
+function loadCooldown(host: string) {
+	let loaded = hostsLoaded.get(host)
+	if (!loaded) {
+		loaded = (async () => {
+			try {
+				if (!listening) {
+					listening = true
+					// another context may hit a 429 later: pick its cooldown up too
+					browser.storage.onChanged.addListener((changes, area) => {
+						if (area !== "local") return
+						for (const [key, change] of Object.entries(changes))
+							if (key.startsWith(COOLDOWN_PREFIX)) adoptCooldown(key.slice(COOLDOWN_PREFIX.length), change.newValue)
+					})
+				}
+				const key = COOLDOWN_PREFIX + host
+				adoptCooldown(host, (await browser.storage.local.get(key))?.[key])
+			} catch {
+				// no storage (a test, or a page without extension APIs): cooldowns just don't survive a restart
+			}
+		})()
+		hostsLoaded.set(host, loaded)
+	}
+	return loaded
 }
-// Merge rather than replace: the options page and the background each keep their own map, so one context's save
-// must not drop a deadline the other wrote.
-function saveCooldowns() {
+function saveCooldown(host: string) {
+	const until = coolingDown.get(host)
+	if (!until) return
 	Promise.resolve()
-		.then(async () => {
-			const stored = (await browser.storage.local.get(COOLDOWN_KEY))?.[COOLDOWN_KEY] as
-				Record<string, number> | undefined
-			const now = Date.now()
-			const merged: Record<string, number> = {}
-			for (const [host, until] of [...Object.entries(stored ?? {}), ...coolingDown])
-				if (until > now) merged[host] = Math.max(merged[host] ?? 0, until)
-			await browser.storage.local.set({ [COOLDOWN_KEY]: merged })
-		})
+		.then(() => browser.storage.local.set({ [COOLDOWN_PREFIX + host]: until }))
 		.catch(() => {})
 }
 export class NetworkRequestError extends Error {
@@ -51,7 +52,7 @@ export async function request<T>(
 	init: RequestInit = {},
 ): Promise<T> {
 	const host = new URL(url).hostname
-	await loadCooldowns()
+	await loadCooldown(host)
 	if ((coolingDown.get(host) ?? 0) > Date.now()) throw new NetworkRequestError("HTTP 429 (retry later)")
 	const controller = new AbortController()
 	let timer: ReturnType<typeof setTimeout> | undefined
@@ -77,7 +78,7 @@ export async function request<T>(
 					const cooldownEnds = Number.isFinite(until) ? until : Date.now() + 30_000
 					if (cooldownEnds > Date.now()) {
 						coolingDown.set(host, Math.max(coolingDown.get(host) ?? 0, cooldownEnds))
-						saveCooldowns()
+						saveCooldown(host)
 					}
 				}
 				return consume(response)
