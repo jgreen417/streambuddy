@@ -18,7 +18,6 @@ self.onerror = function (message, source, lineno, colno, error) {
 }
 
 import { onMessage } from "webext-bridge/background"
-import { addLetterboxdWatchlist } from "@/utils/letterboxd-actions"
 import {
 	fetchImdbRating,
 	fetchImdbEpisodes,
@@ -103,23 +102,6 @@ onMessage("imdbEpisodes", async (message: { data: { imdbId: string; season: numb
 	})
 	episodeLookups.set(key, { expires: Date.now() + 6 * 60 * 60 * 1000, pending })
 	return pending
-})
-
-onMessage("letterboxdAddWatchlist", async (message: { data: { slug: string; confirmed: boolean } }) => {
-	try {
-		await addLetterboxdWatchlist(message.data.slug, message.data.confirmed)
-		const { letterboxdProfile } = await browser.storage.local.get("letterboxdProfile")
-		if (letterboxdProfile) {
-			const profile = letterboxdProfile as LetterboxdProfile
-			// The signed-in account can differ from the configured public-profile username.
-			// Mark the profile stale instead of inserting a film into the wrong account's cache.
-			profile.fetchedAt = 0
-			await browser.storage.local.set({ letterboxdProfile: profile })
-		}
-		return { success: true }
-	} catch (error) {
-		return { error: (error as Error).message }
-	}
 })
 
 // Sideloaded build: an unpacked extension reads its files from disk, so a rebuild shows up in build-id.txt

@@ -22,11 +22,9 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > YOUR FRIENDS, ON THE POSTER (connect Letterboxd, optional)
 > • Friends' average rating on matched films, and who rated them
 > • Your own stars on films you've logged, with watchlisted films marked
-> • Add to your Letterboxd watchlist from a title page
 > • A review pill as the credits roll: your friends' ratings and a one-click Rate on Letterboxd
 >
 > FIND THE GOOD STUFF FASTER
-> • A rating panel on title pages, with friends' stars
 > • IMDb ratings for every episode of a season
 > • An optional cut-off that hides low-rated titles
 > • Ratings and sort-by-rating on search pages
@@ -83,7 +81,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 |---|---|
 | `storage` | Saves the user's settings, Letterboxd username and TMDb key, and a local cache of ratings so titles aren't looked up repeatedly. |
 | `activeTab` | Lets the toolbar popup see which streaming service the current tab is on, so it can show that service's settings. |
-| Host: `letterboxd.com` | Fetches public film pages for ratings and, if the user enters a username, their public diary, watchlist and friends' ratings. Adds to the watchlist only when the user clicks and confirms. |
+| Host: `letterboxd.com` | Fetches public film pages for ratings and, if the user enters a username, their public diary, watchlist and friends' ratings. |
 | Host: `caching.graphql.imdb.com` | Fetches IMDb ratings for series and episodes. |
 | Content scripts on Netflix, Prime Video/Amazon and HBO Max | Reads title names to place rating badges, and finds the player's skip buttons and ad timer to skip intros, credits and ads. Prime Video is hosted on Amazon's domains, so those are included. |
 

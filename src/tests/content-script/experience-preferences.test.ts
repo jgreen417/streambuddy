@@ -80,19 +80,4 @@ describe("experience preferences integration", () => {
 		expect(state.Amazon.skipIntro).toBe(true)
 		expect(toggle(root, "Skip intros & recaps").indeterminate).toBe(true)
 	})
-	it.skipIf(!__LETTERBOXD_USERNAME__)(
-		"keeps watchlist actions stored but inactive when title-page ratings are off",
-		async () => {
-			const settings = fresh()
-			settings.General.detailRatings = false
-			const { root, state } = mount(settings)
-			const action = toggle(root, "Watchlist button")
-			expect(action).toBeDefined()
-			expect(action.disabled).toBe(true)
-			expect(state.General.letterboxdActions).toBe(true)
-			toggle(root, "Ratings on title pages").click()
-			await nextTick()
-			expect(action.disabled).toBe(false)
-		},
-	)
 })
