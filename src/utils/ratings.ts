@@ -1,5 +1,4 @@
 import { request, NetworkRequestError, readText, readJson } from "./network"
-import { scoreScale } from "@/design/tokens"
 // External rating sources (Letterboxd for films, IMDb for TV and as a fallback).
 // These run in the background service worker: neither site sends CORS headers to the
 // streaming pages, so the content scripts can't fetch them directly.
@@ -27,24 +26,6 @@ export class TransientLookupError extends NetworkRequestError {
 }
 function assertNotTransient(response: Response, source: string) {
 	if (!response.ok && response.status !== 404) throw new TransientLookupError(`${source} ${response.status}`)
-}
-
-// red, orange, yellow, light green, green (src/design/tokens.ts)
-export const SCORE_COLORS = scoreScale
-// Band edges picked so each colour covers a similar share of what's actually streaming
-// (popular titles on UK Netflix, Prime and HBO Max, Oct 2026): roughly 13/23/24/25/15%.
-// Letterboxd films: median 3.3, only 15% reach 4.0. IMDb TV runs much higher: median 8.0.
-export const SCORE_BANDS: Record<ExternalRating["source"], number[]> = {
-	letterboxd: [2.5, 3, 3.5, 4],
-	imdb: [7, 7.7, 8.2, 8.6],
-}
-// 0 = red ... 4 = green
-export function getScoreBand(source: ExternalRating["source"], rating: number): number {
-	const band = SCORE_BANDS[source].findIndex((edge) => rating < edge)
-	return band == -1 ? SCORE_BANDS[source].length : band
-}
-export function getScoreColor(source: ExternalRating["source"], rating: number): string {
-	return SCORE_COLORS[getScoreBand(source, rating)]
 }
 
 // Letterboxd wraps its JSON-LD in /* <![CDATA[ */ ... /* ]]> */, so a plain JSON.parse fails

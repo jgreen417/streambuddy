@@ -2,16 +2,15 @@
 // the card's artwork
 import { color, ease, font, friendColors as FRIEND_DOT_COLORS, shadow } from "@/design/tokens"
 import { applyGlass, installPageFeatureStyle } from "@/utils/page-feature-styles"
-import { getScoreBand, getScoreColor } from "@/utils/ratings"
-import { normalizeRowScore } from "@/utils/row-presentation"
+import { getScoreBand, getScoreColor, normalizeScore } from "@/utils/rating-sources"
 import type { MovieInfo } from "./cache"
 import type { PersonalStatus } from "./profile"
 import type { BadgeHost, RatingsSite } from "./sites/types"
 
-// TMDb is only the fallback: colour it on the IMDb scale (both are out of 10), grey when too few people voted
+// TMDb is only the fallback: grey when too few people voted
 export const TMDB_LOW_RATING = 5.5
 function getTmdbColor(rating: number, lowVoteCount: boolean) {
-	return !rating || lowVoteCount ? color.badgeUnrated : getScoreColor("imdb", rating)
+	return !rating || lowVoteCount ? color.badgeUnrated : getScoreColor("tmdb", rating)
 }
 // Letterboxd and IMDb dim by colour band (the cut-off is picked in the popup); TMDb keeps the old threshold
 export function isDimmed(data: MovieInfo, lowVoteCount: boolean, dimBelowBand: number) {
@@ -23,7 +22,7 @@ function getTMDBUrl(id: string | number, media_type: string) {
 }
 // on a 0-10 scale so the dim-low-ratings thresholds work for every source
 export function getNormalizedScore(data: MovieInfo) {
-	if (data.source !== "tmdb" && data.rating) return normalizeRowScore(data.source, data.rating)
+	if (data.source !== "tmdb" && data.rating) return normalizeScore(data.source, data.rating)
 	return data.score
 }
 export function getRatingVoteCount(data: MovieInfo) {

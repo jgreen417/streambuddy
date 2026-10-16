@@ -1,6 +1,7 @@
 // Ratings already looked up, kept in local storage for a month so a title isn't looked up on every page
 import { debugLog } from "@/utils/log"
-import { getExternalRating, prefetchLetterboxd, searchTitle, usesLetterboxd } from "@/utils/lookup"
+import { getExternalRating, prefetchLetterboxd, searchTitle } from "@/utils/lookup"
+import { usesSource } from "@/utils/rating-sources"
 import type { FriendRating, RatingSource } from "@/utils/ratings"
 import { locale, ratingSources, settings } from "./settings"
 
@@ -107,7 +108,7 @@ export async function lookupMovieInfo(
 	sources: RatingSources = ratingSources(),
 ): Promise<MovieInfo | null> {
 	const friends = settings.value.General.friendsRatings
-	if (media_type !== "tv" && usesLetterboxd(sources)) prefetchLetterboxd(title, friends)
+	if (media_type !== "tv" && usesSource(sources, "letterboxd")) prefetchLetterboxd(title, friends)
 	// no match, or TMDb unreachable: show nothing and leave the title uncached so the next visit retries
 	const movie = await searchTitle(title, media_type, year, locale())
 	if (!movie) return null

@@ -3,12 +3,11 @@ import { SERVICE_NAMES_BY_STATS_KEY as PLATFORM_NAMES } from "@/constants/stream
 import { computed, ref } from "vue"
 import { storeToRefs } from "pinia"
 import { useOptionsStore, SettingsPromise } from "@/stores/options.store"
-import { getScoreColor } from "@/utils/ratings"
+import { getRatingPercentile, getScoreColor } from "@/utils/rating-sources"
 import { color, serviceColors } from "@/design/tokens"
 import { useLetterboxdProfile } from "./useLetterboxdProfile"
 import {
 	formatDuration,
-	getRatingPercentile,
 	summarizeWatchLog,
 	recentSeenTitles,
 	sumLastDays,

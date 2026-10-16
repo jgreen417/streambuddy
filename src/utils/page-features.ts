@@ -1,5 +1,6 @@
 import { applyGlass, installPageFeatureStyle } from "./page-feature-styles"
-import { getScoreColor, type RatingSource } from "./ratings"
+import type { RatingSource } from "./ratings"
+import { getScoreColor } from "./rating-sources"
 
 import type { FeatureSite } from "@/constants/streamingServices"
 export type { FeatureSite }

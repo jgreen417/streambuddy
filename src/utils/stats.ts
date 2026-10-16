@@ -1,6 +1,7 @@
 // streamBuddy stats: watch time per day/service and the best-rated titles seen on cards.
 // Everything lives in browser.storage.local; nothing leaves the browser.
 import type { ExternalRating } from "@/utils/ratings"
+import { getRatingPercentile } from "@/utils/rating-sources"
 
 // { "2026-10-11": { netflix: 5400, amazon: 1200 } } in seconds
 export type WatchLog = Record<string, Record<string, number>>
@@ -96,37 +97,6 @@ export function summarizeWatchLog(log: WatchLog, now: Date): WatchSummary {
 			biggestNight = { weekday: WEEKDAYS[index], averageSeconds }
 	})
 	return { thisWeek, lastWeek, days, byService, biggestNight }
-}
-
-// Rough percentile among popular streaming titles, so Letterboxd (/5) and IMDb (/10) can be ranked together.
-// Anchors match the colour bands in ratings.ts (13/36/60/85% of titles fall below each edge).
-const PERCENTILE_ANCHORS: Record<ExternalRating["source"], Array<[number, number]>> = {
-	letterboxd: [
-		[1, 0],
-		[2.5, 13],
-		[3, 36],
-		[3.5, 60],
-		[4, 85],
-		[4.7, 100],
-	],
-	imdb: [
-		[5.5, 0],
-		[7, 13],
-		[7.7, 36],
-		[8.2, 60],
-		[8.6, 85],
-		[9.5, 100],
-	],
-}
-export function getRatingPercentile(source: ExternalRating["source"], rating: number): number {
-	const anchors = PERCENTILE_ANCHORS[source]
-	if (rating <= anchors[0][0]) return 0
-	for (let i = 1; i < anchors.length; i++) {
-		const [x0, y0] = anchors[i - 1]
-		const [x1, y1] = anchors[i]
-		if (rating <= x1) return y0 + ((rating - x0) / (x1 - x0)) * (y1 - y0)
-	}
-	return 100
 }
 
 export function mergeSeenTitles(stored: SeenTop, entries: SeenTitle[], now: Date): SeenTop {

@@ -1,8 +1,5 @@
-import { getScoreBand, type RatingSource } from "./ratings"
-
-export function normalizeRowScore(source: RatingSource, rating: number) {
-	return source === "letterboxd" ? rating * 2 : rating
-}
+import type { RatingSource } from "./ratings"
+import { getScoreBand } from "./rating-sources"
 
 export function isBelowRatingCutoff(
 	source: RatingSource,

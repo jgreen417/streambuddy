@@ -3,16 +3,15 @@ import {
 	fetchImdbRating,
 	fetchLetterboxdRating,
 	getLetterboxdSlug,
-	getScoreColor,
 	guessLetterboxdSlug,
 	parseLetterboxdTmdbId,
 	parseFriendRatings,
 	parseFriendRows,
 	parseLetterboxdHtml,
 	parseProfileGrid,
-	SCORE_COLORS,
 	TransientLookupError,
 } from "../../utils/ratings"
+import { getScoreColor, SCORE_COLORS } from "../../utils/rating-sources"
 
 const wrap = (json: string) => `<html><head><script type="application/ld+json">
 /* <![CDATA[ */
