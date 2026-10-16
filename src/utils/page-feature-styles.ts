@@ -13,7 +13,7 @@ export function installPageFeatureStyle() {
 	style.id = "sb-page-features-style"
 	style.textContent = `
  @font-face { font-family:${BADGE_FONT}; src:url("${browser.runtime.getURL(bricolageLatin)}") format("woff2"); font-weight:200 800; font-display:swap; }
- .sb-review, .sb-feature-button, .sb-hide-title, .sb-episode-rating { ${cssDeclarations()} }
+ .sb-review, .sb-feature-button, .sb-hide-title, .sb-episode-rating, .sb-card-rating { ${cssDeclarations()} }
  .sb-review { color:var(--sb-text); font:14px/1.5 var(--sb-font-system); }
  .sb-feature-button { display:inline-flex; align-items:center; justify-content:center; min-height:40px; box-sizing:border-box; cursor:pointer; padding:8px 12px; background:var(--sb-button); color:var(--sb-text); border:1px solid var(--sb-line-control); border-radius:var(--sb-radius-md); font:500 13px/1.4 var(--sb-font-system); }
  .sb-feature-button:hover:not(:disabled) { background:var(--sb-button-hover); } .sb-feature-button:disabled { cursor:default; opacity:.65; }
