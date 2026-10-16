@@ -32,7 +32,6 @@
     "NetflixCredits": true,
     "NetflixShowTitles": true,
     "NetworkRequestError": true,
-    "PLATFORM_NAMES": true,
     "PlayingEpisode": true,
     "PreferenceState": true,
     "PropType": true,

@@ -24,8 +24,6 @@ function creditsMetadata() {
 
 export const netflixSite: RatingsSite = {
 	service: "Netflix",
-	statsKey: "netflix",
-	feature: "netflix",
 	// Netflix draws its "Recently added" and "Leaving soon" tags into the bottom of the boxart; the top-right is clear
 	badge: { corner: "top", right: "calc(0.2vw + 3px)", zIndex: "2" },
 	titleCards: () => [

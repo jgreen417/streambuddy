@@ -3,7 +3,9 @@
 
 // intro, recap and credits are skip buttons the site shows; stillWatching is the "Are you still watching?" prompt
 export type SkipKind = "intro" | "recap" | "credits" | "stillWatching"
-export type ServiceKey = "Netflix" | "Amazon" | "HBO"
+import type { StreamingService } from "@/constants/streamingServices"
+
+export type ServiceKey = StreamingService
 
 export type SiteAdapter = {
 	service: ServiceKey

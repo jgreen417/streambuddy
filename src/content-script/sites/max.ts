@@ -14,8 +14,6 @@ const TITLE_PAGES = ["show", "series", "movie", "topical", "standalone"]
 
 export const maxSite: RatingsSite = {
 	service: "HBO",
-	statsKey: "hbo",
-	feature: "hbo",
 	badge: { corner: "bottom", zIndex: "2" },
 	titleCards: () => [document.querySelectorAll("a[class*='StyledTileLinkNormal-']:not(.imdb)")],
 	seenMarker: (card) => card,

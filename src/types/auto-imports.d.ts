@@ -439,7 +439,7 @@ declare global {
   export type { NetworkRequestError } from '../utils/network'
   import('../utils/network')
   // @ts-ignore
-  export type { EpisodeRatings, SearchRatingSort, FeatureSite, DetailContext, FeatureRating, EpisodeRating } from '../utils/page-features'
+  export type { EpisodeRatings, SearchRatingSort, DetailContext, FeatureRating, EpisodeRating, FeatureSite } from '../utils/page-features'
   import('../utils/page-features')
   // @ts-ignore
   export type { PreferenceState, RatingMode } from '../utils/preferences'
@@ -474,7 +474,6 @@ declare module 'vue' {
     readonly EpisodeRatings: UnwrapRef<typeof import('../utils/page-features')['EpisodeRatings']>
     readonly NetflixShowTitles: UnwrapRef<typeof import('../utils/netflix-shows')['NetflixShowTitles']>
     readonly NetworkRequestError: UnwrapRef<typeof import('../utils/network')['NetworkRequestError']>
-    readonly PLATFORM_NAMES: UnwrapRef<typeof import('../utils/stats')['PLATFORM_NAMES']>
     readonly RowPresentation: UnwrapRef<typeof import('../utils/row-presentation')['RowPresentation']>
     readonly SCORE_BANDS: UnwrapRef<typeof import('../utils/ratings')['SCORE_BANDS']>
     readonly SCORE_COLORS: UnwrapRef<typeof import('../utils/ratings')['SCORE_COLORS']>

@@ -1,7 +1,8 @@
 import { applyGlass, installPageFeatureStyle } from "./page-feature-styles"
 import { getScoreColor, type RatingSource } from "./ratings"
 
-export type FeatureSite = "netflix" | "hbo" | "prime"
+import type { FeatureSite } from "@/constants/streamingServices"
+export type { FeatureSite }
 export type DetailContext = {
 	root: HTMLElement
 	target: HTMLElement

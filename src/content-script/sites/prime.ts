@@ -49,8 +49,6 @@ function logoHeight(container: HTMLElement) {
 // kind 0: cards in rows (and the search grid's own listitems), which carry their title; kind 1: the other cards
 export const primeSite: RatingsSite = {
 	service: "Amazon",
-	statsKey: "amazon",
-	feature: "prime",
 	badge: { corner: "bottom", zIndex: "3" },
 	titleCards: () => [
 		document.querySelectorAll(

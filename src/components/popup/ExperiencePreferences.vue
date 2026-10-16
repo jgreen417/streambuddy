@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, useId } from "vue"
 import type { FriendsStyle, RatingSources, settingsType } from "@/stores/storeTypes"
-import { streamingServices, type StreamingService } from "@/constants/streamingServices"
+import { SERVICES, streamingServices, type StreamingService } from "@/constants/streamingServices"
 import { getServiceState, setServiceState, getRatingMode, setRatingMode, type RatingMode } from "@/utils/preferences"
 import { SCORE_BANDS } from "@/utils/ratings"
 import PopupToggle from "./PopupToggle.vue"
@@ -19,13 +19,8 @@ watch(
 		selection.value = value ?? ""
 	},
 )
-const names: Record<StreamingService, string> = {
-	Netflix: "Netflix",
-	Amazon: "Prime Video",
-	HBO: "HBO Max",
-}
 const targets = computed(() => (selection.value ? [selection.value] : [...streamingServices]))
-const scope = computed(() => (selection.value ? names[selection.value] : "All services"))
+const scope = computed(() => (selection.value ? SERVICES[selection.value].name : "All services"))
 const has = (key: string) =>
 	targets.value.some((service) => typeof (settings.value[service] as Record<string, unknown>)[key] === "boolean")
 function preference(keys: string[]) {
@@ -116,7 +111,7 @@ const updateMode = (event: Event) => {
 					:key="service"
 					:value="service"
 				>
-					{{ names[service] }}
+					{{ SERVICES[service].name }}
 				</option>
 			</select>
 		</label>

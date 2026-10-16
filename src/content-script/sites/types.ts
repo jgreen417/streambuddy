@@ -2,7 +2,6 @@
 // about a streaming site. Everything site-specific lives in an adapter (sites/*.ts); shared-functions.ts is the same
 // on every service. The playback engine has its own adapters in playback/sites/.
 import type { StreamingService } from "@/constants/streamingServices"
-import type { FeatureSite } from "@/utils/page-features"
 import type { NetflixCredits } from "@/utils/netflix-credits"
 import type { PlayingEpisode } from "@/utils/series-finale"
 
@@ -19,11 +18,7 @@ export type BadgeHost = {
 }
 
 export type RatingsSite = {
-	// the service's key in the settings
 	service: StreamingService
-	// the service's key in the watch-time log and the seen-titles list
-	statsKey: string
-	feature: FeatureSite
 	// the badge's starting position until it's fitted to the artwork, and its stacking over the card
 	badge: { corner: "top" | "bottom"; right?: string; zIndex: string }
 	// the cards to rate, one list per kind of card: the kind is passed back to cleanTitle and seenMarker

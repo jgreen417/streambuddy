@@ -2,23 +2,19 @@
 import { computed, ref } from "vue"
 import PopupSettings from "@/components/popup/PopupSettings.vue"
 import PopupStats from "@/components/popup/PopupStats.vue"
-import type { StreamingService } from "@/constants/streamingServices"
+import { SERVICES, streamingServices } from "@/constants/streamingServices"
 import { useAccount } from "@/components/popup/useAccount"
 import { DONATE_URL } from "@/constants/links"
 
-const SERVICES: Array<{ pattern: RegExp; service: StreamingService; name: string }> = [
-	{ pattern: /(^|\.)(amazon|primevideo)\./i, service: "Amazon", name: "Prime Video" },
-	{ pattern: /(^|\.)netflix\./i, service: "Netflix", name: "Netflix" },
-	{ pattern: /(^|\.)(hbo)?max\.com$/i, service: "HBO", name: "HBO Max" },
-]
+const SITES = streamingServices.map((service) => ({ service, name: SERVICES[service].name, pattern: SERVICES[service].host }))
 
 const tab = ref<"settings" | "stats">("settings")
 const { needsSetup, ratingsPaused } = useAccount()
-const current = ref<(typeof SERVICES)[number] | null>(null)
+const current = ref<(typeof SITES)[number] | null>(null)
 // the activeTab permission lets us read the URL of the tab the popup was opened on
 browser.tabs.query({ active: true, currentWindow: true }).then(([activeTab]) => {
 	const hostname = activeTab?.url ? new URL(activeTab.url).hostname : ""
-	current.value = SERVICES.find(({ pattern }) => pattern.test(hostname)) ?? null
+	current.value = SITES.find(({ pattern }) => pattern.test(hostname)) ?? null
 })
 const context = computed(() => (current.value ? current.value.name : "Choose your service below"))
 

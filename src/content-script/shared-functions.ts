@@ -18,6 +18,7 @@ import { EpisodeRatings, SearchRatingSort, type FeatureRating, type EpisodeRatin
 import { CreditsRatingPrompt, creditsLength, inCredits } from "@/utils/credits-review"
 import { isLastEpisode, shareLookup, type PlayingEpisode } from "@/utils/series-finale"
 import type { RatingsSite } from "./sites/types"
+import { SERVICES } from "@/constants/streamingServices"
 import {
 	addWatchSeconds,
 	localDateKey,
@@ -445,7 +446,7 @@ function startPageFeatures() {
 	const tick = () => {
 		if (document.hidden || !site) return
 		episodeRatings
-			.tick(site.feature, {
+			.tick(SERVICES[site.service].feature, {
 				episodes: settings.value.General.episodeRatings,
 				sources: ratingSources(),
 				glassFrost: settings.value.General.badgeStyle === "glass" ? settings.value.General.glassFrost : undefined,
@@ -1150,7 +1151,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 				source: data.source,
 				rating: data.rating,
 				url: data.rating_url ?? "",
-				platform: site.statsKey,
+				platform: SERVICES[site.service].statsKey,
 				media_type: data.media_type,
 				seen: localDateKey(new Date()),
 			},
@@ -1217,9 +1218,9 @@ function startWatchTimer(service: RatingsSite) {
 	setInterval(() => {
 		const video = service.isPlayerPage() ? getPlayingVideo() : undefined
 		watchTick(watchState, video?.currentTime, WATCH_TICK_SECONDS)
-		flushWatchTime(service.statsKey)
+		flushWatchTime(SERVICES[service.service].statsKey)
 	}, WATCH_TICK_SECONDS * 1000)
-	globalThis.addEventListener("pagehide", () => flushWatchTime(service.statsKey))
+	globalThis.addEventListener("pagehide", () => flushWatchTime(SERVICES[service.service].statsKey))
 }
 async function flushWatchTime(platform: string) {
 	if (!watchState.pendingSeconds) return
