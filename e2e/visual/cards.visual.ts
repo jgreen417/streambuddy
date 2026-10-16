@@ -41,3 +41,22 @@ test("signed out: no friends or personal labels", async ({ open }) => {
 	expect.soft(specProblems(await measure(page)), "badge placement").toEqual([])
 	await expect.soft(page.locator('[data-shot="carousel"]')).toHaveScreenshot("signed-out-prime-carousel.png")
 })
+
+// Prime redraws a large card when it's hovered, leaving the badge ahead of the card's title link. The badge must
+// stay through that, not be dropped as if the card had lost its title (and flicker back a beat later).
+test("prime: hovered large card keeps its badge", async ({ open }) => {
+	const prime = site("prime")
+	const page = await open(prime.url)
+	await settle(page, prime.badges)
+	const card = page.locator('[data-testid="super-carousel-card"]').first()
+	const badge = card.locator(":scope > .sb-card-rating")
+	await badge.evaluate((el) => (el.dataset.beforeHover = ""))
+	await card.hover()
+	await expect(card.locator(":scope > :first-child")).toHaveClass(/sb-card-rating/)
+	// the extension rechecks each card's title every second; give it two passes
+	await page.waitForTimeout(2_500)
+	await expect(card.locator(":scope > [data-before-hover]"), "the badge drawn before the hover").toHaveCount(1)
+	await settle(page, prime.badges)
+	expect.soft(specProblems(await measure(page)), "badge placement").toEqual([])
+	await expect.soft(page.locator('[data-shot="super"]')).toHaveScreenshot("prime-super-hovered.png")
+})
