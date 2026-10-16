@@ -29,7 +29,7 @@ Add these as secrets of a GitHub environment named `stores` (Settings → Enviro
 
 ### Google Cloud setup for Chrome
 
-Chrome signs in without a key file: Google trusts GitHub's identity token only for jobs of this repository that run in the `stores` environment (so they pass its required reviewers) and lets them act as a service account (Workload Identity Federation). New Google Cloud accounts block service account keys by default, so this is also the only route that works there.
+Chrome signs in without a key file: Google trusts GitHub's identity token only for jobs of this repository that run in the `stores` environment (so they pass its required reviewers) and lets them act as a service account (Workload Identity Federation). The check uses the repository's numeric ID (1414811436) rather than its name, because GitHub's identity tokens for repositories created after July 2026 carry the IDs in their subject, and an ID can't be taken over by a renamed or recreated repository. New Google Cloud accounts block service account keys by default, so this is also the only route that works there.
 
 1. In the [Google Cloud console](https://console.cloud.google.com), create a project, then open Cloud Shell (the `>_` button, top right) and run:
 
@@ -42,14 +42,14 @@ Chrome signs in without a key file: Google trusts GitHub's identity token only f
    gcloud iam workload-identity-pools create github --location=global --display-name="GitHub"
    gcloud iam workload-identity-pools providers create-oidc streambuddy --location=global \
      --workload-identity-pool=github --issuer-uri=https://token.actions.githubusercontent.com \
-     --attribute-mapping="google.subject=assertion.sub" \
-     --attribute-condition="assertion.sub=='repo:jgreen417/streambuddy:environment:stores'"
+     --attribute-mapping="google.subject=assertion.sub,attribute.repository_id=assertion.repository_id" \
+     --attribute-condition="assertion.repository_id=='1414811436' && assertion.environment=='stores'"
    gcloud iam service-accounts add-iam-policy-binding \
      "streambuddy-release@$PROJECT_ID.iam.gserviceaccount.com" --role=roles/iam.workloadIdentityUser \
-     --member="principal://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/subject/repo:jgreen417/streambuddy:environment:stores"
+     --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository_id/1414811436"
    echo "GCP_WORKLOAD_IDENTITY_PROVIDER: projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/streambuddy"
    echo "CWS_SERVICE_ACCOUNT: streambuddy-release@$PROJECT_ID.iam.gserviceaccount.com"
    ```
 
 2. Copy the two printed values into the `stores` environment secrets.
-3. In the Chrome Web Store Developer Dashboard, open Account and add the `CWS_SERVICE_ACCOUNT` email.
+3. In the Chrome Web Store Developer Dashboard, open Account and add the `CWS_SERVICE_ACCOUNT` email. A publisher can have only one service account, so remove any other one listed there first.
