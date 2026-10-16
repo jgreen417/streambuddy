@@ -21,7 +21,9 @@ export type FriendRating = { name: string; rating: number }
 
 // A temporary failure (network error, rate limit, Cloudflare challenge) as opposed to "this title has no rating".
 // Callers must not cache these, or one bad minute pins a title to the fallback rating for a month.
-export class TransientLookupError extends NetworkRequestError {}
+export class TransientLookupError extends NetworkRequestError {
+	override name = "TransientLookupError"
+}
 function assertNotTransient(response: Response, source: string) {
 	if (!response.ok && response.status !== 404) throw new TransientLookupError(`${source} ${response.status}`)
 }

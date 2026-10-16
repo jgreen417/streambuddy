@@ -1,5 +1,6 @@
 // write the version metadata web-ext sign sends to addons.mozilla.org: the release notes from CHANGELOG.md
-// and, when AMO_APPROVAL_NOTES is set, the confidential notes for Mozilla's reviewers
+// and the confidential notes for Mozilla's reviewers: AMO_APPROVAL_NOTES if set, plus how to rebuild the package with
+// streamBuddy's shared TMDb key (STREAMBUDDY_TMDB_KEY), without which their build would differ from the upload
 // usage: tsx scripts/amo-metadata.ts <out.json>
 import { readFileSync, writeFileSync } from "node:fs"
 import process from "node:process"
@@ -21,9 +22,12 @@ if (start !== -1) {
 const metadata: { version: Record<string, unknown> } = { version: {} }
 if (releaseNotes) metadata.version.release_notes = { "en-US": releaseNotes }
 else console.warn(`No "${heading}" section in CHANGELOG.md, so the version goes up without release notes`)
-if (process.env.AMO_APPROVAL_NOTES) metadata.version.approval_notes = process.env.AMO_APPROVAL_NOTES
+const key = process.env.STREAMBUDDY_TMDB_KEY
+if (!key) throw new Error("STREAMBUDDY_TMDB_KEY is missing: reviewers couldn't rebuild the package from source")
+const buildNote =
+	`To rebuild: npm ci, then STREAMBUDDY_TMDB_KEY=${key} npm run build:release:firefox. ` +
+	"This is streamBuddy's shared TMDb API key, built into the package so ratings work without setup."
+metadata.version.approval_notes = [process.env.AMO_APPROVAL_NOTES, buildNote].filter(Boolean).join("\n\n")
 
 writeFileSync(out, JSON.stringify(metadata))
-console.log(
-	`Release notes: ${releaseNotes ? "yes" : "no"}, reviewer notes: ${process.env.AMO_APPROVAL_NOTES ? "yes" : "no"}`,
-)
+console.log(`Release notes: ${releaseNotes ? "yes" : "no"}, reviewer notes: yes`)

@@ -9,6 +9,7 @@
 export {}
 declare global {
   const BADGE_FONT: typeof import('../utils/page-feature-styles').BADGE_FONT
+  const BUILT_IN_TMDB_TOKEN: typeof import('../utils/account').BUILT_IN_TMDB_TOKEN
   const CheckedCards: typeof import('../utils/tmdb').CheckedCards
   const CreditsRatingPrompt: typeof import('../utils/credits-review').CreditsRatingPrompt
   const EffectScope: typeof import('vue').EffectScope
@@ -27,6 +28,7 @@ declare global {
   const addSavedSeconds: typeof import('../utils/stats').addSavedSeconds
   const addWatchSeconds: typeof import('../utils/stats').addWatchSeconds
   const appRouter: typeof import('../utils/router/index').appRouter
+  const applyGlass: typeof import('../utils/page-feature-styles').applyGlass
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
   const browser: typeof import('webextension-polyfill')
@@ -58,6 +60,7 @@ declare global {
   const customRef: typeof import('vue').customRef
   const debouncedRef: typeof import('@vueuse/core').debouncedRef
   const debouncedWatch: typeof import('@vueuse/core').debouncedWatch
+  const debugLog: typeof import('../utils/log').debugLog
   const defaultSettings: typeof import('../stores/storeTypes').defaultSettings
   const defineAsyncComponent: typeof import('vue').defineAsyncComponent
   const defineComponent: typeof import('vue').defineComponent
@@ -95,6 +98,7 @@ declare global {
   const injectLocal: typeof import('@vueuse/core').injectLocal
   const installPageFeatureStyle: typeof import('../utils/page-feature-styles').installPageFeatureStyle
   const isBelowRatingCutoff: typeof import('../utils/row-presentation').isBelowRatingCutoff
+  const isBuiltInKeyRejected: typeof import('../utils/account').isBuiltInKeyRejected
   const isDefined: typeof import('@vueuse/core').isDefined
   const isLastEpisode: typeof import('../utils/series-finale').isLastEpisode
   const isProxy: typeof import('vue').isProxy
@@ -105,6 +109,7 @@ declare global {
   const isSetUp: typeof import('../utils/account').isSetUp
   const isShallow: typeof import('vue').isShallow
   const localDateKey: typeof import('../utils/stats').localDateKey
+  const logLookupFailure: typeof import('../utils/log').logLookupFailure
   const makeDestructurable: typeof import('@vueuse/core').makeDestructurable
   const mapActions: typeof import('pinia').mapActions
   const mapGetters: typeof import('pinia').mapGetters
@@ -122,6 +127,7 @@ declare global {
   const onBeforeRouteUpdate: typeof import('vue-router').onBeforeRouteUpdate
   const onBeforeUnmount: typeof import('vue').onBeforeUnmount
   const onBeforeUpdate: typeof import('vue').onBeforeUpdate
+  const onBuiltInKeyRejectedChanged: typeof import('../utils/account').onBuiltInKeyRejectedChanged
   const onClickOutside: typeof import('@vueuse/core').onClickOutside
   const onDeactivated: typeof import('vue').onDeactivated
   const onElementRemoval: typeof import('@vueuse/core').onElementRemoval
@@ -176,6 +182,7 @@ declare global {
   const reviewable: typeof import('../utils/credits-review').reviewable
   const saveAccount: typeof import('../utils/account').saveAccount
   const setActivePinia: typeof import('pinia').setActivePinia
+  const setBuiltInKeyRejected: typeof import('../utils/account').setBuiltInKeyRejected
   const setMapStoreSuffix: typeof import('pinia').setMapStoreSuffix
   const setRatingMode: typeof import('../utils/preferences').setRatingMode
   const setServiceState: typeof import('../utils/preferences').setServiceState
@@ -463,6 +470,7 @@ declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
     readonly BADGE_FONT: UnwrapRef<typeof import('../utils/page-feature-styles')['BADGE_FONT']>
+    readonly BUILT_IN_TMDB_TOKEN: UnwrapRef<typeof import('../utils/account')['BUILT_IN_TMDB_TOKEN']>
     readonly CheckedCards: UnwrapRef<typeof import('../utils/tmdb')['CheckedCards']>
     readonly CreditsRatingPrompt: UnwrapRef<typeof import('../utils/credits-review')['CreditsRatingPrompt']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
@@ -480,6 +488,7 @@ declare module 'vue' {
     readonly addSavedSeconds: UnwrapRef<typeof import('../utils/stats')['addSavedSeconds']>
     readonly addWatchSeconds: UnwrapRef<typeof import('../utils/stats')['addWatchSeconds']>
     readonly appRouter: UnwrapRef<typeof import('../utils/router/index')['appRouter']>
+    readonly applyGlass: UnwrapRef<typeof import('../utils/page-feature-styles')['applyGlass']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly browser: UnwrapRef<typeof import('webextension-polyfill')>
@@ -510,6 +519,7 @@ declare module 'vue' {
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>
     readonly debouncedRef: UnwrapRef<typeof import('@vueuse/core')['debouncedRef']>
     readonly debouncedWatch: UnwrapRef<typeof import('@vueuse/core')['debouncedWatch']>
+    readonly debugLog: UnwrapRef<typeof import('../utils/log')['debugLog']>
     readonly defaultSettings: UnwrapRef<typeof import('../stores/storeTypes')['defaultSettings']>
     readonly defineAsyncComponent: UnwrapRef<typeof import('vue')['defineAsyncComponent']>
     readonly defineComponent: UnwrapRef<typeof import('vue')['defineComponent']>
@@ -546,6 +556,7 @@ declare module 'vue' {
     readonly injectLocal: UnwrapRef<typeof import('@vueuse/core')['injectLocal']>
     readonly installPageFeatureStyle: UnwrapRef<typeof import('../utils/page-feature-styles')['installPageFeatureStyle']>
     readonly isBelowRatingCutoff: UnwrapRef<typeof import('../utils/row-presentation')['isBelowRatingCutoff']>
+    readonly isBuiltInKeyRejected: UnwrapRef<typeof import('../utils/account')['isBuiltInKeyRejected']>
     readonly isDefined: UnwrapRef<typeof import('@vueuse/core')['isDefined']>
     readonly isLastEpisode: UnwrapRef<typeof import('../utils/series-finale')['isLastEpisode']>
     readonly isProxy: UnwrapRef<typeof import('vue')['isProxy']>
@@ -556,6 +567,7 @@ declare module 'vue' {
     readonly isSetUp: UnwrapRef<typeof import('../utils/account')['isSetUp']>
     readonly isShallow: UnwrapRef<typeof import('vue')['isShallow']>
     readonly localDateKey: UnwrapRef<typeof import('../utils/stats')['localDateKey']>
+    readonly logLookupFailure: UnwrapRef<typeof import('../utils/log')['logLookupFailure']>
     readonly makeDestructurable: UnwrapRef<typeof import('@vueuse/core')['makeDestructurable']>
     readonly mapActions: UnwrapRef<typeof import('pinia')['mapActions']>
     readonly mapGetters: UnwrapRef<typeof import('pinia')['mapGetters']>
@@ -573,6 +585,7 @@ declare module 'vue' {
     readonly onBeforeRouteUpdate: UnwrapRef<typeof import('vue-router')['onBeforeRouteUpdate']>
     readonly onBeforeUnmount: UnwrapRef<typeof import('vue')['onBeforeUnmount']>
     readonly onBeforeUpdate: UnwrapRef<typeof import('vue')['onBeforeUpdate']>
+    readonly onBuiltInKeyRejectedChanged: UnwrapRef<typeof import('../utils/account')['onBuiltInKeyRejectedChanged']>
     readonly onClickOutside: UnwrapRef<typeof import('@vueuse/core')['onClickOutside']>
     readonly onDeactivated: UnwrapRef<typeof import('vue')['onDeactivated']>
     readonly onElementRemoval: UnwrapRef<typeof import('@vueuse/core')['onElementRemoval']>
@@ -626,6 +639,7 @@ declare module 'vue' {
     readonly reviewable: UnwrapRef<typeof import('../utils/credits-review')['reviewable']>
     readonly saveAccount: UnwrapRef<typeof import('../utils/account')['saveAccount']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
+    readonly setBuiltInKeyRejected: UnwrapRef<typeof import('../utils/account')['setBuiltInKeyRejected']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>
     readonly setRatingMode: UnwrapRef<typeof import('../utils/preferences')['setRatingMode']>
     readonly setServiceState: UnwrapRef<typeof import('../utils/preferences')['setServiceState']>

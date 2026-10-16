@@ -1,5 +1,6 @@
-import { request as networkRequest, NetworkRequestError, readJson } from "@/utils/network"
-import { getAccount, tmdbRequest } from "@/utils/account"
+import { request as networkRequest, readJson } from "@/utils/network"
+import { debugLog, logLookupFailure } from "@/utils/log"
+import { BUILT_IN_TMDB_TOKEN, getAccount, onAccountChanged, setBuiltInKeyRejected, tmdbRequest } from "@/utils/account"
 import { createProfileSync } from "@/utils/profile-sync"
 const is_DEV = process.env.NODE_ENV === "development"
 
@@ -33,7 +34,7 @@ import {
 	type LetterboxdFilm,
 	type LetterboxdProfile,
 } from "@/utils/ratings"
-console.log("background loaded")
+debugLog("background loaded")
 
 // A homepage can ask for dozens of titles at once and Letterboxd copes fine (40 parallel requests finish in ~1.3s).
 // Benchmarked on a 40-card homepage: a cap of 8 made badges slower than no cap (1.44s vs 0.90s average),
@@ -82,7 +83,7 @@ onMessage("letterboxdRating", async (message: { data: { tmdbId: number; friends:
 		const username = friends ? (await getAccount()).letterboxdUsername : ""
 		return await withLetterboxdSlot(() => fetchLetterboxdRating(tmdbId, username))
 	} catch (error) {
-		if (!(error instanceof NetworkRequestError)) console.error(error)
+		logLookupFailure("streamBuddy lookup failed:", error)
 		return { error: (error as Error).message }
 	}
 })
@@ -92,7 +93,7 @@ onMessage("letterboxdSeries", async (message: { data: { imdbId: string; friends:
 		const username = message.data.friends ? (await getAccount()).letterboxdUsername : ""
 		return await withLetterboxdSlot(() => fetchLetterboxdByImdb(message.data.imdbId, username))
 	} catch (error) {
-		if (!(error instanceof NetworkRequestError)) console.error(error)
+		logLookupFailure("streamBuddy lookup failed:", error)
 		return { error: (error as Error).message }
 	}
 })
@@ -100,7 +101,7 @@ onMessage("imdbRating", async (message: { data: { imdbId: string } }) => {
 	try {
 		return await fetchImdbRating(message.data.imdbId)
 	} catch (error) {
-		if (!(error instanceof NetworkRequestError)) console.error(error)
+		logLookupFailure("streamBuddy lookup failed:", error)
 		return { error: (error as Error).message }
 	}
 })
@@ -158,6 +159,9 @@ onMessage("letterboxdProfile", async (message: { data: { force?: boolean } }) =>
 )
 
 type FetchRequestType = "tmdb" | "noAuth"
+// a key or username saved on the settings page takes effect here straight away, not on the next worker restart
+onAccountChanged(() => {})
+
 // API keys only ever go to the API they belong to, whatever URL a content script asks for
 const AUTH_HOSTS: Partial<Record<FetchRequestType, string>> = {
 	tmdb: "api.themoviedb.org",
@@ -168,6 +172,7 @@ onMessage("fetch", async (message: { data: { url: string; type: FetchRequestType
 	const { data } = message
 	try {
 		let headers: Record<string, string>
+		let usesBuiltInKey = false
 		if (data.type === "noAuth") {
 			headers = {
 				accept: "application/json",
@@ -176,6 +181,7 @@ onMessage("fetch", async (message: { data: { url: string; type: FetchRequestType
 			const { tmdbToken } = await getAccount()
 			// not set up yet: a permanent condition, so say so instead of looking like a network blip
 			if (!tmdbToken) return { error: "setup-required" }
+			usesBuiltInKey = !!BUILT_IN_TMDB_TOKEN && tmdbToken === BUILT_IN_TMDB_TOKEN
 			const request = tmdbRequest(data.url, tmdbToken)
 			headers = request.headers
 			data.url = request.url
@@ -188,13 +194,16 @@ onMessage("fetch", async (message: { data: { url: string; type: FetchRequestType
 		return await networkRequest(
 			data.url,
 			async (response) => {
+				if (usesBuiltInKey)
+					void setBuiltInKeyRejected(response.status === 401 || response.status === 403).catch(() => {})
+				// rate limits and outages are temporary: report them rather than handing back an error body as "no results"
 				if (!response.ok && response.status !== 404) return { error: `HTTP ${response.status}` }
 				return readJson(response)
 			},
 			{ method: "GET", headers },
 		)
 	} catch (error) {
-		if (!(error instanceof NetworkRequestError)) console.error(error)
+		logLookupFailure("streamBuddy lookup failed:", error)
 		return { error: (error as Error).message }
 	}
 })

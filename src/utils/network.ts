@@ -1,7 +1,9 @@
 // Keep the deadline active through body consumption, so a stalled response cannot hold a lookup slot.
 const REQUEST_TIMEOUT_MS = 10_000
 const coolingDown = new Map<string, number>()
-export class NetworkRequestError extends Error {}
+export class NetworkRequestError extends Error {
+	override name = "NetworkRequestError"
+}
 
 export async function request<T>(
 	url: string,
