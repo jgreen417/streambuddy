@@ -160,5 +160,13 @@
 			<article data-testid="top-ten-card" class="topten"><a class="cardlink" href="/detail/smith/" aria-label="Mr. &amp; Mrs. Smith"></a><span class="num">1</span><div class="pic" data-sb-art data-sb-corner="bottom"><img alt="" src="https://art.test/art/smith._CLs|600,900|channels-logo|0,0,600,900+500,836,80,40_.svg?w=600&amp;h=900&amp;hue=350"></div></article>
 		</div>
 	</section>
+	<script>
+		// Prime redraws a large card's contents when it's hovered (to swap in the trailer). Anything else in the card,
+		// such as streamBuddy's badge, stays put, so afterwards it comes before the card's own title link.
+		for (const card of document.querySelectorAll('[data-testid="super-carousel-card"]'))
+			card.addEventListener("mouseenter", () => {
+				for (const child of [...card.children]) if (!child.classList.contains("sb-card-rating")) card.append(child)
+			}, { once: true })
+	</script>
 </body>
 </html>
