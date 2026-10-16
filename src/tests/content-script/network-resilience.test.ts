@@ -211,6 +211,65 @@ describe("cooldown edge cases", () => {
 	})
 })
 
+describe("friends' ratings failures", () => {
+	const filmPage = (url: string) => {
+		const response = new Response(
+			'<script type="application/ld+json">{"aggregateRating":{"ratingValue":4,"ratingCount":10}}</script>',
+		)
+		Object.defineProperty(response, "url", { value: url })
+		return response
+	}
+	const friendsRow =
+		'<tr><td><a href="/pal/" class="name">Pal</a></td><td class="col-rating"><span class="rating rated-8"></span></td></tr>'
+	it.each([
+		[404, undefined],
+		[403, undefined],
+		[429, true],
+		[503, true],
+	])("flags friends as unavailable for a retry only on a temporary failure (%s)", async (status, flagged) => {
+		vi.resetModules()
+		const { fetchLetterboxdRating: fetchRating } = await import("@/utils/ratings")
+		globalThis.fetch = vi.fn(async (input) =>
+			String(input).includes("/friends/")
+				? new Response("", { status })
+				: filmPage("https://letterboxd.com/film/example/"),
+		)
+		const result = await fetchRating(123, "exampleuser")
+		expect(result?.rating).toBe(4)
+		expect(result?.friends_unavailable).toBe(flagged)
+	})
+	it("keeps the friends already read when a later page fails", async () => {
+		vi.resetModules()
+		const { fetchLetterboxdRating: fetchRating } = await import("@/utils/ratings")
+		globalThis.fetch = vi.fn(async (input) => {
+			const url = String(input)
+			if (url.includes("/friends/") && url.includes("/page/2/")) return new Response("", { status: 429 })
+			if (url.includes("/friends/"))
+				return new Response(`${friendsRow}<a href="/exampleuser/friends/film/example/page/2/">2</a>`)
+			return filmPage("https://letterboxd.com/film/example/")
+		})
+		const result = await fetchRating(123, "exampleuser")
+		expect(result?.friends_unavailable).toBeUndefined()
+		expect(result?.friends_count).toBeGreaterThan(0)
+	})
+})
+
+describe("cooldown cap", () => {
+	it("caps a far-off Retry-After at 15 minutes", async () => {
+		vi.resetModules()
+		const { request } = await import("@/utils/network")
+		let calls = 0
+		globalThis.fetch = vi.fn(async () => {
+			calls++
+			return new Response("slow down", { status: 429, headers: { "Retry-After": "31536000" } })
+		})
+		await request("https://example.com/", (response) => response.status)
+		await vi.advanceTimersByTimeAsync(15 * 60_000)
+		await request("https://example.com/", (response) => response.status)
+		expect(calls).toBe(2)
+	})
+})
+
 describe("TMDb setup rate limit", () => {
 	it("returns offline during Retry-After then validates successfully without an automatic retry", async () => {
 		vi.resetModules()

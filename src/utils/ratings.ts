@@ -97,12 +97,18 @@ async function fetchLetterboxdFilm(path: string, username: string): Promise<Lett
 		assertNotTransient(response, "Letterboxd")
 		const slug = getLetterboxdSlug(response.url)
 		if (!response.ok || !slug) return null
-		const friends = username ? fetchFriendsRating(username, slug).catch(() => null) : Promise.resolve(null)
+		// a throw is a temporary failure (rate limit, outage, timeout), worth retrying; null is a lasting one
+		const friends = username
+			? fetchFriendsRating(username, slug).then(
+					(result) => ({ result, failed: false }),
+					() => ({ result: null, failed: true }),
+				)
+			: Promise.resolve({ result: null, failed: false })
 		return { html: await readText(response), url: response.url, friends }
 	})
 	if (!film) return null
 	const { html } = film
-	const friends = await film.friends
+	const { result: friends, failed: friendsFailed } = await film.friends
 	const parsed = parseLetterboxdHtml(html)
 	if (!parsed) return null
 	return {
@@ -112,7 +118,7 @@ async function fetchLetterboxdFilm(path: string, username: string): Promise<Lett
 		// count 0 means none of your friends rated it; undefined means their ratings couldn't be read
 		friends_rating: friends?.count ? friends.rating : undefined,
 		friends_count: friends?.count,
-		friends_unavailable: username && friends === null ? true : undefined,
+		friends_unavailable: friendsFailed || undefined,
 		friends: friends?.count ? friends.top : undefined,
 		tmdb: parseLetterboxdTmdbId(html),
 	}
@@ -166,11 +172,22 @@ async function fetchFriendsRating(
 	const base = `https://letterboxd.com/${username}/friends/film/${slug}/`
 	const friends: FriendRating[] = []
 	for (let page = 1; page <= MAX_FRIEND_PAGES; page++) {
-		const html = await request(page == 1 ? base : `${base}page/${page}/`, async (response) => {
-			if (!response.ok) return null
-			return readText(response)
-		})
-		if (html === null) return null
+		let html: string | null
+		try {
+			html = await request(page == 1 ? base : `${base}page/${page}/`, async (response) => {
+				// a rate limit or outage on the first page is temporary; a 404 (renamed, deleted or private profile) isn't
+				if (page == 1 && (response.status === 429 || response.status >= 500))
+					throw new TransientLookupError(`Letterboxd ${response.status}`)
+				return response.ok ? readText(response) : null
+			})
+		} catch (error) {
+			if (page == 1) throw error
+			// a later page failing keeps the friends already read
+			break
+		}
+		// unknown, as opposed to none of them rated it
+		if (html === null && page == 1) return null
+		if (html === null) break
 		friends.push(...parseFriendRows(html))
 		if (!html.includes(`/friends/film/${slug}/page/${page + 1}/`)) break
 	}

@@ -1,5 +1,6 @@
 // Keep the deadline active through body consumption, so a stalled response cannot hold a lookup slot.
 const REQUEST_TIMEOUT_MS = 10_000
+const MAX_COOLDOWN_MS = 15 * 60_000
 const coolingDown = new Map<string, number>()
 // The background is an MV3 service worker (non-persistent in Firefox), so it can unload mid-cooldown. Each host's
 // cooldown is also kept in storage under its own key, so a restarted worker still waits out a provider's Retry-After,
@@ -75,7 +76,10 @@ export async function request<T>(
 						Number.isFinite(seconds) && seconds >= 0 ? Date.now() + seconds * 1000 : Date.parse(retryAfter ?? "")
 					// a deadline that has already passed (clock skew, or Retry-After: 0) allows the next request at once;
 					// only a missing or unreadable header gets the default wait
-					const cooldownEnds = Number.isFinite(until) ? until : Date.now() + 30_000
+					// capped, so one odd header can't block a provider (and the setup checks) for days
+					const cooldownEnds = Number.isFinite(until)
+						? Math.min(until, Date.now() + MAX_COOLDOWN_MS)
+						: Date.now() + 30_000
 					if (cooldownEnds > Date.now()) {
 						coolingDown.set(host, Math.max(coolingDown.get(host) ?? 0, cooldownEnds))
 						saveCooldown(host)
