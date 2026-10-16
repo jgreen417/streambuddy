@@ -5,13 +5,21 @@ const coolingDown = new Map<string, number>()
 // kept in storage too, so a restarted worker still waits out a provider's Retry-After.
 const COOLDOWN_KEY = "networkCooldowns"
 let cooldownsLoaded: Promise<void> | undefined
+function adoptCooldowns(stored: Record<string, number> | undefined) {
+	for (const [host, until] of Object.entries(stored ?? {}))
+		if (until > Date.now()) coolingDown.set(host, Math.max(coolingDown.get(host) ?? 0, until))
+}
 function loadCooldowns() {
 	cooldownsLoaded ??= (async () => {
 		try {
 			const stored = (await browser.storage.local.get(COOLDOWN_KEY))?.[COOLDOWN_KEY] as
 				Record<string, number> | undefined
-			for (const [host, until] of Object.entries(stored ?? {}))
-				if (until > Date.now()) coolingDown.set(host, Math.max(coolingDown.get(host) ?? 0, until))
+			adoptCooldowns(stored)
+			// another context (the options page, or the background) may save a cooldown later: pick it up too
+			browser.storage.onChanged.addListener((changes, area) => {
+				if (area === "local" && changes[COOLDOWN_KEY])
+					adoptCooldowns(changes[COOLDOWN_KEY].newValue as Record<string, number>)
+			})
 		} catch {
 			// no storage (a test, or a page without extension APIs): cooldowns just don't survive a restart
 		}
@@ -64,14 +72,13 @@ export async function request<T>(
 					const seconds = retryAfter?.trim() ? Number(retryAfter) : Number.NaN
 					const until =
 						Number.isFinite(seconds) && seconds >= 0 ? Date.now() + seconds * 1000 : Date.parse(retryAfter ?? "")
-					coolingDown.set(
-						host,
-						Math.max(
-							coolingDown.get(host) ?? 0,
-							Number.isFinite(until) && until >= Date.now() ? until : Date.now() + 30_000,
-						),
-					)
-					saveCooldowns()
+					// a deadline that has already passed (clock skew, or Retry-After: 0) allows the next request at once;
+					// only a missing or unreadable header gets the default wait
+					const cooldownEnds = Number.isFinite(until) ? until : Date.now() + 30_000
+					if (cooldownEnds > Date.now()) {
+						coolingDown.set(host, Math.max(coolingDown.get(host) ?? 0, cooldownEnds))
+						saveCooldowns()
+					}
 				}
 				return consume(response)
 			})(),

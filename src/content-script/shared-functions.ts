@@ -583,11 +583,13 @@ function updateCreditsPrompt() {
 	const key = episode ? `${title}|S${episode.season}E${episode.episode}` : title
 	if (playerLookup?.title !== key || playerLookup.sources !== ratingSources())
 		playerLookup = { title: key, sources: ratingSources(), data: null, retry: 0 }
-	if (!playerLookup.pending && !playerLookup.data && playerLookup.retry <= Date.now()) {
+	// a rating whose friends' scores failed to load is shown meanwhile and looked up again once it's due a retry
+	const due = (playerLookup.data as { retryAfter?: number } | null)?.retryAfter ?? Number.POSITIVE_INFINITY
+	if (!playerLookup.pending && (!playerLookup.data || due <= Date.now()) && playerLookup.retry <= Date.now()) {
 		const current = playerLookup
 		current.pending = (episode ? lookupSeriesFinale({ ...episode, show: title }) : lookupMovieInfo(title, null, null))
 			.then((data) => {
-				current.data = data
+				current.data = data ?? current.data
 			})
 			.catch(() => {})
 			.finally(() => {
