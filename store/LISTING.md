@@ -23,7 +23,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > • Friends' average rating on matched films, and who rated them
 > • Your own stars on films you've logged, with watchlisted films marked
 > • Add to your Letterboxd watchlist from a title page
-> • A review card as the credits roll, with what your friends thought and a one-click Rate on Letterboxd
+> • A review pill as the credits roll: your friends' ratings and a one-click Rate on Letterboxd
 >
 > FIND THE GOOD STUFF FASTER
 > • A rating panel on title pages, with friends' stars
@@ -64,7 +64,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 **Screenshots** (1280×800, upload in this order, replacing the 1.0.0 one):
 1. `store/screenshots/netflix-ratings.png`: live Netflix home rows with the Buddy badge
-2. `store/screenshots/review-pill.png`: the review card over Netflix's end credits (rendered from `design/bet-prototypes/after-credits.html` with the notes and the dropped watchlist row removed; only upload once the review pill has shipped)
+2. `store/screenshots/review-pill.png`: the review card over Netflix's end credits (the shipped pill, opened, rendered by the visual-check harness at 1280×800 with fuller credits and player controls drawn in)
 3. `store/screenshots/badge-looks.png`: Classic and Liquid Glass badges side by side
 4. `store/screenshots/popup-settings.png`: the toolbar popup with the main switches
 

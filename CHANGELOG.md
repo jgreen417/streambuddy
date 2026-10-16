@@ -1,5 +1,11 @@
 # Changelog
 
+# streamBuddy 1.0.2
+
+- When a film's credits start, a small "Review" pill appears beside the player with your friends' average. Open it to see who rated the film, then rate it on Letterboxd in one click. On Netflix it sits bottom left, clear of the next-title preview.
+- Netflix episode cards (such as pilot rows) now show their series' rating.
+- Prime Video: large-card badges stay put after a hover, and unrated cards are no longer rechecked every second.
+
 # streamBuddy 1.0.1
 
 - A new look: a new logo (two friends on the couch), a warm dark palette with tangerine highlights and the Bricolage Grotesque typeface in the popup and settings.
