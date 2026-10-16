@@ -137,6 +137,44 @@ describe("provider cooldowns across background restarts", () => {
 	})
 })
 
+describe("provider cooldowns shared by several extension contexts", () => {
+	it("keeps another context's cooldown when saving its own", async () => {
+		const browser = await import("webextension-polyfill")
+		let saved: Record<string, unknown> = {}
+		vi.mocked(browser.storage.local.set).mockImplementation(async (items) => {
+			saved = { ...saved, ...items }
+		})
+		vi.mocked(browser.storage.local.get).mockImplementation(async () => saved as never)
+		const calls: string[] = []
+		globalThis.fetch = vi.fn(async (input) => {
+			calls.push(new URL(String(input)).hostname)
+			return new Response("slow down", { status: 429, headers: { "Retry-After": "600" } })
+		})
+		vi.resetModules()
+		const options = await import("@/utils/network")
+		// the options page loads its (empty) snapshot first
+		await options.request("https://example.org/", (response) => response.status).catch(() => {})
+		vi.resetModules()
+		const background = await import("@/utils/network")
+		await background.request("https://letterboxd.com/film/a/", (response) => response.status)
+		await vi.waitFor(() => expect(Object.keys((saved.networkCooldowns as object) ?? {})).toContain("letterboxd.com"))
+		await options.request("https://api.themoviedb.org/3/configuration", (response) => response.status)
+		await vi.waitFor(() =>
+			expect(Object.keys(saved.networkCooldowns as object)).toEqual(
+				expect.arrayContaining(["letterboxd.com", "api.themoviedb.org"]),
+			),
+		)
+		vi.resetModules()
+		const restarted = await import("@/utils/network")
+		await expect(restarted.request("https://letterboxd.com/film/b/", (response) => response.status)).rejects.toThrow(
+			"429",
+		)
+		expect(calls.filter((host) => host === "letterboxd.com")).toHaveLength(1)
+		vi.mocked(browser.storage.local.get).mockReset()
+		vi.mocked(browser.storage.local.set).mockReset()
+	})
+})
+
 describe("TMDb setup rate limit", () => {
 	it("returns offline during Retry-After then validates successfully without an automatic retry", async () => {
 		vi.resetModules()

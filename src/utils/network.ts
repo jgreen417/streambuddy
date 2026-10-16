@@ -18,11 +18,19 @@ function loadCooldowns() {
 	})()
 	return cooldownsLoaded
 }
+// Merge rather than replace: the options page and the background each keep their own map, so one context's save
+// must not drop a deadline the other wrote.
 function saveCooldowns() {
-	const now = Date.now()
-	const active = Object.fromEntries([...coolingDown].filter(([, until]) => until > now))
 	Promise.resolve()
-		.then(() => browser.storage.local.set({ [COOLDOWN_KEY]: active }))
+		.then(async () => {
+			const stored = (await browser.storage.local.get(COOLDOWN_KEY))?.[COOLDOWN_KEY] as
+				Record<string, number> | undefined
+			const now = Date.now()
+			const merged: Record<string, number> = {}
+			for (const [host, until] of [...Object.entries(stored ?? {}), ...coolingDown])
+				if (until > now) merged[host] = Math.max(merged[host] ?? 0, until)
+			await browser.storage.local.set({ [COOLDOWN_KEY]: merged })
+		})
 		.catch(() => {})
 }
 export class NetworkRequestError extends Error {
