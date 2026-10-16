@@ -115,6 +115,11 @@ async function fetchLetterboxdFilm(path: string, username: string): Promise<Lett
 export function fetchLetterboxdRating(tmdbMovieId: number, username = ""): Promise<LetterboxdFilm | null> {
 	return fetchLetterboxdFilm(`/tmdb/${tmdbMovieId}/`, username)
 }
+// Letterboxd's /tmdb/{id} only understands film ids, but its /imdb/{id} finds the limited series it lists as films
+export function fetchLetterboxdByImdb(imdbId: string, username = ""): Promise<LetterboxdFilm | null> {
+	if (!/^tt\d+$/.test(imdbId)) return Promise.resolve(null)
+	return fetchLetterboxdFilm(`/imdb/${imdbId}/`, username)
+}
 export function fetchLetterboxdGuess(slug: string, username = ""): Promise<LetterboxdFilm | null> {
 	return fetchLetterboxdFilm(`/film/${slug}/`, username)
 }

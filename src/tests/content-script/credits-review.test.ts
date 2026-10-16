@@ -118,13 +118,29 @@ describe("credits review", () => {
 		// an hour-long film's credits are taken to start 4.2 minutes from the end
 		prompt.tick(video(3300), film, true, signedIn)
 		expect(review()).toBeNull()
-		prompt.tick(video(3400), { ...film, media_type: "tv" }, true, signedIn)
+		// a show with no Letterboxd page is ongoing TV
+		prompt.tick(video(3400), { ...film, media_type: "tv", source: "imdb" }, true, signedIn)
 		expect(review()).toBeNull()
 		prompt.tick(video(3400), film, true, signedIn)
 		expect(review()).not.toBeNull()
 		document.querySelector<HTMLButtonElement>(".sb-review-close")!.click()
 		prompt.tick(video(3400), film, true, signedIn)
 		expect(review()).toBeNull()
+	})
+	it("shows for a limited series Letterboxd lists, apart from a film with the same id", () => {
+		document.body.innerHTML = ""
+		const prompt = new CreditsRatingPrompt()
+		const series: FeatureRating = {
+			...film,
+			title: "Chernobyl",
+			media_type: "tv",
+			rating_url: "https://letterboxd.com/film/chernobyl/",
+		}
+		prompt.tick(video(3400), series, true, signedIn)
+		expect(review()?.textContent).toContain("You just finished Chernobyl")
+		document.querySelector<HTMLButtonElement>(".sb-review-close")!.click()
+		prompt.tick(video(3400), film, true, signedIn)
+		expect(review()?.textContent).toContain("Past Lives")
 	})
 	it("uses the service's own credits start when it has one", () => {
 		document.body.innerHTML = ""

@@ -22,7 +22,10 @@ import {
 } from "@/utils/page-features"
 import { CreditsRatingPrompt, creditsLength, inCredits } from "@/utils/credits-review"
 import { fetchNetflixMetadata, parseNetflixCredits, type NetflixCredits } from "@/utils/netflix-credits"
+import { isLastEpisode, parseEpisodeLabel, shareLookup, type PlayingEpisode } from "@/utils/series-finale"
 import { NetflixShowTitles, getEpisodeId } from "@/utils/netflix-shows"
+import { hbo } from "@/playback/sites/hbo"
+import { prime } from "@/playback/sites/prime"
 import {
 	addWatchSeconds,
 	localDateKey,
@@ -534,20 +537,21 @@ function updateCreditsPrompt() {
 	// how long Netflix says the credits run, when it does
 	const marked = video && netflix?.creditsShare ? netflix.creditsShare * video.duration : undefined
 	// look the film up a couple of minutes before its credits, so it's ready when they start
-	if (!video || !inCredits(video, (marked ?? creditsLength(video.duration)) + 2 * 60) || netflix?.movie === false) {
+	if (!video || !inCredits(video, (marked ?? creditsLength(video.duration)) + 2 * 60)) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
-	if (
-		document.querySelector('[data-testid="player-ux-season-episode"]') ||
-		/(?:S\d+\s*:?\s*E\d+|Season\s+\d+|Episode\s+\d+)/i.test(document.title)
-	) {
+	// films, and the last episode of a limited series; never the rest of a show
+	const episode = playingEpisode(netflix)
+	if (episode === null) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
-	const raw = isNetflix
-		? (netflix?.title ?? document.querySelector('[data-uia="video-title"] h4')?.textContent)
-		: document.title
+	const raw = episode
+		? episode.show
+		: isNetflix
+			? (netflix?.title ?? document.querySelector('[data-uia="video-title"] h4')?.textContent)
+			: document.title
 	const title = raw
 		?.replace(/^Prime Video:\s*/i, "")
 		.split(/\s*[•·|]\s*/)[0]
@@ -556,11 +560,12 @@ function updateCreditsPrompt() {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
-	if (playerLookup?.title !== title || playerLookup.sources !== ratingSources())
-		playerLookup = { title, sources: ratingSources(), data: null, retry: 0 }
+	const key = episode ? `${title}|S${episode.season}E${episode.episode}` : title
+	if (playerLookup?.title !== key || playerLookup.sources !== ratingSources())
+		playerLookup = { title: key, sources: ratingSources(), data: null, retry: 0 }
 	if (!playerLookup.pending && !playerLookup.data && playerLookup.retry <= Date.now()) {
 		const current = playerLookup
-		current.pending = lookupMovieInfo(title, null, null)
+		current.pending = (episode ? lookupSeriesFinale({ ...episode, show: title }) : lookupMovieInfo(title, null, null))
 			.then((data) => {
 				current.data = data
 			})
@@ -590,6 +595,88 @@ function updateCreditsPrompt() {
 	if (creditsPrompt.showing) {
 		creditsShownFor = video.duration
 		placeCreditsReview()
+	}
+}
+// the episode playing, if it's one: undefined for a film, null for an episode that isn't a limited series' finale
+// (or one that can't be placed in its show)
+function playingEpisode(netflix: NetflixCredits | undefined): PlayingEpisode | null | undefined {
+	if (netflix && !netflix.movie) {
+		const episode = netflix.episode
+		return episode?.last ? { show: netflix.title, season: episode.season, episode: episode.number } : null
+	}
+	if (isNetflix) return undefined
+	const text = (selector: string) => document.querySelector(selector)?.textContent?.trim()
+	// as the playback adapters read them: Prime's newer players label the episode in episode-info, and Max's
+	// player can be missing its show title
+	const place = parseEpisodeLabel(
+		isHBO
+			? text('[data-testid="player-ux-season-episode"]')
+			: text(".atvwebplayersdk-episode-info") || text(".atvwebplayersdk-subtitle-text"),
+	)
+	const show = (isHBO ? hbo : prime).showTitle()
+	if (place && show) return { show, ...place }
+	if (
+		document.querySelector('[data-testid="player-ux-season-episode"]') ||
+		/(?:S\d+\s*:?\s*E\d+|Season\s+\d+|Episode\s+\d+)/i.test(document.title)
+	)
+		return null
+	return undefined
+}
+// a show's last episode gets the pill when Letterboxd has a page for the show, which it only has for limited series.
+// TMDb's episode counts decide, even on Netflix, which marks the newest episode of a weekly release as its last.
+const finaleLookups = new Map<string, Promise<MovieInfo | null>>()
+function lookupSeriesFinale(episode: PlayingEpisode): Promise<MovieInfo | null> {
+	const key = `${episode.show}|S${episode.season}E${episode.episode}|${settings.value.General.friendsRatings}`
+	return shareLookup(finaleLookups, key, () => findSeriesFinale(episode))
+}
+async function findSeriesFinale({ show, season, episode }: PlayingEpisode): Promise<MovieInfo | null> {
+	const locale = htmlLang || navigator?.language || "en-US"
+	const search: TMDBResponse & { error?: string } = await sendMessage(
+		"fetch",
+		{
+			url: `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(show)}&include_adult=false&language=${locale}&page=1`,
+			type: "tmdb",
+		},
+		"background",
+	)
+	if (!search || search.error) return null
+	const match = pickBestMatch(search.results, show)
+	if (!match?.id) return null
+	const details: {
+		seasons?: Array<{ season_number?: number; episode_count?: number }>
+		external_ids?: { imdb_id?: string | null }
+		error?: string
+	} = await sendMessage(
+		"fetch",
+		{ url: `https://api.themoviedb.org/3/tv/${match.id}?append_to_response=external_ids`, type: "tmdb" },
+		"background",
+	)
+	if (!details || details.error || !isLastEpisode(details.seasons, season, episode)) return null
+	const imdbId = details.external_ids?.imdb_id
+	if (!imdbId) return null
+	const letterboxd: ExternalResult = await sendMessage(
+		"letterboxdSeries",
+		{ imdbId, friends: settings.value.General.friendsRatings },
+		"background",
+	)
+	if (!letterboxd || isLookupError(letterboxd)) return null
+	return {
+		id: match.id,
+		media_type: "tv",
+		title: match.name || match.original_name || show,
+		score: match.vote_average,
+		vote_count: match.vote_count,
+		release_date: match.first_air_date,
+		poster_path: match.poster_path ?? null,
+		date: today,
+		db: "tmdb",
+		source: letterboxd.source,
+		rating: letterboxd.rating,
+		rating_count: letterboxd.rating_count,
+		rating_url: letterboxd.url,
+		friends_rating: letterboxd.friends_rating,
+		friends_count: letterboxd.friends_count,
+		friends: letterboxd.friends,
 	}
 }
 // the longest video on the page is the film: Prime keeps its detail page's trailer underneath the player
