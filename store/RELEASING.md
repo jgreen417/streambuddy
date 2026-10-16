@@ -29,23 +29,24 @@ Add these as secrets of a GitHub environment named `stores` (Settings → Enviro
 
 ### Google Cloud setup for Chrome
 
-Chrome signs in without a key file: Google trusts GitHub's identity token for runs of this repository and lets them act as a service account (Workload Identity Federation). New Google Cloud accounts block service account keys by default, so this is also the only route that works there.
+Chrome signs in without a key file: Google trusts GitHub's identity token only for jobs of this repository that run in the `stores` environment (so they pass its required reviewers) and lets them act as a service account (Workload Identity Federation). New Google Cloud accounts block service account keys by default, so this is also the only route that works there.
 
 1. In the [Google Cloud console](https://console.cloud.google.com), create a project, then open Cloud Shell (the `>_` button, top right) and run:
 
    ```sh
    PROJECT_ID=$(gcloud config get-value project)
+   gcloud services enable chromewebstore.googleapis.com iam.googleapis.com iamcredentials.googleapis.com \
+     sts.googleapis.com cloudresourcemanager.googleapis.com
    PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
-   gcloud services enable chromewebstore.googleapis.com iamcredentials.googleapis.com sts.googleapis.com
    gcloud iam service-accounts create streambuddy-release --display-name="streamBuddy release"
    gcloud iam workload-identity-pools create github --location=global --display-name="GitHub"
    gcloud iam workload-identity-pools providers create-oidc streambuddy --location=global \
      --workload-identity-pool=github --issuer-uri=https://token.actions.githubusercontent.com \
-     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
-     --attribute-condition="assertion.repository=='jgreen417/streambuddy'"
+     --attribute-mapping="google.subject=assertion.sub" \
+     --attribute-condition="assertion.sub=='repo:jgreen417/streambuddy:environment:stores'"
    gcloud iam service-accounts add-iam-policy-binding \
      "streambuddy-release@$PROJECT_ID.iam.gserviceaccount.com" --role=roles/iam.workloadIdentityUser \
-     --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/jgreen417/streambuddy"
+     --member="principal://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/subject/repo:jgreen417/streambuddy:environment:stores"
    echo "GCP_WORKLOAD_IDENTITY_PROVIDER: projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/streambuddy"
    echo "CWS_SERVICE_ACCOUNT: streambuddy-release@$PROJECT_ID.iam.gserviceaccount.com"
    ```
