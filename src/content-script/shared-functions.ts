@@ -38,17 +38,13 @@ import {
 	type WatchTimerState,
 	watchTick,
 } from "@/utils/stats"
-debugLog("shared-functions loaded")
 
 // exported for tests
 export const { data: settings, promise } = useBrowserSyncStorage<settingsType>("settings", defaultSettings)
-export const date = new Date()
-const today = date.toISOString().split("T")[0]
+// the cache dates entries by day (UTC)
+const today = () => new Date().toISOString().split("T")[0]
 
-const isMobile = /mobile/i.test(navigator.userAgent)
-let url = globalThis.location.href
-const htmlLang = document.documentElement.lang
-const locale = () => htmlLang || navigator?.language || "en-US"
+const locale = () => document.documentElement.lang || navigator?.language || "en-US"
 
 let DBCache: DBCacheType = {}
 
@@ -56,6 +52,7 @@ let DBCache: DBCacheType = {}
 let site: RatingsSite | null = null
 export async function startSharedFunctions(service: RatingsSite) {
 	site = service
+	watchSettings()
 	startWatchTimer(service)
 	loadLetterboxdProfile()
 
@@ -105,7 +102,7 @@ async function getDBCache() {
 		DBCache = {}
 	}
 	if (ratingsEnabled()) startShowRatingInterval()
-	if (getDiffInDays(settings.value.General.GCdate, date) >= GCdiff) garbageCollection()
+	if (getDiffInDays(settings.value.General.GCdate, new Date()) >= GCdiff) garbageCollection()
 
 	browser.storage.onChanged.addListener(function (changes, areaName) {
 		if (areaName === "local" && changes?.DBCache) DBCache = changes.DBCache.newValue as DBCacheType
@@ -134,12 +131,12 @@ async function garbageCollection() {
 	debugLog("garbageCollection started, deleting old ratings:")
 	const keys = Object.keys(DBCache)
 	for (const key of keys) {
-		if (getDiffInDays(DBCache[key].date, date) >= GCdiff || DBCache[key].db != "tmdb") {
+		if (getDiffInDays(DBCache[key].date, new Date()) >= GCdiff || DBCache[key].db != "tmdb") {
 			debugLog(DBCache[key].date, key)
 			delete DBCache[key]
 		}
 	}
-	settings.value.General.GCdate = today
+	settings.value.General.GCdate = today()
 	setDBCache()
 }
 // #region startSharedFuncs
@@ -204,7 +201,7 @@ export async function lookupMovieInfo(
 		release_date: movie.release_date || movie.first_air_date,
 		title: movie.title || movie.original_title || movie.name || movie.original_name,
 		poster_path: movie.poster_path ?? null,
-		date: today,
+		date: today(),
 		db: "tmdb",
 		source: external.rating?.source ?? "tmdb",
 		rating: external.rating?.rating,
@@ -286,33 +283,36 @@ function refreshRowPresentation(redrawAll = false) {
 		},
 	)
 }
-watch(
-	() => [
-		settings.value.General.fadeWatched,
-		settings.value.General.hideBelowRating,
-		settings.value.General.dimBelowBand,
-		settings.value.Netflix?.showRating,
-		settings.value.Amazon?.showRating,
-		settings.value.HBO?.showRating,
-	],
-	() => refreshRowPresentation(),
-)
-// badges read these when they're drawn, so redraw the ones on screen; settled first, as the glass slider fires per step
 let badgeRedrawTimer: ReturnType<typeof setTimeout> | undefined
-watch(
-	() => [
-		settings.value.General.ratingSources,
-		settings.value.General.friendsRatings,
-		settings.value.General.friendsStyle,
-		settings.value.General.badgeStyle,
-		settings.value.General.glassFrost,
-		settings.value.General.markWatched,
-	],
-	() => {
-		clearTimeout(badgeRedrawTimer)
-		badgeRedrawTimer = setTimeout(() => refreshRowPresentation(true), 150)
-	},
-)
+// row filters and badge looks follow the settings as they change
+function watchSettings() {
+	watch(
+		() => [
+			settings.value.General.fadeWatched,
+			settings.value.General.hideBelowRating,
+			settings.value.General.dimBelowBand,
+			settings.value.Netflix?.showRating,
+			settings.value.Amazon?.showRating,
+			settings.value.HBO?.showRating,
+		],
+		() => refreshRowPresentation(),
+	)
+	// badges read these when they're drawn, so redraw the ones on screen; settled first, as the glass slider fires per step
+	watch(
+		() => [
+			settings.value.General.ratingSources,
+			settings.value.General.friendsRatings,
+			settings.value.General.friendsStyle,
+			settings.value.General.badgeStyle,
+			settings.value.General.glassFrost,
+			settings.value.General.markWatched,
+		],
+		() => {
+			clearTimeout(badgeRedrawTimer)
+			badgeRedrawTimer = setTimeout(() => refreshRowPresentation(true), 150)
+		},
+	)
+}
 let watchlistSlugs = new Set<string>()
 
 const searchSorting = new SearchRatingSort()
@@ -485,7 +485,7 @@ async function lookupFinale(episode: PlayingEpisode): Promise<MovieInfo | null> 
 		vote_count: match.vote_count,
 		release_date: match.first_air_date,
 		poster_path: match.poster_path ?? null,
-		date: today,
+		date: today(),
 		db: "tmdb",
 		source: letterboxd.source,
 		rating: letterboxd.rating,
@@ -593,30 +593,30 @@ export function getDiffInDays(firstDate: string, secondDate: Date) {
 // 4. Condition Cached Rating older than 1 day, Vote count under 100 and Release date in the last 50 days -> Fetch Rating
 // 5. Condition if media_type is not matching -> Fetch Rating
 function useDBCache(title: string, card: HTMLElement, media_type: string | null) {
-	DBCache[title].date ||= today
+	DBCache[title].date ||= today()
 	const vote_count = DBCache[title].vote_count || 100
 	const diffInReleaseDate =
 		// under 100 votes the rating is still settling
 		vote_count < 100 &&
 		// not refreshed in the last day
-		getDiffInDays(DBCache[title].date, date) > 1 &&
+		getDiffInDays(DBCache[title].date, new Date()) > 1 &&
 		// released in the last 50 days
-		getDiffInDays(DBCache[title].release_date, date) <= 50
+		getDiffInDays(DBCache[title].release_date, new Date()) <= 50
 
 	// refresh rating if older than 30 days or release date is in last month and vote count is under 100
-	if (getDiffInDays(DBCache[title].date, date) >= GCdiff || diffInReleaseDate) {
+	if (getDiffInDays(DBCache[title].date, new Date()) >= GCdiff || diffInReleaseDate) {
 		if (diffInReleaseDate)
 			debugLog(
 				"update recent movie:",
 				title,
 				",refresh:",
-				getDiffInDays(DBCache[title].date, date),
+				getDiffInDays(DBCache[title].date, new Date()),
 				",Age:",
-				getDiffInDays(DBCache[title].release_date, date),
+				getDiffInDays(DBCache[title].release_date, new Date()),
 				"Vote count:",
 				vote_count,
 			)
-		else debugLog("update old rating:", title, ",Age:", getDiffInDays(DBCache[title].date, date))
+		else debugLog("update old rating:", title, ",Age:", getDiffInDays(DBCache[title].date, new Date()))
 		getMovieInfo(title, card, media_type)
 	} else {
 		setRatingOnCard(card, DBCache[title], title)
@@ -639,7 +639,7 @@ function isElementVisible(el: HTMLElement): boolean {
 
 async function addRating() {
 	if (!site) return
-	url = globalThis.location.href
+	const url = globalThis.location.href
 	const AllTitleCardsTypes = site.titleCards()
 	// a card can hold several images of the same title, so only use the first one
 	let lastTitle = ""
@@ -665,7 +665,7 @@ async function addRating() {
 			if (
 				isCacheCurrent(DBCache[title]) &&
 				// a Letterboxd/IMDb rating counts even when TMDb has no votes; unrated titles are retried after a week
-				(DBCache[title].rating || DBCache[title].score || getDiffInDays(DBCache[title].date, date) <= 7) &&
+				(DBCache[title].rating || DBCache[title].score || getDiffInDays(DBCache[title].date, new Date()) <= 7) &&
 				(!media_type || DBCache[title].media_type == media_type)
 			) {
 				useDBCache(title, card, media_type)
@@ -1023,7 +1023,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		fontVariantNumeric: "tabular-nums",
 		lineHeight: "1",
 		zIndex: site.badge.zIndex,
-		fontSize: isMobile ? "clamp(13px, 4vw, 19px)" : "clamp(13px, 0.95vw, 17px)",
+		fontSize: /mobile/i.test(navigator.userAgent) ? "clamp(13px, 4vw, 19px)" : "clamp(13px, 0.95vw, 17px)",
 	})
 
 	if (settings.value.General.badgeStyle === "glass") applyGlass(div, settings.value.General.glassFrost)
