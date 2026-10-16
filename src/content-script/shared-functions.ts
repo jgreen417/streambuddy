@@ -9,7 +9,7 @@ import {
 	type LetterboxdProfile,
 	type RatingSource,
 } from "@/utils/ratings"
-import { pickBestMatch } from "@/utils/tmdb"
+import { CheckedCards, isSeasonOnlyTitle, pickBestMatch } from "@/utils/tmdb"
 import { getAccount, onAccountChanged } from "@/utils/account"
 import type { StreamingService } from "@/constants/streamingServices"
 import { RowPresentation, normalizeRowScore, isBelowRatingCutoff } from "@/utils/row-presentation"
@@ -185,6 +185,9 @@ type TMDBResponse = {
 
 // The same title often sits in several rows; share one lookup between all of its cards
 const lookupsInFlight = new Map<string, Promise<MovieInfo | null>>()
+const checkedCards = new CheckedCards()
+// switching rating sources can turn an unrated title into a rated one, so a card is checked again under new sources
+const checkedKey = (title: string) => `${title}|${ratingSources()}`
 async function getMovieInfo(
 	title: string,
 	card: HTMLElement,
@@ -206,6 +209,8 @@ async function getMovieInfo(
 		return
 	}
 	if (info) setRatingOnCard(card, info, title)
+	// no match, or TMDb unreachable: try this card again in a while rather than on every tick
+	else checkedCards.mark(card, checkedKey(title), Date.now() + 30_000)
 }
 
 export async function lookupMovieInfo(
@@ -782,6 +787,7 @@ async function addRating() {
 					card.classList.remove("imdb")
 				continue
 			}
+			if (checkedCards.isChecked(card, checkedKey(title))) continue
 			{
 				// sometimes more than one image is loaded for the same title
 				if (lastTitle != title && !title.includes("Netflix") && !title.includes("Prime Video")) {
@@ -848,6 +854,7 @@ function getCleanTitle(card: HTMLElement, type: number): string | undefined {
 			if (type == 0) title = Amazon_fixTitle(card.dataset.cardTitle ?? "")
 			else if (type == 1) title = Amazon_fixTitle(link.getAttribute("aria-label") ?? "")
 		}
+		if (title && isSeasonOnlyTitle(title)) title = undefined
 	} else if (isHBO) {
 		const href = card.getAttribute("href") || ""
 		if (
@@ -1219,6 +1226,8 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		card.closest("li")?.classList.remove("imdb")
 		return
 	}
+	// a card picked up again while its lookup was in flight waits on the same lookup; draw its badge only once
+	if (rowCardTitles.get(card) === title && rowCardDecorations.get(card)?.[0]?.isConnected) return
 	let div: HTMLElement
 	if (data?.id) {
 		{
@@ -1234,6 +1243,10 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	const hasRating = (data?.source !== "tmdb" && !!data?.rating) || data?.score > 0
 	if (!hasRating) {
 		console.log("no score found:", title, data, card)
+		// Prime's card selectors can't skip cards already seen, so remember it. A cached unrated title is looked up
+		// again once the cache refreshes it (a week), which needs a page load anyway; a result left uncached because
+		// Letterboxd/IMDb failed for a moment is retried shortly
+		checkedCards.mark(card, checkedKey(title), DBCache[title] === data ? Number.POSITIVE_INFINITY : Date.now() + 30_000)
 		return
 	}
 	const vote_count = getRatingVoteCount(data)
