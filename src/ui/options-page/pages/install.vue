@@ -58,14 +58,14 @@ const { account, ratingsPaused } = useAccount()
 	margin-top: 16px;
 	padding: 12px 14px;
 	border-radius: 10px;
-	background: rgba(0, 224, 84, 0.1);
-	border: 1px solid rgba(0, 224, 84, 0.25);
-	color: #fbf4ec;
+	background: var(--sb-welcome-wash);
+	border: 1px solid var(--sb-welcome-line);
+	color: var(--sb-text);
 }
 .sb-more {
 	margin-top: 16px;
 }
 .sb-more a {
-	color: #8ec5ff;
+	color: var(--sb-info);
 }
 </style>

@@ -1,5 +1,6 @@
 import { debugLog, logLookupFailure } from "@/utils/log"
-import { applyGlass, BADGE_FONT, installPageFeatureStyle } from "@/utils/page-feature-styles"
+import { color, ease, font, friendColors as FRIEND_DOT_COLORS, shadow } from "@/design/tokens"
+import { applyGlass, installPageFeatureStyle } from "@/utils/page-feature-styles"
 import { sendMessage } from "webext-bridge/content-script"
 import {
 	getLetterboxdSlug,
@@ -1028,7 +1029,7 @@ function Amazon_fixTitle(title: string | undefined) {
 // TMDb is only the fallback: colour it on the IMDb scale (both are out of 10), grey when too few people voted
 const TMDB_LOW_RATING = 5.5
 function getTmdbColor(rating: number, lowVoteCount: boolean) {
-	return !rating || lowVoteCount ? "#b3aaa1" : getScoreColor("imdb", rating)
+	return !rating || lowVoteCount ? color.badgeUnrated : getScoreColor("imdb", rating)
 }
 // Letterboxd and IMDb dim by colour band (the cut-off is picked in the popup); TMDb keeps the old threshold
 function isDimmed(data: MovieInfo, lowVoteCount: boolean) {
@@ -1051,16 +1052,13 @@ function getRatingVoteCount(data: MovieInfo) {
 // A popcorn chip: the score in a pill coloured by how it ranks among what's streaming, then, smaller, friends'
 // Letterboxd average and your own status (your rating, seen, or on your watchlist), labelled or as dots per the
 // friendsStyle setting. The exact score and scale are in the tooltip; colour adds context rather than carrying the meaning.
-const BADGE_INK = "#1b1918"
 // colours inside the badge go through variables so the Liquid Glass look can switch them to light-on-glass
-const BADGE_LABEL = "var(--sb-label, #7a716a)"
-const BADGE_TEXT = "var(--sb-ink, #1b1918)"
-const BADGE_WATCHLIST = "var(--sb-watch, #2f6fb5)"
-const BADGE_CHIP = "var(--sb-chip, #fbf4ec)"
+const BADGE_LABEL = `var(--sb-badge-label, ${color.badgeLabel})`
+const BADGE_TEXT = `var(--sb-badge-ink, ${color.badgeInk})`
+const BADGE_WATCHLIST = `var(--sb-badge-watchlist, ${color.badgeWatchlist})`
+const BADGE_CHIP = `var(--sb-badge-bg, ${color.badgeBg})`
 // the small column beside the score: friends/you lines, or the IMDb/TMDb source name
 const LABEL_COLUMN_STYLE = { padding: "0 0.5em 0 0.45em", fontSize: "max(10px, 0.72em)", fontWeight: "800" }
-// the first three are also the fixed trio
-const FRIEND_DOT_COLORS = ["#ff7a45", "#8ec5ff", "#f2c94c", "#7ad9a0", "#c9a7ff"]
 function addBadgeSegment(div: HTMLElement, text: string, color = BADGE_TEXT) {
 	const segment = document.createElement("span")
 	Object.assign(segment.style, {
@@ -1168,7 +1166,7 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 		letterSpacing: "-0.02em",
 		whiteSpace: "nowrap",
 		// dark on the band colour in both badge looks
-		color: BADGE_INK,
+		color: color.badgeInk,
 		textShadow: "none",
 	})
 	const tooltip: string[] = []
@@ -1183,7 +1181,7 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 		tooltip.push(`IMDb ${data.rating?.toFixed(1)}/10 · ${formatCount(data.rating_count)} ratings`)
 	} else {
 		value = data.score?.toFixed(1) ?? ""
-		main.style.background = tmdbColor ?? "#b3aaa1"
+		main.style.background = tmdbColor ?? color.badgeUnrated
 		tooltip.push(`TMDb ${data.score?.toFixed(1)}/10 (no Letterboxd or IMDb rating)`)
 	}
 	main.append(prefix + value)
@@ -1198,7 +1196,7 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 	const labelled = settings.value.General.friendsStyle === "labels"
 	let column: HTMLElement | undefined
 	if (data.source === "letterboxd" && data.friends_rating && settings.value.General.friendsRatings) {
-		if (labelled) column = addLabelLine(div, column, "#ff7a45", "friends", data.friends_rating.toFixed(1))
+		if (labelled) column = addLabelLine(div, column, color.accent, "friends", data.friends_rating.toFixed(1))
 		else {
 			const segment = addBadgeSegment(div, data.friends_rating.toFixed(1))
 			segment.prepend(friendsIcon(data.friends ?? [], data.friends_count ?? 1))
@@ -1210,11 +1208,11 @@ function fillBadge(div: HTMLElement, data: MovieInfo, prefix: string, tmdbColor:
 	}
 	const personal = getPersonalStatus(data)
 	if (personal.watched !== undefined) {
-		if (labelled) addLabelLine(div, column, "#8ec5ff", "you", personal.watched ? personal.watched.toFixed(1) : "seen")
+		if (labelled) addLabelLine(div, column, color.info, "you", personal.watched ? personal.watched.toFixed(1) : "seen")
 		else addBadgeSegment(div, personal.watched ? `✓ you ${personal.watched.toFixed(1)}` : "✓ seen")
 		tooltip.push(personal.watched ? `You rated it ${personal.watched.toFixed(1)}` : "You've logged it")
 	} else if (personal.watchlist) {
-		if (labelled) addLabelLine(div, column, "#8ec5ff", "you", "watchlist", BADGE_WATCHLIST)
+		if (labelled) addLabelLine(div, column, color.info, "you", "watchlist", BADGE_WATCHLIST)
 		else addBadgeSegment(div, "watchlist", BADGE_WATCHLIST)
 		tooltip.push("On your watchlist")
 	}
@@ -1380,14 +1378,13 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		color: BADGE_TEXT,
 		textDecoration: "none",
 		background: BADGE_CHIP,
-		// a sticker, not glass: a hard drop shadow lifts it off any artwork
-		boxShadow: "0 3px 0 rgba(0, 0, 0, 0.35)",
+		boxShadow: shadow.sticker,
 		borderRadius: "1.1em",
 		opacity: "0",
 		transform: "translateY(2px)",
-		transition: "opacity 160ms ease-out, transform 220ms cubic-bezier(0.3, 0.7, 0.2, 1)",
+		transition: `opacity 160ms ease-out, transform 220ms ${ease.settle}`,
 		padding: `${BADGE_PAD_PX}px`,
-		fontFamily: `${BADGE_FONT}, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif`,
+		fontFamily: font.page,
 		fontWeight: "700",
 		fontVariantNumeric: "tabular-nums",
 		lineHeight: "1",
@@ -1433,7 +1430,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		left: 0,
 		right: 0,
 		bottom: 0,
-		background: "rgba(40, 40, 40, 0.7)",
+		background: color.dimOverlay,
 		pointerEvents: "none",
 		zIndex: 2,
 	})

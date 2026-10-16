@@ -85,12 +85,12 @@ h2 + p {
 }
 .sb-guide a,
 p a {
-	color: #8ec5ff;
+	color: var(--sb-info);
 }
 code {
 	font-size: 13px;
 	padding: 1px 5px;
 	border-radius: 4px;
-	background: rgba(251, 244, 236, 0.08);
+	background: var(--sb-line);
 }
 </style>

@@ -3,6 +3,7 @@ import { computed, ref } from "vue"
 import { storeToRefs } from "pinia"
 import { useOptionsStore, SettingsPromise } from "@/stores/options.store"
 import { getScoreColor } from "@/utils/ratings"
+import { color, serviceColors } from "@/design/tokens"
 import { useLetterboxdProfile } from "./useLetterboxdProfile"
 import {
 	formatDuration,
@@ -15,12 +16,6 @@ import {
 	type SeenTop,
 	type WatchLog,
 } from "@/utils/stats"
-
-const SERVICE_COLORS: Record<string, string> = {
-	netflix: "#e50914",
-	amazon: "#1f9cf0",
-	hbo: "#7b5cff",
-}
 
 const { settings } = storeToRefs(useOptionsStore())
 const watchLog = ref<WatchLog>({})
@@ -148,7 +143,7 @@ const formatRating = (title: { source: string; rating: number }) =>
 				<span
 					v-for="service in summary.byService"
 					:key="service.platform"
-					:style="{ flex: service.seconds, background: SERVICE_COLORS[service.platform] ?? '#a39b93' }"
+					:style="{ flex: service.seconds, background: serviceColors[service.platform] ?? color.textMuted }"
 				></span>
 			</div>
 			<div class="sb-legend">
@@ -156,7 +151,7 @@ const formatRating = (title: { source: string; rating: number }) =>
 					v-for="service in summary.byService"
 					:key="service.platform"
 				>
-					<i :style="{ background: SERVICE_COLORS[service.platform] ?? '#a39b93' }"></i>
+					<i :style="{ background: serviceColors[service.platform] ?? color.textMuted }"></i>
 					{{ PLATFORM_NAMES[service.platform] ?? service.platform }}
 					{{ Math.round((service.seconds / servicesTotal) * 100) }}%
 				</span>

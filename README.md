@@ -56,6 +56,8 @@ npm run test:coverage
 
 Content scripts live in `src/content-script` (one per service, with shared logic in `shared-functions.ts`), skip and speed handling in `src/playback`, and the popup and options pages in `src/ui`. Settings are a Pinia store in `src/stores/options.store.ts`, and translations are in `src/locales`.
 
+Colours, type, shadows and motion come from the design tokens in `src/design/tokens.ts`; see [docs/design-system.md](docs/design-system.md).
+
 
 ## Support
 

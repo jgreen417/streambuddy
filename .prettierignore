@@ -11,3 +11,5 @@ src/locales/
 *.js
 # fixture pages keep the sites' markup as served (no whitespace between tags)
 e2e/visual/fixtures/
+# written by npm run tokens
+src/design/tokens.css
