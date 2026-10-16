@@ -1,4 +1,4 @@
-# Chrome Web Store listing: streamBuddy 1.0.0
+# Chrome Web Store listing: streamBuddy 1.0.2
 
 Paste these into the Developer Dashboard. Character limits are noted where the store enforces them.
 
@@ -22,7 +22,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > YOUR FRIENDS, ON THE POSTER (connect Letterboxd, optional)
 > • Friends' average rating on matched films, and who rated them
 > • Your own stars on films you've logged, with watchlisted films marked
-> • A reminder to rate a film as the credits roll
+> • A review pill as the credits roll: your friends' ratings and a one-click Rate on Letterboxd
 >
 > FIND THE GOOD STUFF FASTER
 > • IMDb ratings for every episode of a season
@@ -30,6 +30,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > • Ratings and sort-by-rating on search pages
 > • Watched films can fade back so new ones stand out
 > • Pick your scores: Letterboxd, IMDb, TMDb, or Letterboxd for films and IMDb for series
+> • Two badge looks: the classic cream chip, or Liquid Glass from clear to frosted
 >
 > WATCH WITHOUT THE FIDDLY BITS
 > • Optional automatic skipping of supported intro, recap and credits controls, with a notice and one-tap Undo
@@ -55,17 +56,15 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 | Asset | Size | Status |
 |---|---|---|
 | Store icon | 128×128 PNG | Ready: `src/assets/Logo/icon-128.png` (96×96 mark with 16px transparent padding, as the store asks) |
-| Screenshots (1–5) | 1280×800 PNG | Retake needed: `store/screenshots/netflix-ratings.png` still shows the old badge; shot list below |
+| Screenshots | 1280×800 PNG | Ready: the four files below, in this order |
 | Small promo tile | 440×280 PNG | Ready: `store/promo-small.png` (source: `promo-small.svg`, set in Bricolage Grotesque) |
 | Marquee promo tile (optional) | 1400×560 PNG | Ready: `store/promo-marquee.png` (source: `promo-marquee.svg`) |
 
-**Screenshot list** (1280×800, in this order):
-1. Netflix home rows with badges, including labelled "friends" and "you" lines
-2. An HBO Max or Prime Video series page with episode rating chips
-3. The popup, Settings tab, next to a streaming page
-4. The welcome page (two-step setup)
-
-Tip: in Dia, set the window to 1280×800, or capture larger and scale down. Avoid showing other people's full names from friends' tooltips.
+**Screenshots** (1280×800, upload in this order, replacing the 1.0.0 one):
+1. `store/screenshots/netflix-ratings.png`: live Netflix home rows with the Buddy badge
+2. `store/screenshots/review-pill.png`: the review card over Netflix's end credits (the shipped pill, opened, rendered by the visual-check harness at 1280×800 with fuller credits and player controls drawn in)
+3. `store/screenshots/badge-looks.png`: Classic and Liquid Glass badges side by side
+4. `store/screenshots/popup-settings.png`: the toolbar popup with the main switches
 
 **Links:**
 - Homepage: https://github.com/jgreen417/streambuddy

@@ -1,8 +1,11 @@
 # Changelog
 
-# Unreleased
+# streamBuddy 1.0.2
 
-- Removed the rating panel and "Add to Letterboxd watchlist" button from title pages on Netflix, Prime Video and HBO Max, along with their settings. Card badges, episode ratings and the end-credits prompt are unchanged.
+- When a film's credits start, a small "Review" pill appears beside the player with your friends' average. Open it to see who rated the film, then rate it on Letterboxd in one click. On Netflix it sits bottom left, clear of the next-title preview.
+- Netflix episode cards (such as pilot rows) now show their series' rating.
+- Prime Video: large-card badges stay put after a hover, and unrated cards are no longer rechecked every second.
+- Removed the rating panel and "Add to Letterboxd watchlist" button from title pages on Netflix, Prime Video and HBO Max, along with their settings. Card badges and episode ratings are unchanged.
 
 # streamBuddy 1.0.1
 
