@@ -851,7 +851,8 @@ function getAllTitleCardsTypes(): Array<NodeListOf<Element>> {
 	else if (isPrimeVideo)
 		AllTitleCardsTypes = [
 			document.querySelectorAll(
-				"li article[data-card-title]:not([data-card-entity-type='EVENT']):not([data-card-title='Live-TV']):not(:has(#rating))",
+				// rows hold their cards in li; the search grid's cards are listitems themselves (article[data-testid=card])
+				":is(li article, article[data-testid='card'])[data-card-title]:not([data-card-entity-type='EVENT']):not([data-card-title='Live-TV']):not(:has(#rating))",
 			),
 			document.querySelectorAll("article[data-testid*='-card']:not(:has(#rating))"),
 		]
