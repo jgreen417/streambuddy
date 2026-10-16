@@ -87,6 +87,7 @@
     "createSharedComposable": true,
     "createTemplatePromise": true,
     "createUnrefFn": true,
+    "creditsLength": true,
     "customRef": true,
     "debouncedRef": true,
     "debouncedWatch": true,

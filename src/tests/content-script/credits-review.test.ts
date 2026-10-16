@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest"
-import { CreditsRatingPrompt, reviewState, starText, type ReviewViewer } from "../../utils/credits-review"
+import {
+	CreditsRatingPrompt,
+	creditsLength,
+	reviewState,
+	starText,
+	type ReviewViewer,
+} from "../../utils/credits-review"
 import type { FeatureRating } from "../../utils/page-features"
 
 function video(currentTime = 3550) {
@@ -90,17 +96,23 @@ describe("credits review", () => {
 		escape()
 		expect(review()).toBeNull()
 	})
-	it("only shows for films in their last minute and a half, once per film", () => {
+	it("guesses the credits from the runtime, between 3 and 10 minutes", () => {
+		expect(creditsLength(22 * 60)).toBe(180)
+		expect(creditsLength(120 * 60)).toBeCloseTo(504)
+		expect(creditsLength(200 * 60)).toBe(600)
+	})
+	it("only shows for films once their credits start, once per film", () => {
 		document.body.innerHTML = ""
 		const prompt = new CreditsRatingPrompt()
-		prompt.tick(video(3000), film, true, signedIn)
+		// an hour-long film's credits are taken to start 4.2 minutes from the end
+		prompt.tick(video(3300), film, true, signedIn)
 		expect(review()).toBeNull()
-		prompt.tick(video(), { ...film, media_type: "tv" }, true, signedIn)
+		prompt.tick(video(3400), { ...film, media_type: "tv" }, true, signedIn)
 		expect(review()).toBeNull()
-		prompt.tick(video(), film, true, signedIn)
+		prompt.tick(video(3400), film, true, signedIn)
 		expect(review()).not.toBeNull()
 		document.querySelector<HTMLButtonElement>(".sb-review-close")!.click()
-		prompt.tick(video(), film, true, signedIn)
+		prompt.tick(video(3400), film, true, signedIn)
 		expect(review()).toBeNull()
 	})
 	it("clears an old film's review when playback ends or switches", () => {

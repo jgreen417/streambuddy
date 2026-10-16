@@ -19,6 +19,13 @@ const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" heigh
 const FACE_COLORS = ["#ff7a45", "#8ec5ff", "#f2c94c", "#7ad9a0", "#c9a7ff"]
 const FRIENDS_IN_CARD = 3
 
+// When the credits probably start, in seconds before the end: about 7% of the runtime, between 3 and 10 minutes
+// (around 8 minutes for a 2-hour film). Players don't say when credits start, so this errs a little early; the
+// pill stays collapsed, so showing during the last scene of a film with short credits is fine.
+export function creditsLength(duration: number) {
+	return Math.min(10 * 60, Math.max(3 * 60, duration * 0.07))
+}
+
 export function reviewState(data: FeatureRating, viewer: ReviewViewer): ReviewState {
 	if (!viewer.username) return "unlinked"
 	if (viewer.watched !== undefined) return "logged"
@@ -102,7 +109,7 @@ export class CreditsRatingPrompt {
 			data.media_type !== "movie" ||
 			!Number.isFinite(video.duration) ||
 			video.duration < 20 * 60 ||
-			video.currentTime < video.duration - 90
+			video.currentTime < video.duration - creditsLength(video.duration)
 		) {
 			this.clear()
 			return
