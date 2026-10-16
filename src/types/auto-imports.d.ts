@@ -16,6 +16,7 @@ declare global {
   const EpisodeRatings: typeof import('../utils/page-features').EpisodeRatings
   const HiddenTitlesPromise: typeof import('../stores/options.store').HiddenTitlesPromise
   const NetflixShowTitles: typeof import('../utils/netflix-shows').NetflixShowTitles
+  const NetworkRequestError: typeof import('../utils/network').NetworkRequestError
   const PLATFORM_NAMES: typeof import('../utils/stats').PLATFORM_NAMES
   const RowPresentation: typeof import('../utils/row-presentation').RowPresentation
   const SCORE_BANDS: typeof import('../utils/ratings').SCORE_BANDS
@@ -163,6 +164,8 @@ declare global {
   const reactivePick: typeof import('@vueuse/core').reactivePick
   const readDetailContext: typeof import('../utils/page-features').readDetailContext
   const readEpisodeCards: typeof import('../utils/page-features').readEpisodeCards
+  const readJson: typeof import('../utils/network').readJson
+  const readText: typeof import('../utils/network').readText
   const readonly: typeof import('vue').readonly
   const recentSeenTitles: typeof import('../utils/stats').recentSeenTitles
   const ref: typeof import('vue').ref
@@ -172,6 +175,7 @@ declare global {
   const refManualReset: typeof import('@vueuse/core').refManualReset
   const refThrottled: typeof import('@vueuse/core').refThrottled
   const refWithControl: typeof import('@vueuse/core').refWithControl
+  const request: typeof import('../utils/network').request
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveRef: typeof import('@vueuse/core').resolveRef
   const reviewState: typeof import('../utils/credits-review').reviewState
@@ -435,6 +439,9 @@ declare global {
   export type { NetflixShowTitles } from '../utils/netflix-shows'
   import('../utils/netflix-shows')
   // @ts-ignore
+  export type { NetworkRequestError } from '../utils/network'
+  import('../utils/network')
+  // @ts-ignore
   export type { EpisodeRatings, SearchRatingSort, FeatureSite, DetailContext, FeatureRating, EpisodeRating } from '../utils/page-features'
   import('../utils/page-features')
   // @ts-ignore
@@ -469,6 +476,7 @@ declare module 'vue' {
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly EpisodeRatings: UnwrapRef<typeof import('../utils/page-features')['EpisodeRatings']>
     readonly NetflixShowTitles: UnwrapRef<typeof import('../utils/netflix-shows')['NetflixShowTitles']>
+    readonly NetworkRequestError: UnwrapRef<typeof import('../utils/network')['NetworkRequestError']>
     readonly PLATFORM_NAMES: UnwrapRef<typeof import('../utils/stats')['PLATFORM_NAMES']>
     readonly RowPresentation: UnwrapRef<typeof import('../utils/row-presentation')['RowPresentation']>
     readonly SCORE_BANDS: UnwrapRef<typeof import('../utils/ratings')['SCORE_BANDS']>
@@ -614,6 +622,8 @@ declare module 'vue' {
     readonly reactivePick: UnwrapRef<typeof import('@vueuse/core')['reactivePick']>
     readonly readDetailContext: UnwrapRef<typeof import('../utils/page-features')['readDetailContext']>
     readonly readEpisodeCards: UnwrapRef<typeof import('../utils/page-features')['readEpisodeCards']>
+    readonly readJson: UnwrapRef<typeof import('../utils/network')['readJson']>
+    readonly readText: UnwrapRef<typeof import('../utils/network')['readText']>
     readonly readonly: UnwrapRef<typeof import('vue')['readonly']>
     readonly recentSeenTitles: UnwrapRef<typeof import('../utils/stats')['recentSeenTitles']>
     readonly ref: UnwrapRef<typeof import('vue')['ref']>
@@ -623,6 +633,7 @@ declare module 'vue' {
     readonly refManualReset: UnwrapRef<typeof import('@vueuse/core')['refManualReset']>
     readonly refThrottled: UnwrapRef<typeof import('@vueuse/core')['refThrottled']>
     readonly refWithControl: UnwrapRef<typeof import('@vueuse/core')['refWithControl']>
+    readonly request: UnwrapRef<typeof import('../utils/network')['request']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
     readonly reviewState: UnwrapRef<typeof import('../utils/credits-review')['reviewState']>
     readonly reviewable: UnwrapRef<typeof import('../utils/credits-review')['reviewable']>

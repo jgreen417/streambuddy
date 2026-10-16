@@ -7,7 +7,9 @@ export function logLookupFailure(context: string, error: unknown, ...details: un
 	const name = (error as Error | undefined)?.name
 	const message = String((error as Error | undefined)?.message ?? error)
 	const expected =
-		name === "TransientLookupError" || /NetworkError|Failed to fetch|Load failed|HTTP \d{3}|^(Letterboxd|IMDb|TMDb) \d{3}$/.test(message)
+		name === "TransientLookupError" ||
+		name === "NetworkRequestError" ||
+		/NetworkError|Failed to fetch|Load failed|HTTP \d{3}|^(Letterboxd|IMDb|TMDb) \d{3}$/.test(message)
 	if (expected) debugLog(context, ...details, error)
 	else console.error(context, ...details, error)
 }

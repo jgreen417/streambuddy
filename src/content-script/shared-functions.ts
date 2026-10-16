@@ -94,6 +94,7 @@ type MovieInfo = {
 	friends_rating?: number
 	friends_count?: number
 	friends?: FriendRating[]
+	retryAfter?: number
 	cacheVersion?: number
 	// the rating-source setting this was looked up under (missing on older entries, which used both)
 	sources?: RatingSources
@@ -106,7 +107,7 @@ const usesLetterboxd = (sources: RatingSources) => sources === "both" || sources
 const usesImdb = (sources: RatingSources) => sources === "both" || sources === "imdb"
 // cached under the current lookup rules and the current choice of sources
 export const isCacheCurrent = (entry: MovieInfo | undefined) =>
-	entry?.cacheVersion === CACHE_VERSION && (entry.sources ?? "both") === ratingSources()
+	!entry?.retryAfter && entry?.cacheVersion === CACHE_VERSION && (entry.sources ?? "both") === ratingSources()
 type DBCacheType = {
 	[title: string]: MovieInfo
 }
@@ -192,6 +193,7 @@ type TMDBResponse = {
 const lookupsInFlight = new Map<string, Promise<MovieInfo | null>>()
 const checkedCards = new CheckedCards()
 // switching rating sources can turn an unrated title into a rated one, so a card is checked again under new sources
+const temporaryResults = new Map<string, MovieInfo>()
 const checkedKey = (title: string) => `${title}|${ratingSources()}`
 async function getMovieInfo(
 	title: string,
@@ -202,8 +204,18 @@ async function getMovieInfo(
 	const sources = ratingSources()
 	const key = `${title}|${media_type ?? ""}|${year ?? ""}|${sources}`
 	let lookup = lookupsInFlight.get(key)
+	// a result kept out of the cache because a provider failed for a moment is reused until it's due a retry, so
+	// other cards with the same title don't start their own lookups in the meantime
+	const recent = temporaryResults.get(key)
+	if (!lookup && recent && (recent.retryAfter ?? 0) > Date.now()) lookup = Promise.resolve(recent)
 	if (!lookup) {
-		lookup = lookupMovieInfo(title, media_type, year, sources).finally(() => lookupsInFlight.delete(key))
+		lookup = lookupMovieInfo(title, media_type, year, sources)
+			.then((info) => {
+				if (info?.retryAfter) temporaryResults.set(key, info)
+				else temporaryResults.delete(key)
+				return info
+			})
+			.finally(() => lookupsInFlight.delete(key))
 		lookupsInFlight.set(key, lookup)
 	}
 	const info = await lookup
@@ -261,6 +273,7 @@ export async function lookupMovieInfo(
 		friends_count: external.rating?.friends_count,
 		friends: external.rating?.friends,
 		cacheVersion: CACHE_VERSION,
+		retryAfter: external.transient ? Date.now() + 30_000 : undefined,
 		sources,
 	}
 	// a temporary Letterboxd/IMDb failure must not pin this title to the fallback for a month
@@ -298,7 +311,7 @@ async function getExternalRating(
 				"background",
 			)
 			if (isLookupError(letterboxd)) transient = true
-			else if (letterboxd?.rating) return { rating: letterboxd, transient }
+			else if (letterboxd?.rating) return { rating: letterboxd, transient: !!letterboxd.friends_unavailable }
 		}
 		if (!usesImdb(sources) || (media_type !== "movie" && media_type !== "tv")) return { rating: null, transient }
 		const externalIds: { imdb_id?: string; error?: string } = await sendMessage(
@@ -326,9 +339,14 @@ const rowCardDecorations = new WeakMap<HTMLElement, HTMLElement[]>()
 const netflixShowTitles = new NetflixShowTitles()
 // redrawAll: drop every card badge so the next pass draws it again (after a setting that changes how badges look)
 function refreshRowPresentation(redrawAll = false) {
-	const stale = rowPresentation.prune(
-		(card) => !redrawAll && getCleanTitle(card, card.dataset.cardTitle ? 0 : 1) === rowCardTitles.get(card),
-	)
+	const stale = rowPresentation.prune((card) => {
+		const retryAfter = rowCardData.get(card)?.retryAfter ?? Number.POSITIVE_INFINITY
+		return (
+			!redrawAll &&
+			retryAfter > Date.now() &&
+			getCleanTitle(card, card.dataset.cardTitle ? 0 : 1) === rowCardTitles.get(card)
+		)
+	})
 	for (const card of stale) {
 		rowCardDecorations.get(card)?.forEach((decoration) => decoration.remove())
 		card.classList.remove("imdb")
@@ -565,11 +583,13 @@ function updateCreditsPrompt() {
 	const key = episode ? `${title}|S${episode.season}E${episode.episode}` : title
 	if (playerLookup?.title !== key || playerLookup.sources !== ratingSources())
 		playerLookup = { title: key, sources: ratingSources(), data: null, retry: 0 }
-	if (!playerLookup.pending && !playerLookup.data && playerLookup.retry <= Date.now()) {
+	// a rating whose friends' scores failed to load is shown meanwhile and looked up again once it's due a retry
+	const due = (playerLookup.data as { retryAfter?: number } | null)?.retryAfter ?? Number.POSITIVE_INFINITY
+	if (!playerLookup.pending && (!playerLookup.data || due <= Date.now()) && playerLookup.retry <= Date.now()) {
 		const current = playerLookup
 		current.pending = (episode ? lookupSeriesFinale({ ...episode, show: title }) : lookupMovieInfo(title, null, null))
 			.then((data) => {
-				current.data = data
+				current.data = data ?? current.data
 			})
 			.catch(() => {})
 			.finally(() => {
@@ -629,7 +649,11 @@ function playingEpisode(netflix: NetflixCredits | undefined): PlayingEpisode | n
 const finaleLookups = new Map<string, Promise<MovieInfo | null>>()
 function lookupSeriesFinale(episode: PlayingEpisode): Promise<MovieInfo | null> {
 	const key = `${episode.show}|S${episode.season}E${episode.episode}|${settings.value.General.friendsRatings}`
-	return shareLookup(finaleLookups, key, () => findSeriesFinale(episode))
+	return shareLookup(finaleLookups, key, () => findSeriesFinale(episode)).then((found) => {
+		// friends' ratings failed for a moment: let the retry after retryAfter ask again rather than reuse this
+		if (found?.retryAfter) finaleLookups.delete(key)
+		return found
+	})
 }
 async function findSeriesFinale({ show, season, episode }: PlayingEpisode): Promise<MovieInfo | null> {
 	const locale = htmlLang || navigator?.language || "en-US"
@@ -679,6 +703,7 @@ async function findSeriesFinale({ show, season, episode }: PlayingEpisode): Prom
 		friends_rating: letterboxd.friends_rating,
 		friends_count: letterboxd.friends_count,
 		friends: letterboxd.friends,
+		retryAfter: letterboxd.friends_unavailable ? Date.now() + 30_000 : undefined,
 	}
 }
 // the longest video on the page is the film: Prime keeps its detail page's trailer underneath the player

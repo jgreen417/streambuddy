@@ -1,3 +1,4 @@
+import { request as networkRequest, readJson } from "@/utils/network"
 import { debugLog, logLookupFailure } from "@/utils/log"
 import { BUILT_IN_TMDB_TOKEN, getAccount, onAccountChanged, setBuiltInKeyRejected, tmdbRequest } from "@/utils/account"
 import { createProfileSync } from "@/utils/profile-sync"
@@ -190,15 +191,17 @@ onMessage("fetch", async (message: { data: { url: string; type: FetchRequestType
 		const authHost = AUTH_HOSTS[data.type]
 		if (authHost && new URL(data.url).hostname !== authHost)
 			throw new Error(`Refusing to send ${data.type} credentials to ${new URL(data.url).hostname}`)
-		const response = await fetch(data.url, {
-			method: "GET",
-			headers,
-		})
-		if (usesBuiltInKey) void setBuiltInKeyRejected(response.status === 401 || response.status === 403).catch(() => {})
-		// rate limits and outages are temporary: report them rather than handing back an error body as "no results"
-		if (!response.ok && response.status !== 404) return { error: `HTTP ${response.status}` }
-		const responseData = await response.json()
-		return responseData
+		return await networkRequest(
+			data.url,
+			async (response) => {
+				if (usesBuiltInKey)
+					void setBuiltInKeyRejected(response.status === 401 || response.status === 403).catch(() => {})
+				// rate limits and outages are temporary: report them rather than handing back an error body as "no results"
+				if (!response.ok && response.status !== 404) return { error: `HTTP ${response.status}` }
+				return readJson(response)
+			},
+			{ method: "GET", headers },
+		)
 	} catch (error) {
 		logLookupFailure("streamBuddy lookup failed:", error)
 		return { error: (error as Error).message }

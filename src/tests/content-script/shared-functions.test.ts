@@ -205,3 +205,35 @@ describe("CheckedCards", () => {
 		expect(checked.isChecked(card, "Not Found", 1000)).toBe(false)
 	})
 })
+
+describe("friends lookup recovery", () => {
+	it("keeps the public score temporary when friends failed, then accepts a recovered score", async () => {
+		settings.value.General.ratingSources = "both"
+		let unavailable = true
+		vi.mocked(sendMessage).mockImplementation((async (name: string) => {
+			if (name === "fetch")
+				return {
+					results: [{ id: 123, title: "Recovery Example", media_type: "movie", vote_average: 8, vote_count: 900 }],
+				}
+			if (name === "letterboxdRating")
+				return {
+					source: "letterboxd",
+					rating: 4,
+					rating_count: 10,
+					url: "https://letterboxd.com/film/example/",
+					friends_unavailable: unavailable || undefined,
+					friends_count: unavailable ? undefined : 2,
+					friends_rating: unavailable ? undefined : 4.5,
+				}
+			return null
+		}) as never)
+		const failed = await lookupMovieInfo("Recovery Example", "movie", null)
+		expect(failed?.rating).toBe(4)
+		expect(isCacheCurrent(failed!)).toBe(false)
+		expect(failed).toMatchObject({ retryAfter: expect.any(Number) })
+		unavailable = false
+		const recovered = await lookupMovieInfo("Recovery Example", "movie", null)
+		expect(recovered?.friends_rating).toBe(4.5)
+		expect(isCacheCurrent(recovered!)).toBe(true)
+	})
+})
