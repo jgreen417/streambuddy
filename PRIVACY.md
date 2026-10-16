@@ -11,7 +11,7 @@ All of the following stays in your browser's extension storage. "Synced" items t
 | Data | Where | Why |
 |---|---|---|
 | Your settings | Synced | So your preferences follow you between devices |
-| Your Letterboxd username and TMDb key | Synced | To look up ratings and your Letterboxd profile |
+| Your Letterboxd username and your own TMDb key, if you add one | Synced | To look up ratings and your Letterboxd profile |
 | A cache of title lookups and ratings | This device | So ratings load instantly and sites aren't asked twice |
 | A copy of your public Letterboxd diary and watchlist | This device | To mark films you've seen or watchlisted |
 | Watch time per day and service, and estimated time saved by skipping | This device, last 120 days | For the Stats tab |
@@ -24,7 +24,7 @@ Uninstalling streamBuddy deletes all of it. You can also erase it with "Reset" o
 
 streamBuddy contacts these services directly from your browser, only to show ratings:
 
-- **The Movie Database (api.themoviedb.org):** the titles shown on the streaming page, with your TMDb key, to identify each film or show.
+- **The Movie Database (api.themoviedb.org):** the titles shown on the streaming page, with streamBuddy's built-in TMDb key or your own, to identify each film or show.
 - **Letterboxd (letterboxd.com):** requests for film pages, and for your public profile, diary, watchlist and friends' ratings if you've entered a username.
 - **IMDb (caching.graphql.imdb.com):** IMDb IDs, to fetch series and episode ratings.
 

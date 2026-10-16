@@ -1,4 +1,5 @@
-import { BADGE_FONT, installPageFeatureStyle } from "@/utils/page-feature-styles"
+import { debugLog, logLookupFailure } from "@/utils/log"
+import { applyGlass, BADGE_FONT, installPageFeatureStyle } from "@/utils/page-feature-styles"
 import { sendMessage } from "webext-bridge/content-script"
 import {
 	getLetterboxdSlug,
@@ -36,7 +37,7 @@ import {
 	type WatchTimerState,
 	watchTick,
 } from "@/utils/stats"
-console.log("shared-functions loaded")
+debugLog("shared-functions loaded")
 // Global Variables
 
 // exported for tests
@@ -97,8 +98,8 @@ type MovieInfo = {
 	// the rating-source setting this was looked up under (missing on older entries, which used both)
 	sources?: RatingSources
 }
-// bump when lookups change so older entries (wrong matches, fallbacks saved during an outage) are refetched once
-const CACHE_VERSION = 2
+// bump when lookups change (and the seeded cacheVersion in e2e/visual/ratings.ts) so older entries (wrong matches, fallbacks saved during an outage) are refetched once
+const CACHE_VERSION = 3
 const ratingSources = () => settings.value.General.ratingSources
 // a lookup takes the sources setting as it was when it started, so a change mid-lookup can't mislabel its result
 const usesLetterboxd = (sources: RatingSources) => sources === "both" || sources === "letterboxd"
@@ -113,11 +114,11 @@ async function getDBCache() {
 	const result = await browser.storage.local.get("DBCache")
 	DBCache = result?.DBCache as DBCacheType
 	if (typeof DBCache !== "object") {
-		console.log("DBCache not found, creating new one", DBCache)
+		debugLog("DBCache not found, creating new one", DBCache)
 		try {
 			await browser.storage.local.set({ DBCache: {} })
 		} catch (error) {
-			console.log(error)
+			console.error(error)
 		}
 		DBCache = {}
 	}
@@ -134,10 +135,10 @@ async function setDBCache() {
 	const kiloBytes = size / 1024
 	const megaBytes = kiloBytes / 1024
 	if (megaBytes < 5) {
-		console.log("updateDBCache size:", megaBytes.toFixed(4) + " MB")
+		debugLog("updateDBCache size:", megaBytes.toFixed(4) + " MB")
 		await browser.storage.local.set({ DBCache })
 	} else {
-		console.log("DBCache cleared", megaBytes)
+		debugLog("DBCache cleared", megaBytes)
 		DBCache = {}
 		await browser.storage.local.set({ DBCache })
 	}
@@ -148,11 +149,11 @@ const GCdiff = 30
 async function garbageCollection() {
 	// clear every rating older than 30 days
 	// clear every rating where db != tmdb
-	console.log("garbageCollection started, deleting old ratings:")
+	debugLog("garbageCollection started, deleting old ratings:")
 	const keys = Object.keys(DBCache)
 	for (const key of keys) {
 		if (getDiffInDays(DBCache[key].date, date) >= GCdiff || DBCache[key].db != "tmdb") {
-			console.log(DBCache[key].date, key)
+			debugLog(DBCache[key].date, key)
 			delete DBCache[key]
 		}
 	}
@@ -311,7 +312,7 @@ async function getExternalRating(
 		if (isLookupError(imdb)) return { rating: null, transient: true }
 		return { rating: imdb, transient }
 	} catch (error) {
-		console.error("getExternalRating failed", tmdbId, media_type, error)
+		logLookupFailure("getExternalRating failed", error, tmdbId, media_type)
 		return { rating: null, transient: true }
 	}
 }
@@ -492,6 +493,7 @@ function startPageFeatures() {
 			.tick(featureSite(), {
 				episodes: settings.value.General.episodeRatings,
 				sources: ratingSources(),
+				glassFrost: settings.value.General.badgeStyle === "glass" ? settings.value.General.glassFrost : undefined,
 			})
 			.catch((error) => console.debug("streamBuddy page ratings:", error))
 		updateSearchSorting()
@@ -779,7 +781,7 @@ async function startShowRatingInterval() {
 	const RatingInterval = setInterval(function () {
 		refreshRowPresentation()
 		if (!ratingsEnabled()) {
-			console.log("stopped adding Rating")
+			debugLog("stopped adding Rating")
 			clearInterval(RatingInterval)
 			stopped = true
 			observer.disconnect()
@@ -814,7 +816,7 @@ function useDBCache(title: string, card: HTMLElement, media_type: string | null)
 	// refresh rating if older than 30 days or release date is in last month and vote count is under 100
 	if (getDiffInDays(DBCache[title].date, date) >= GCdiff || diffInReleaseDate) {
 		if (diffInReleaseDate)
-			console.log(
+			debugLog(
 				"update recent movie:",
 				title,
 				",refresh:",
@@ -824,7 +826,7 @@ function useDBCache(title: string, card: HTMLElement, media_type: string | null)
 				"Vote count:",
 				vote_count,
 			)
-		else console.log("update old rating:", title, ",Age:", getDiffInDays(DBCache[title].date, date))
+		else debugLog("update old rating:", title, ",Age:", getDiffInDays(DBCache[title].date, date))
 		getMovieInfo(title, card, media_type)
 	} else {
 		setRatingOnCard(card, DBCache[title], title)
@@ -849,7 +851,8 @@ function getAllTitleCardsTypes(): Array<NodeListOf<Element>> {
 	else if (isPrimeVideo)
 		AllTitleCardsTypes = [
 			document.querySelectorAll(
-				"li article[data-card-title]:not([data-card-entity-type='EVENT']):not([data-card-title='Live-TV']):not(:has(#rating))",
+				// rows hold their cards in li; the search grid's cards are listitems themselves (article[data-testid=card])
+				":is(li article, article[data-testid='card'])[data-card-title]:not([data-card-entity-type='EVENT']):not([data-card-title='Live-TV']):not(:has(#rating))",
 			),
 			document.querySelectorAll("article[data-testid*='-card']:not(:has(#rating))"),
 		]
@@ -1297,23 +1300,6 @@ function watchBadgeResizes() {
 	})
 }
 
-// Liquid Glass: a blurred, lightly tinted pane in place of the cream chip, with light text. frost runs from
-// 0 (clear glass: a hairline edge and highlight) to 100 (thick frosted sea glass). The score pill keeps its colour.
-function applyGlass(div: HTMLElement, frost: number) {
-	const f = Math.min(Math.max(frost, 0), 100) / 100
-	Object.assign(div.style, {
-		background: `rgba(251, 244, 236, ${(0.04 + 0.26 * f).toFixed(2)})`,
-		backdropFilter: `blur(${(2 + 14 * f).toFixed(1)}px) saturate(1.6)`,
-		boxShadow:
-			"inset 0 0 0 0.5px rgba(255, 255, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 8px rgba(0, 0, 0, 0.25)",
-		textShadow: "0 1px 2px rgba(0, 0, 0, 0.35)",
-	})
-	div.style.setProperty("--sb-ink", "#ffffff")
-	div.style.setProperty("--sb-label", "rgba(255, 255, 255, 0.8)")
-	div.style.setProperty("--sb-watch", "#8ec5ff")
-	div.style.setProperty("--sb-chip", "rgba(255, 255, 255, 0.6)")
-}
-
 // Prime composites its own "prime" or channel logo into the artwork's bottom-right corner, and the image URL
 // says where: _CLs|W,H|...channels-logo...|...+x,y,w,h. Returns how far up the card the logo reaches (0 when none).
 // Read it off the image on show: the large cards also hold a hidden landscape image with its logo elsewhere.
@@ -1354,7 +1340,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 	// nothing to say about this title: show nothing rather than a "?" or a meaningless 0.0
 	const hasRating = (data?.source !== "tmdb" && !!data?.rating) || data?.score > 0
 	if (!hasRating) {
-		console.log("no score found:", title, data, card)
+		debugLog("no score found:", title, data, card)
 		// Prime's card selectors can't skip cards already seen, so remember it. A cached unrated title is looked up
 		// again once the cache refreshes it (a week), which needs a page load anyway; a result left uncached because
 		// Letterboxd/IMDb failed for a moment is retried shortly

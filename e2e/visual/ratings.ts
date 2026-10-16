@@ -129,7 +129,8 @@ export function dbCache(today: string, sources: "both" | "letterboxd" | "imdb" |
 						: undefined,
 					friends_count: seed.friendsCount,
 					friends: seed.friends,
-					cacheVersion: 2,
+					// must match CACHE_VERSION in src/content-script/shared-functions.ts, or the seeded ratings count as stale
+					cacheVersion: 3,
 					sources,
 				},
 			]

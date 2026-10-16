@@ -107,6 +107,22 @@ describe("episode ratings", () => {
 		await features.tick("netflix", { episodes: false })
 		expect(document.querySelector(".sb-episode-rating")).toBeNull()
 	})
+	it("draws episode chips like the card badge, in glass when badges are", async () => {
+		document.body.innerHTML = `<div data-uia="modal-motion-container-DETAIL_MODAL"><div data-uia="about-container"><h3>About Show</h3></div><div data-uia="previewModal--detailsMetadata"><span class="duration">2 seasons</span></div><button data-uia="dropdown-toggle">Season 1</button><div data-uia="episode-selector"><div data-uia="titleCard--container"><span class="titleCard-title_index">1</span></div></div></div>`
+		const features = new EpisodeRatings(
+			async () => ({ id: 1, title: "Show", media_type: "tv", source: "imdb", rating: 8 }),
+			async () => [{ id: "tt1", season: 1, episode: 1, title: "Pilot", rating: 8.1, votes: 100 }],
+		)
+		await features.tick("netflix", { episodes: true })
+		let chip = document.querySelector<HTMLElement>(".sb-episode-rating")!
+		expect(chip.querySelector(".sb-episode-score")?.textContent).toBe("8.1")
+		expect(chip.querySelector(".sb-episode-source")?.textContent).toBe("IMDb")
+		expect(chip.style.backdropFilter).toBe("")
+		await features.tick("netflix", { episodes: true, glassFrost: 60 })
+		chip = document.querySelector<HTMLElement>(".sb-episode-rating")!
+		expect(chip.style.backdropFilter).toContain("blur")
+		expect(chip.style.getPropertyValue("--sb-label")).not.toBe("")
+	})
 })
 
 describe("search sorting", () => {

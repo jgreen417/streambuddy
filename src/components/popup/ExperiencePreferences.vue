@@ -58,6 +58,13 @@ const sourceOptions: { value: RatingSources; label: string }[] = [
 	{ value: "imdb", label: "IMDb only" },
 	{ value: "tmdb", label: "TMDb only" },
 ]
+const badgeLooks = [
+	{ value: "classic", label: "Classic" },
+	{ value: "glass", label: "Liquid Glass" },
+] as const
+const sourceLabel = computed(
+	() => sourceOptions.find((option) => option.value === settings.value.General.ratingSources)?.label ?? "",
+)
 const letterboxdOff = computed(() => ["imdb", "tmdb"].includes(settings.value.General.ratingSources))
 // one picker for whether friends' ratings show and how: "hidden" turns them off (and stops fetching them)
 const friendsOptions: { value: FriendsStyle | "hidden"; label: string }[] = [
@@ -146,6 +153,52 @@ const updateMode = (event: Event) => {
 				@update:model-value="cards = $event"
 			/>
 		</div>
+		<div class="sb-label">Badge look</div>
+		<div class="sb-group sb-badge-look">
+			<div
+				class="sb-mode sb-look-picker"
+				role="radiogroup"
+				aria-label="Badge look"
+			>
+				<label
+					v-for="look in badgeLooks"
+					:key="look.value"
+				>
+					<input
+						v-model="settings.General.badgeStyle"
+						type="radio"
+						:name="`${id}-look`"
+						:value="look.value"
+					/>
+					<span>
+						<i
+							class="sb-look-sample"
+							:class="look.value"
+							aria-hidden="true"
+						>
+							<b>4.1</b>
+						</i>
+						{{ look.label }}
+					</span>
+				</label>
+			</div>
+			<label
+				v-if="settings.General.badgeStyle === 'glass'"
+				class="sb-cutoff sb-frost"
+			>
+				Glass:
+				{{ settings.General.glassFrost < 34 ? "clear" : settings.General.glassFrost < 67 ? "soft frost" : "frosted" }}
+				<input
+					v-model.number="settings.General.glassFrost"
+					type="range"
+					min="0"
+					max="100"
+					step="5"
+					:aria-valuetext="`${settings.General.glassFrost}% frosted`"
+				/>
+			</label>
+			<p class="sb-help">Applies to card and episode ratings.</p>
+		</div>
 		<details
 			class="sb-disclosure"
 			:open="expanded"
@@ -153,7 +206,7 @@ const updateMode = (event: Event) => {
 			<summary>
 				<span>
 					Ratings & discovery
-					<small>{{ cardsInactive ? "Card effects paused" : `Low ratings: ${mode}` }}</small>
+					<small>{{ cardsInactive ? "Card effects paused" : `${sourceLabel} · Low ratings: ${mode}` }}</small>
 				</span>
 			</summary>
 			<div class="sb-disclosure-body">
@@ -176,33 +229,6 @@ const updateMode = (event: Event) => {
 					</select>
 				</label>
 				<p class="sb-help">TMDb fills in when the chosen sites have no rating.</p>
-				<label class="sb-cutoff">
-					Badge look
-					<select v-model="settings.General.badgeStyle">
-						<option value="classic">Classic</option>
-						<option value="glass">Liquid Glass</option>
-					</select>
-				</label>
-				<label
-					v-if="settings.General.badgeStyle === 'glass'"
-					class="sb-cutoff sb-frost"
-				>
-					Glass
-					<input
-						v-model.number="settings.General.glassFrost"
-						type="range"
-						min="0"
-						max="100"
-						step="5"
-						:aria-valuetext="`${settings.General.glassFrost}% frosted`"
-					/>
-				</label>
-				<p
-					v-if="settings.General.badgeStyle === 'glass'"
-					class="sb-help"
-				>
-					Slide left for clear glass, right for frosted.
-				</p>
 				<template v-if="supportsPages">
 					<PopupToggle
 						v-model="settings.General.episodeRatings"

@@ -55,13 +55,11 @@ describe("experience preferences integration", () => {
 	})
 	it("keeps the classic badge by default and shows the glass slider only for Liquid Glass", async () => {
 		const { root, state } = mount(fresh())
-		const select = Array.from(root.querySelectorAll<HTMLSelectElement>("label.sb-cutoff select")).find((el) =>
-			el.closest("label")?.textContent?.includes("Badge look"),
-		)!
-		expect(select.value).toBe("classic")
+		const look = (value: string) =>
+			root.querySelector<HTMLInputElement>(`.sb-badge-look input[type=radio][value=${value}]`)!
+		expect(look("classic").checked).toBe(true)
 		expect(root.querySelector(".sb-frost")).toBeNull()
-		select.value = "glass"
-		select.dispatchEvent(new Event("change"))
+		look("glass").click()
 		await nextTick()
 		expect(state.General.badgeStyle).toBe("glass")
 		const slider = root.querySelector<HTMLInputElement>(".sb-frost input[type=range]")!

@@ -45,7 +45,14 @@ jobs:
       - name: Test
         run: npx vitest run
       - name: Build release packages
+        env:
+          # streamBuddy's shared TMDb key, built into the store packages so ratings work without setup
+          STREAMBUDDY_TMDB_KEY: ${{ secrets.STREAMBUDDY_TMDB_KEY }}
         run: |
+          if [ -z "$STREAMBUDDY_TMDB_KEY" ]; then
+            echo "::error::Add the STREAMBUDDY_TMDB_KEY secret first, or every new user would have to bring their own key"
+            exit 1
+          fi
           mkdir -p release
           npm run build:release
           npm run build:release:firefox
@@ -132,6 +139,8 @@ jobs:
       - name: Write release and reviewer notes
         env:
           AMO_APPROVAL_NOTES: ${{ secrets.AMO_APPROVAL_NOTES }}
+          # reviewers rebuild from source, so the notes must carry the key the package was built with
+          STREAMBUDDY_TMDB_KEY: ${{ secrets.STREAMBUDDY_TMDB_KEY }}
         run: npx tsx scripts/amo-metadata.ts "$RUNNER_TEMP/amo-metadata.json"
       - name: Upload with source and submit for review
         env:

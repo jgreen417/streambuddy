@@ -27,7 +27,7 @@ streamBuddy puts a small score on every title card. Films show their Letterboxd 
 
 1. Install streamBuddy. A welcome page opens.
 2. Enter your Letterboxd username. This is optional, but it enables friends, your diary and your watchlist.
-3. Paste a free TMDb key. The [in-extension guide](src/ui/options-page/pages/Guide.vue) walks through getting one in about two minutes.
+3. Optionally paste your own free TMDb key. Store builds come with a shared key, so this is only needed if ratings pause; the [in-extension guide](src/ui/options-page/pages/Guide.vue) shows how.
 
 Both values stay in your browser. See [PRIVACY.md](PRIVACY.md).
 

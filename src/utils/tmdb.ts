@@ -19,6 +19,19 @@ const normalizeTitle = (title: string | undefined) =>
 		.replaceAll(/([a-z])(\d)/g, "$1 $2")
 		.replaceAll(/[^a-z0-9]+/g, " ")
 		.trim()
+const words = (title: string) => new Set(title.split(" ").filter(Boolean))
+// the titles share at least two words, most of the shorter title, and a good part of the card's own title
+// ("Star Wars" for "Star Wars: A New Hope" qualifies; a lone "Film" for "Brand New Film" doesn't)
+function sharesMostWords(item: TMDBTitled, wanted: string) {
+	const query = words(wanted)
+	return [item.title, item.original_title, item.name, item.original_name].some((name) => {
+		const other = words(normalizeTitle(name))
+		const shorter = Math.min(query.size, other.size)
+		if (!shorter) return false
+		const common = [...other].filter((word) => query.has(word)).length
+		return common >= 2 && common / shorter >= 0.6 && common / query.size >= 0.4
+	})
+}
 const REMAKE_OVERRIDE_RATIO = 3
 const reach = (item: TMDBTitled) => ((item.vote_count ?? 0) + 1) * (item.popularity ?? 0)
 export function pickBestMatch<T extends TMDBTitled>(results: T[] | undefined, query: string): T {
@@ -27,7 +40,15 @@ export function pickBestMatch<T extends TMDBTitled>(results: T[] | undefined, qu
 	const exact = candidates.filter((item) =>
 		[item.title, item.original_title, item.name, item.original_name].some((name) => normalizeTitle(name) === wanted),
 	)
-	if (!exact.length) return candidates[0]
+	// No exact title: TMDb's first result can be an unrated fan film or an unreleased show ("Cardboard Star Wars: A
+	// New Hope" before Star Wars, the 2026 Harry Potter series before the film). Pass over an unrated first result only
+	// for a rated one whose title shares most of its words with the card's, so a new release listed under another
+	// title isn't swapped for something unrelated.
+	if (!exact.length) {
+		const first = candidates[0]
+		if (!first || (first.vote_count ?? 0) > 0) return first
+		return candidates.find((item) => (item.vote_count ?? 0) > 0 && sharesMostWords(item, wanted)) ?? first
+	}
 	return exact.reduce((pick, item) => (reach(item) > REMAKE_OVERRIDE_RATIO * reach(pick) ? item : pick))
 }
 

@@ -1,5 +1,12 @@
 # Changelog
 
+# streamBuddy 1.0.3
+
+- Ratings work straight after install: streamBuddy now comes with a shared TMDb key. Adding your own free key is optional and replaces it, and if TMDb ever pauses the shared key the popup says so and asks for one.
+- Famous films no longer miss their rating when TMDb's first match is an unrated fan film or an unreleased show (such as Star Wars and the first Harry Potter).
+- A quieter console: no debug logging in store builds, and no errors when TMDb, Letterboxd or IMDb is briefly unreachable (those titles are retried as before).
+- The popup no longer asks for a missing icon.
+
 # streamBuddy 1.0.2
 
 - When a film's credits start, a small "Review" pill appears beside the player with your friends' average. Open it to see who rated the film, then rate it on Letterboxd in one click. On Netflix it sits bottom left, clear of the next-title preview.
