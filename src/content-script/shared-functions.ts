@@ -14,7 +14,7 @@ import { getAccount, onAccountChanged } from "@/utils/account"
 import type { StreamingService } from "@/constants/streamingServices"
 import { RowPresentation, normalizeRowScore, isBelowRatingCutoff } from "@/utils/row-presentation"
 import {
-	DetailRatings,
+	EpisodeRatings,
 	SearchRatingSort,
 	type FeatureSite,
 	type FeatureRating,
@@ -404,7 +404,7 @@ let playerLookup: {
 	pending?: Promise<unknown>
 	retry: number
 } | null = null
-const detailRatings = new DetailRatings(
+const episodeRatings = new EpisodeRatings(
 	async (title, type, year) => {
 		const cached = DBCache[title]
 		if (
@@ -434,54 +434,6 @@ const detailRatings = new DetailRatings(
 			EpisodeRating[] | { error: string }
 		if (!Array.isArray(result)) throw new Error("Episode ratings unavailable")
 		return result
-	},
-	(data) => {
-		const slug = getLetterboxdSlug(data.rating_url)
-		return slug ? { watched: letterboxdProfile?.watched[slug], watchlist: watchlistSlugs.has(slug) } : {}
-	},
-	(panel, data) => {
-		if (!settings.value.General.letterboxdActions || !letterboxdUsername || data.media_type !== "movie") return
-		const slug = getLetterboxdSlug(data.rating_url)
-		if (!slug) return
-		const button = document.createElement("button")
-		button.type = "button"
-		button.className = "sb-feature-button sb-letterboxd-action"
-		// The synced public-profile account is not proof of the browser's signed-in account.
-		button.textContent = "Add to Letterboxd watchlist"
-		button.addEventListener("click", async () => {
-			if (
-				!settings.value.General.letterboxdActions ||
-				!window.confirm(`Add “${data.title}” to the watchlist of your currently signed-in Letterboxd account?`)
-			)
-				return
-			button.disabled = true
-			button.textContent = "Adding…"
-			button.setAttribute("aria-busy", "true")
-			panel.querySelector('[role="status"]')?.remove()
-			try {
-				const result = (await sendMessage("letterboxdAddWatchlist", { slug, confirmed: true }, "background")) as {
-					success?: boolean
-					error?: string
-				}
-				if (!result.success) throw new Error(result.error ?? "Unable to update Letterboxd")
-				button.textContent = "Added to watchlist"
-				const success = document.createElement("small")
-				success.setAttribute("role", "status")
-				success.textContent = "Added to your signed-in Letterboxd account."
-				panel.append(success)
-			} catch (error) {
-				button.disabled = false
-				button.textContent = "Retry watchlist add"
-				const note = document.createElement("small")
-				note.setAttribute("role", "status")
-				note.textContent = (error as Error).message
-				panel.querySelector('[role="status"]')?.remove()
-				panel.append(note)
-			} finally {
-				button.removeAttribute("aria-busy")
-			}
-		})
-		panel.append(button)
 	},
 )
 
@@ -533,12 +485,9 @@ function startPageFeatures() {
 	pageFeaturesStarted = true
 	const tick = () => {
 		if (document.hidden) return
-		detailRatings
+		episodeRatings
 			.tick(featureSite(), {
-				panel: settings.value.General.detailRatings,
 				episodes: settings.value.General.episodeRatings,
-				actions: settings.value.General.letterboxdActions,
-				friends: settings.value.General.friendsRatings,
 				sources: ratingSources(),
 			})
 			.catch((error) => console.debug("streamBuddy page ratings:", error))
@@ -548,11 +497,8 @@ function startPageFeatures() {
 	setInterval(tick, 1000)
 	watch(
 		() => [
-			settings.value.General.detailRatings,
 			settings.value.General.episodeRatings,
 			settings.value.General.searchSort,
-			settings.value.General.letterboxdActions,
-			settings.value.General.friendsRatings,
 			settings.value.General.rateOnCredits,
 		],
 		tick,
