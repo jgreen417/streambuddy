@@ -1,25 +1,35 @@
 import { describe, it, expect, vi } from "vitest"
 import { sendMessage } from "webext-bridge/content-script"
-import { Amazon_titleLink, HBO_fixTitle, isCacheCurrent, lookupMovieInfo, settings } from "../../content-script/shared-functions"
+import {
+	Amazon_titleLink,
+	HBO_fixTitle,
+	isCacheCurrent,
+	lookupMovieInfo,
+	settings,
+} from "../../content-script/shared-functions"
 import { CheckedCards, isSeasonOnlyTitle, pickBestMatch } from "../../utils/tmdb"
 
 describe("HBO_fixTitle", () => {
 	it("strips bidi marks, the position and badges", () => {
-		expect(HBO_fixTitle("\u2066\u2068\u2068Weapons\u2069\u2069. \u20681 of 20\u2069. \u2068\u2068Leaving Soon\u2069\u2069\u2069")).toBe(
-			"Weapons",
-		)
+		expect(
+			HBO_fixTitle(
+				"\u2066\u2068\u2068Weapons\u2069\u2069. \u20681 of 20\u2069. \u2068\u2068Leaving Soon\u2069\u2069\u2069",
+			),
+		).toBe("Weapons")
 	})
 
 	it("keeps full stops that are part of the title", () => {
-		expect(HBO_fixTitle("\u2066\u2068\u2068Freddy vs. Jason\u2069\u2069. \u20686 of 20\u2069. \u2068\u2068Just Added\u2069\u2069\u2069")).toBe(
-			"Freddy vs. Jason",
-		)
+		expect(
+			HBO_fixTitle(
+				"\u2066\u2068\u2068Freddy vs. Jason\u2069\u2069. \u20686 of 20\u2069. \u2068\u2068Just Added\u2069\u2069\u2069",
+			),
+		).toBe("Freddy vs. Jason")
 	})
 
 	it("handles the grid label on detail pages", () => {
-		expect(HBO_fixTitle("\u2066\u2068\u2068American Sniper\u2069\u2069. \u2068Row 1 of 5, Column 1 of 6\u2069\u2069")).toBe(
-			"American Sniper",
-		)
+		expect(
+			HBO_fixTitle("\u2066\u2068\u2068American Sniper\u2069\u2069. \u2068Row 1 of 5, Column 1 of 6\u2069\u2069"),
+		).toBe("American Sniper")
 	})
 
 	it("uses the whole label when there are no isolation marks", () => {
@@ -64,7 +74,10 @@ describe("pickBestMatch", () => {
 	})
 
 	it("ignores case, accents and punctuation", () => {
-		const results = [{ id: 1, name: "Something Else" }, { id: 2, original_title: "Amélie" }]
+		const results = [
+			{ id: 1, name: "Something Else" },
+			{ id: 2, original_title: "Amélie" },
+		]
 		expect(pickBestMatch(results, "amelie").id).toBe(2)
 		expect(pickBestMatch([{ id: 3, title: "Fast & Furious" }], "Fast and Furious").id).toBe(3)
 	})
@@ -83,7 +96,15 @@ describe("pickBestMatch", () => {
 	})
 
 	it("treats superscripts like digits", () => {
-		expect(pickBestMatch([{ id: 1, title: "Other" }, { id: 9, title: "The Accountant 2" }], "The Accountant²").id).toBe(9)
+		expect(
+			pickBestMatch(
+				[
+					{ id: 1, title: "Other" },
+					{ id: 9, title: "The Accountant 2" },
+				],
+				"The Accountant²",
+			).id,
+		).toBe(9)
 	})
 
 	it("skips unrated results when nothing matches exactly", () => {
@@ -105,10 +126,23 @@ describe("pickBestMatch", () => {
 			{ id: 6, title: "Something Else Entirely", vote_count: 900 },
 		]
 		expect(pickBestMatch(newRelease, "Brand New Film").id).toBe(5)
+		const shortTitle = [
+			{ id: 5, title: "Brand New Film (Director's Cut)", vote_count: 0 },
+			{ id: 7, title: "Film", vote_count: 900 },
+		]
+		expect(pickBestMatch(shortTitle, "Brand New Film").id).toBe(5)
 	})
 
 	it("falls back to the first result", () => {
-		expect(pickBestMatch([{ id: 7, title: "Close" }, { id: 8, title: "Other" }], "Clos").id).toBe(7)
+		expect(
+			pickBestMatch(
+				[
+					{ id: 7, title: "Close" },
+					{ id: 8, title: "Other" },
+				],
+				"Clos",
+			).id,
+		).toBe(7)
 		expect(pickBestMatch(undefined, "Anything")).toBeUndefined()
 	})
 })
@@ -118,7 +152,8 @@ describe("rating source policy", () => {
 		settings.value.General.ratingSources = "both"
 		let finishLetterboxd: (value: unknown) => void = () => {}
 		vi.mocked(sendMessage).mockImplementation((async (name: string) => {
-			if (name === "fetch") return { results: [{ id: 1, title: "Dune", media_type: "movie", vote_average: 8, vote_count: 900 }] }
+			if (name === "fetch")
+				return { results: [{ id: 1, title: "Dune", media_type: "movie", vote_average: 8, vote_count: 900 }] }
 			if (name === "letterboxdRating")
 				return new Promise((resolve) => {
 					finishLetterboxd = resolve
@@ -126,7 +161,9 @@ describe("rating source policy", () => {
 			return null
 		}) as never)
 		const lookup = lookupMovieInfo("Dune", "movie", null)
-		await vi.waitFor(() => expect(sendMessage).toHaveBeenCalledWith("letterboxdRating", expect.anything(), "background"))
+		await vi.waitFor(() =>
+			expect(sendMessage).toHaveBeenCalledWith("letterboxdRating", expect.anything(), "background"),
+		)
 		settings.value.General.ratingSources = "imdb"
 		finishLetterboxd({ source: "letterboxd", rating: 4.1, rating_count: 10, url: "https://letterboxd.com/film/dune/" })
 		const info = await lookup

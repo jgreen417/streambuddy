@@ -20,7 +20,8 @@ const normalizeTitle = (title: string | undefined) =>
 		.replaceAll(/[^a-z0-9]+/g, " ")
 		.trim()
 const words = (title: string) => new Set(title.split(" ").filter(Boolean))
-// share of the shorter title's words that the other title also has
+// the titles share at least two words, most of the shorter title, and a good part of the card's own title
+// ("Star Wars" for "Star Wars: A New Hope" qualifies; a lone "Film" for "Brand New Film" doesn't)
 function sharesMostWords(item: TMDBTitled, wanted: string) {
 	const query = words(wanted)
 	return [item.title, item.original_title, item.name, item.original_name].some((name) => {
@@ -28,7 +29,7 @@ function sharesMostWords(item: TMDBTitled, wanted: string) {
 		const shorter = Math.min(query.size, other.size)
 		if (!shorter) return false
 		const common = [...other].filter((word) => query.has(word)).length
-		return common / shorter >= 0.6
+		return common >= 2 && common / shorter >= 0.6 && common / query.size >= 0.4
 	})
 }
 const REMAKE_OVERRIDE_RATIO = 3
