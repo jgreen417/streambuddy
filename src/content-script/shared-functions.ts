@@ -99,7 +99,7 @@ type MovieInfo = {
 	sources?: RatingSources
 }
 // bump when lookups change so older entries (wrong matches, fallbacks saved during an outage) are refetched once
-const CACHE_VERSION = 2
+const CACHE_VERSION = 3
 const ratingSources = () => settings.value.General.ratingSources
 // a lookup takes the sources setting as it was when it started, so a change mid-lookup can't mislabel its result
 const usesLetterboxd = (sources: RatingSources) => sources === "both" || sources === "letterboxd"

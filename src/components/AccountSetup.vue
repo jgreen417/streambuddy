@@ -10,7 +10,7 @@ import {
 } from "@/utils/account"
 import { useAccount } from "@/components/popup/useAccount"
 
-const { account } = useAccount()
+const { account, ratingsPaused } = useAccount()
 const username = ref("")
 const token = ref("")
 const usernameState = ref<CheckResult | "checking" | "">("")
@@ -127,7 +127,7 @@ const messages: Record<string, Record<string, string>> = {
 			<div class="sb-step-head">
 				<span class="sb-step-num">2</span>
 				<div>
-					<template v-if="BUILT_IN_TMDB_TOKEN">
+					<template v-if="BUILT_IN_TMDB_TOKEN && !ratingsPaused">
 						<h2>Your own TMDb key</h2>
 						<p>
 							Optional. Ratings already work with streamBuddy’s shared key. Add your own free key only if ratings ever
@@ -138,8 +138,12 @@ const messages: Record<string, Record<string, string>> = {
 					<template v-else>
 						<h2>Your free TMDb key</h2>
 						<p>
-							Needed for ratings. streamBuddy uses The Movie Database to work out which film or show each card is. A
-							key is free and takes about two minutes.
+							<template v-if="ratingsPaused">
+								TMDb stopped accepting streamBuddy’s shared key, so ratings need your own.
+							</template>
+							<template v-else>Needed for ratings.</template>
+							streamBuddy uses The Movie Database to work out which film or show each card is. A key is free and takes
+							about two minutes.
 							<RouterLink to="/options-page/Guide">How to get one →</RouterLink>
 						</p>
 					</template>

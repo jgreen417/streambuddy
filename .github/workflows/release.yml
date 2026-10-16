@@ -139,6 +139,8 @@ jobs:
       - name: Write release and reviewer notes
         env:
           AMO_APPROVAL_NOTES: ${{ secrets.AMO_APPROVAL_NOTES }}
+          # reviewers rebuild from source, so the notes must carry the key the package was built with
+          STREAMBUDDY_TMDB_KEY: ${{ secrets.STREAMBUDDY_TMDB_KEY }}
         run: npx tsx scripts/amo-metadata.ts "$RUNNER_TEMP/amo-metadata.json"
       - name: Upload with source and submit for review
         env:

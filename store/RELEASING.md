@@ -27,7 +27,7 @@ Add these as secrets of a GitHub environment named `stores` (Settings → Enviro
 | `CWS_PUBLISHER_ID` | Chrome Web Store Developer Dashboard → Publisher → Settings. |
 | `AMO_JWT_ISSUER` | addons.mozilla.org → Developer Hub → Manage API Keys → "JWT issuer". |
 | `AMO_JWT_SECRET` | Same page → "JWT secret". |
-| `AMO_APPROVAL_NOTES` | Optional. The confidential notes for Mozilla's reviewers, including the shared TMDb key so they can rebuild the package from source with `STREAMBUDDY_TMDB_KEY` set. Only reviewers see them; never put the key in the repo. |
+| `AMO_APPROVAL_NOTES` | Optional. Extra confidential notes for Mozilla's reviewers. The workflow always adds the rebuild command with the shared key from `STREAMBUDDY_TMDB_KEY`, which only reviewers see. Never put the key in the repo. |
 
 ### Google Cloud setup for Chrome
 
