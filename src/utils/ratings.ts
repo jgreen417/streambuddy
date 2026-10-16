@@ -66,8 +66,6 @@ export function parseLetterboxdHtml(html: string): { rating: number; rating_coun
 	}
 }
 
-// letterboxd.com/tmdb/{id} redirects to the film page. It only knows TMDb *movie* ids:
-// a TV id lands on an unrelated film (Breaking Bad's 1396 -> Tarkovsky's Mirror), so never call this for TV.
 export function getLetterboxdSlug(url: string | undefined): string | undefined {
 	return url ? /letterboxd\.com\/film\/([^/]+)\//.exec(url)?.[1] : undefined
 }
@@ -123,6 +121,8 @@ async function fetchLetterboxdFilm(path: string, username: string): Promise<Lett
 		tmdb: parseLetterboxdTmdbId(html),
 	}
 }
+// letterboxd.com/tmdb/{id} redirects to the film page. It only knows TMDb *movie* ids:
+// a TV id lands on an unrelated film (Breaking Bad's 1396 -> Tarkovsky's Mirror), so never call this for TV.
 export function fetchLetterboxdRating(tmdbMovieId: number, username = ""): Promise<LetterboxdFilm | null> {
 	return fetchLetterboxdFilm(`/tmdb/${tmdbMovieId}/`, username)
 }
@@ -233,12 +233,12 @@ async function fetchProfileGrid(path: string): Promise<Array<{ slug: string; rat
 	if (html === null) return []
 	const lastPage = Math.min(getLastPage(html, path), MAX_PROFILE_PAGES)
 	const rest = await Promise.all(
-		Array.from({ length: lastPage - 1 }, async (_, index) => {
-			return request(`https://letterboxd.com${path}page/${index + 2}/`, async (response) => {
+		Array.from({ length: lastPage - 1 }, (_, index) =>
+			request(`https://letterboxd.com${path}page/${index + 2}/`, async (response) => {
 				assertNotTransient(response, "Letterboxd")
 				return response.ok ? parseProfileGrid(await readText(response)) : []
-			})
-		}),
+			}),
+		),
 	)
 	return [parseProfileGrid(html), ...rest].flat()
 }

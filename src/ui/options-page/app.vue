@@ -1,22 +1,11 @@
 <script setup lang="ts">
 import { DONATE_URL, ISSUES_URL, PRIVACY_URL, SOURCE_URL } from "@/constants/links"
-const version = __VERSION__
 import { useFrontendStore } from "@/stores/options.store"
-// wont sync without opening once
+const version = __VERSION__
+// won't sync without opening once
 useFrontendStore()
 const router = useRouter()
-const hash = ref(router.currentRoute.value.path)
-// watch router route changed
-watch(
-	() => router.currentRoute.value.path,
-	(newHash) => {
-		hash.value = newHash
-	},
-	{
-		immediate: true,
-		deep: true,
-	},
-)
+const hash = computed(() => router.currentRoute.value.path)
 </script>
 <template>
 	<div

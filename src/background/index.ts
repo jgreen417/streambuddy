@@ -2,6 +2,18 @@ import { request as networkRequest, readJson } from "@/utils/network"
 import { debugLog, logLookupFailure } from "@/utils/log"
 import { BUILT_IN_TMDB_TOKEN, getAccount, onAccountChanged, setBuiltInKeyRejected, tmdbRequest } from "@/utils/account"
 import { createProfileSync } from "@/utils/profile-sync"
+import { onMessage } from "webext-bridge/background"
+import {
+	fetchImdbRating,
+	fetchImdbEpisodes,
+	fetchLetterboxdGuess,
+	fetchLetterboxdProfile,
+	fetchLetterboxdByImdb,
+	fetchLetterboxdRating,
+	guessLetterboxdSlug,
+	type LetterboxdFilm,
+	type LetterboxdProfile,
+} from "@/utils/ratings"
 const is_DEV = process.env.NODE_ENV === "development"
 
 // first install: open the two-step welcome page
@@ -21,25 +33,12 @@ self.onerror = function (message, source, lineno, colno, error) {
 	console.info("Column: " + colno)
 	console.info("Error object: " + error)
 }
-
-import { onMessage } from "webext-bridge/background"
-import {
-	fetchImdbRating,
-	fetchImdbEpisodes,
-	fetchLetterboxdGuess,
-	fetchLetterboxdProfile,
-	fetchLetterboxdByImdb,
-	fetchLetterboxdRating,
-	guessLetterboxdSlug,
-	type LetterboxdFilm,
-	type LetterboxdProfile,
-} from "@/utils/ratings"
 debugLog("background loaded")
 
 // A homepage can ask for dozens of titles at once and Letterboxd copes fine (40 parallel requests finish in ~1.3s).
-// Benchmarked on a 40-card homepage: a cap of 8 made badges slower than no cap (1.44s vs 0.90s average),
-// 32 is within noise of uncapped (0.92s) while still stopping a huge grid from flooding the site.
-// kept modest so a page of cards never floods Letterboxd; the cache absorbs repeat visits
+// Benchmarked on a 40-card homepage, a cap of 8 made badges slower than no cap (1.44s vs 0.90s average) and 32 was
+// within noise of uncapped (0.92s). The cap stays at 8 so a page of cards never floods Letterboxd; the cache absorbs
+// repeat visits.
 const MAX_LETTERBOXD_LOOKUPS = 8
 let activeLetterboxdLookups = 0
 const waitingLetterboxdLookups: Array<() => void> = []
@@ -167,7 +166,6 @@ const AUTH_HOSTS: Partial<Record<FetchRequestType, string>> = {
 	tmdb: "api.themoviedb.org",
 }
 
-// onMessage
 onMessage("fetch", async (message: { data: { url: string; type: FetchRequestType } }) => {
 	const { data } = message
 	try {
