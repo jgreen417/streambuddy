@@ -1,7 +1,7 @@
 // The review pill at the end credits: works out what's playing, looks it up ahead of the credits and puts the pill up
 import { sendMessage } from "webext-bridge/content-script"
 import { findSeriesFinale } from "@/utils/lookup"
-import { CreditsRatingPrompt, creditsLength, inCredits } from "@/utils/credits-review"
+import { CreditsRatingPrompt, SHORTEST_FILM, creditsLength, inCredits } from "@/utils/credits-review"
 import type { FeatureRating } from "@/utils/page-features"
 import { shareLookup, type PlayingEpisode } from "@/utils/series-finale"
 import { lookupMovieInfo, today, type MovieInfo } from "./cache"
@@ -40,7 +40,11 @@ export function updateCreditsPrompt(site: RatingsSite) {
 	const watchingSomethingElse =
 		!!video && video.duration !== creditsShownFor && video.currentTime > 2 * 60 && !video.paused
 	if (creditsPrompt.showing && creditsShownFor !== null && !watchingSomethingElse) {
-		setFilmOver(!video || video.duration !== creditsShownFor || video.currentTime >= creditsShownAt - 1)
+		// a different, short video is Netflix's trailer; a different full-length one is the next film starting
+		setFilmOver(
+			!video ||
+				(video.duration === creditsShownFor ? video.currentTime >= creditsShownAt - 1 : video.duration < SHORTEST_FILM),
+		)
 		placeCreditsReview(site)
 		return
 	}
