@@ -91,6 +91,6 @@ code {
 	font-size: 13px;
 	padding: 1px 5px;
 	border-radius: 4px;
-	background: var(--sb-line);
+	background: var(--sb-hairline);
 }
 </style>

@@ -92,7 +92,7 @@ function replaceSettings(event: Event) {
 	padding: 10px 12px;
 	border-radius: 10px;
 	background: var(--sb-surface-sunken);
-	border: 1px solid var(--sb-line);
+	border: 1px solid var(--sb-hairline);
 }
 .sb-backup small {
 	display: block;

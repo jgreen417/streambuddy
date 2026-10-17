@@ -6,7 +6,7 @@ streamBuddy different, so friends get faces and dots, never a separate panel.
 
 ## Where the tokens live
 
-`src/design/tokens.ts` is the only place a colour, typeface, shadow, radius or animation curve is defined.
+`src/design/tokens.ts` is the only place a colour, typeface, shadow, radius, spacing step or animation curve is defined.
 
 | Where it's drawn                                   | How it gets the tokens                                                                                                                   |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -43,9 +43,10 @@ To add a colour: add it to `palette` if it's new, then give it a role in `color`
 | mint      | `#7ad9a0` | good news: connected, faster playback               |
 | coral     | `#ff8a8a` | problems                                            |
 
-Surfaces and lines on the dark background are popcorn at a low alpha (`surface` 6%, `surfaceRaised` 10%,
-`line` 8%), so they warm whatever they sit on. Text that must stay readable never goes darker than `stone`
-(darker greys failed WCAG AA on these surfaces).
+Surfaces and lines on the dark background are popcorn at a low alpha (`surface` 6%, `surfaceRaised` 10%), so they
+warm whatever they sit on. Lines come in five steps: `hairline` 7% (group borders and dividers), `lineRaised` 12%
+(raised edges and fields), `lineField` 15% (selects), `lineHover` 18% and `lineActive` 28%. Text that must stay
+readable never goes darker than `stone` (darker greys failed WCAG AA on these surfaces).
 
 ### Score scale
 
@@ -80,8 +81,14 @@ player overlay uses the system font (`font.system`). Numbers in scores use tabul
 
 ## Shape, depth and motion
 
-- Radius: `xs` 5px, `sm` 6px (inputs, tabs), `md` 8px (buttons), `lg` 10px (groups), `xl` 12px (cards in the credits
-  pill), `pill` 999px. The badge's radius is concentric with the card it sits on (card radius minus its 3px inset).
+- Radius: `xxs` 2px (bars, the episode chip's fallback), `xs` 5px, `sm` 6px (inputs, tabs), `md` 8px (buttons), `lg`
+  10px (groups), `xl` 12px (cards in the credits pill), `pill` 999px, and the credits pill's own `credits` 30px
+  (closed) and `creditsOpen` 22px (opened into a card). The badge's radius is concentric with the card it sits on
+  (card radius minus its 3px inset).
+- Spacing (`--sb-space-*`): `xxs` 2px, `xs` 4px, `sm` 6px, `md` 8px, `lg` 12px, `xl` 16px, `xxl` 24px for padding,
+  margins and gaps, and three named insets: `edge` 14px (the popup's and the credits pill's outer edge), `inset` 12px
+  (from a group's border to its content) and `card` 18px (above the credits card's content). Sizes of things (toggles,
+  icons, the badge's 3px inset) stay as plain values.
 - Shadow: the badge is a sticker, not glass: `shadow.sticker` is a hard 3px drop with no blur, which lifts it off any
   artwork. Floating panels (`float`, `review`) use soft shadows. Liquid Glass (`glass`, `shadow.glass`) is a blurred
   tint with a hairline edge; its frost setting runs from clear to frosted.

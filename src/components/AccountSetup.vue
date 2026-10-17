@@ -209,7 +209,7 @@ const messages: Record<string, Record<string, string>> = {
 	padding: 18px;
 	border-radius: 12px;
 	background: var(--sb-surface-sunken);
-	border: 1px solid var(--sb-line);
+	border: 1px solid var(--sb-hairline);
 }
 .sb-step-head {
 	display: flex;
@@ -253,7 +253,7 @@ const messages: Record<string, Record<string, string>> = {
 	padding: 4px;
 	border-radius: 8px;
 	background: var(--sb-field);
-	border: 1px solid var(--sb-line-strong);
+	border: 1px solid var(--sb-line-raised);
 }
 .sb-field:focus-within {
 	border-color: var(--sb-line-active);

@@ -242,10 +242,10 @@ body {
 .content th,
 .content td {
 	padding: 4px 8px;
-	border-color: var(--sb-line) !important;
+	border-color: var(--sb-hairline) !important;
 }
 .content table {
-	border-color: var(--sb-line) !important;
+	border-color: var(--sb-hairline) !important;
 }
 .content th {
 	font-weight: 500;
@@ -260,7 +260,7 @@ body {
 .content .btn {
 	font-size: 14px;
 	background: var(--sb-hairline);
-	border: 1px solid var(--sb-line-strong);
+	border: 1px solid var(--sb-line-raised);
 	color: var(--sb-text);
 	box-shadow: none;
 	font-weight: 500;
@@ -271,7 +271,7 @@ body {
 .content input:not([type="checkbox"]),
 .content select {
 	background: var(--sb-field);
-	border: 1px solid var(--sb-line-strong);
+	border: 1px solid var(--sb-line-raised);
 	border-radius: 6px;
 	color: var(--sb-text);
 }

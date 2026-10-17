@@ -9,7 +9,7 @@ const STYLE = `
 	font: 500 14px/1.35 var(--sb-font-system);
 	color: var(--sb-text); -webkit-font-smoothing: antialiased; }
 .pill { pointer-events: auto; display: flex; align-items: center; gap: 10px;
-	background: var(--sb-glass-dark); border: 1px solid var(--sb-line-bright);
+	background: var(--sb-glass-dark); border: 1px solid var(--sb-line-raised);
 	box-shadow: var(--sb-shadow-float); border-radius: var(--sb-radius-pill);
 	backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 .notice { position: absolute; left: 32px; bottom: 120px; max-width: min(560px, calc(100% - 64px));
@@ -23,7 +23,7 @@ button { all: unset; cursor: pointer; padding: 6px 12px; border-radius: var(--sb
 button:hover { background: var(--sb-line-hover); }
 button:focus-visible { outline: 2px solid var(--sb-focus); outline-offset: 2px; }
 button.quiet { background: transparent; color: var(--sb-text-soft); }
-button.quiet:hover { color: var(--sb-text); background: var(--sb-line); }
+button.quiet:hover { color: var(--sb-text); background: var(--sb-hairline); }
 /* top centre: players keep their own buttons in the top corners */
 .speed { position: absolute; left: 50%; transform: translateX(-50%); top: 20px; padding: 4px; gap: 2px; opacity: 0;
 	transition: opacity 0.2s ease; }
