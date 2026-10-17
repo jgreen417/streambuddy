@@ -1,4 +1,4 @@
-// streamBuddy's design tokens: every colour, typeface, shadow, radius and curve the extension draws with.
+// streamBuddy's design tokens: every colour, typeface, shadow, radius, space and curve the extension draws with.
 // This file is the only source. Extension pages read them as CSS variables from tokens.css (written from this file by
 // npm run tokens); content scripts import them here, since a page's :root isn't ours to style. See docs/design-system.md.
 
@@ -71,12 +71,8 @@ export const color = {
 	panel: alpha("couch", 0.91),
 	panelSolid: alpha("couch", 0.95),
 	// lines
-	divider: alpha("popcorn", 0.06),
 	hairline: alpha("popcorn", 0.07),
-	line: alpha("popcorn", 0.08),
-	lineStrong: alpha("popcorn", 0.1),
 	lineRaised: alpha("popcorn", 0.12),
-	lineBright: alpha("popcorn", 0.14),
 	lineField: alpha("popcorn", 0.15),
 	lineHover: alpha("popcorn", 0.18),
 	lineActive: alpha("popcorn", 0.28),
@@ -173,12 +169,31 @@ export const font = {
 } as const
 
 export const radius = {
+	xxs: "2px",
 	xs: "5px",
 	sm: "6px",
 	md: "8px",
 	lg: "10px",
 	xl: "12px",
 	pill: "999px",
+	// the credits pill, closed (half its height) and opened into a card
+	credits: "30px",
+	creditsOpen: "22px",
+} as const
+
+export const space = {
+	xxs: "2px",
+	xs: "4px",
+	sm: "6px",
+	md: "8px",
+	lg: "12px",
+	xl: "16px",
+	// the popup's and the credits pill's outer edge
+	edge: "14px",
+	// from a group's border to its content
+	inset: "12px",
+	// above the credits card's content
+	card: "18px",
 } as const
 
 export const ease = {
@@ -199,6 +214,7 @@ export function cssVariables(): Record<string, string> {
 		["shadow-", shadow],
 		["font-", font],
 		["radius-", radius],
+		["space-", space],
 		["ease-", ease],
 	]
 	return Object.fromEntries(
