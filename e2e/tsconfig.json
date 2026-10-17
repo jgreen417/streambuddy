@@ -3,12 +3,13 @@
 		"target": "ESNext",
 		"module": "ESNext",
 		"moduleResolution": "Bundler",
-		"lib": ["ESNext", "DOM"],
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
 		"types": ["node", "chrome-types"],
 		"strict": true,
 		"noEmit": true,
 		"skipLibCheck": true,
-		"esModuleInterop": true
+		"esModuleInterop": true,
+		"paths": { "@/*": ["../src/*"] }
 	},
-	"include": ["visual/**/*.ts", "../playwright.config.ts"]
+	"include": ["visual/**/*.ts", "sites/**/*.ts", "../src/**/*.d.ts", "../playwright.config.ts"]
 }

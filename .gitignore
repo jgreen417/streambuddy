@@ -46,3 +46,5 @@ preview/
 e2e/.build/
 e2e/.results/
 e2e/.report/
+e2e/.captures/
+e2e/.sites/

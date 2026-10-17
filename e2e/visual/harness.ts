@@ -133,7 +133,7 @@ function imdbEpisodes(query: string) {
 
 const WAV = silentWav(22 * 60)
 
-async function handle(route: Route) {
+export async function handle(route: Route) {
 	const request = route.request()
 	const url = new URL(request.url())
 	if (url.pathname.startsWith("/art/"))
@@ -180,7 +180,7 @@ async function handle(route: Route) {
 }
 
 // media elements seek with range requests
-function fulfillRange(route: Route, body: Buffer, contentType: string) {
+export function fulfillRange(route: Route, body: Buffer, contentType: string) {
 	const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range ?? "")
 	if (!range) return route.fulfill({ body, contentType, headers: { "accept-ranges": "bytes" } })
 	const start = Number(range[1])

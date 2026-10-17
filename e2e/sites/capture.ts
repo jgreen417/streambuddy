@@ -1,0 +1,145 @@
+// Saves one live page state as a fixture.
+//
+//   npx tsx e2e/sites/capture.ts --state netflix-browse --service Netflix --url https://www.netflix.com/browse \
+//     --cdp http://localhost:9333 --out ~/streambuddy-firefox-test/captures [--hover <selector>] [--click <selector>]
+//     [--seek-from-end <seconds>] [--wait <ms>] [--viewport 1440x900] [--scrub "Josh,joshuagreen"]
+//
+// --cdp attaches to a signed-in Chrome started with --remote-debugging-port (see docs/site-fixtures.md). Without it,
+// the page is opened in Playwright's Chromium with the visual harness answering every request, which is how the
+// capture → replay round trip is checked against the hand-made fixtures.
+//
+// Writes <out>/<state>/: page.html (the frozen page), images.json, resources.json + resources/ (fonts and other
+// files the stylesheets point at), feeds.json (the site's own data streamBuddy reads), probe.json (what streamBuddy's
+// site code made of the live page), shot.png (screenshot with artwork and video masked) and meta.json.
+import { chromium, type Browser, type Page } from "@playwright/test"
+import { execSync } from "node:child_process"
+import { createHash } from "node:crypto"
+import { mkdir, writeFile } from "node:fs/promises"
+import path from "node:path"
+import { parseArgs } from "node:util"
+import type { StreamingService } from "@/constants/streamingServices"
+import { handle } from "../visual/harness"
+import { bundleProbe, runProbe } from "./bundle"
+import type { freeze } from "./freeze"
+import { FEEDS, screenshotWithoutArt } from "./replay"
+
+const { values: args } = parseArgs({
+	options: {
+		state: { type: "string" },
+		service: { type: "string" },
+		url: { type: "string" },
+		cdp: { type: "string" },
+		out: { type: "string", default: "e2e/.captures" },
+		hover: { type: "string" },
+		click: { type: "string" },
+		"seek-from-end": { type: "string" },
+		wait: { type: "string", default: "3000" },
+		viewport: { type: "string", default: "1440x900" },
+		scrub: { type: "string", default: "" },
+	},
+})
+if (!args.state || !args.service || !args.url) throw new Error("--state, --service and --url are required")
+const service = args.service as StreamingService
+const [width, height] = args.viewport!.split("x").map(Number)
+const dir = path.resolve(args.out!.replace(/^~/, process.env.HOME ?? "~"), args.state)
+
+let browser: Browser
+let page: Page
+if (args.cdp) {
+	browser = await chromium.connectOverCDP(args.cdp)
+	page = await browser.contexts()[0].newPage()
+} else {
+	browser = await chromium.launch()
+	const context = await browser.newContext()
+	await context.route(/^https?:\/\//, handle)
+	page = await context.newPage()
+}
+await page.setViewportSize({ width, height })
+
+// recorded from the first request on: stylesheets the page can't read back itself, fonts and images the
+// stylesheets point at, and the data feeds
+const sheets: Record<string, string> = {}
+const resources: Record<string, { file: string; type: string }> = {}
+const feeds: Record<string, unknown[]> = {}
+const pending: Promise<void>[] = []
+page.on("response", (response) => {
+	const type = response.request().resourceType()
+	const url = response.url()
+	const feed = Object.entries(FEEDS).find(([, pattern]) => pattern.test(url))?.[0]
+	if (!feed && !["stylesheet", "font"].includes(type)) return
+	pending.push(
+		response
+			.body()
+			.then(async (body) => {
+				if (feed) (feeds[feed] ??= []).push({ url, body: JSON.parse(body.toString()) })
+				else if (type === "stylesheet") sheets[url] = body.toString()
+				else {
+					const file = createHash("sha1").update(url).digest("hex").slice(0, 16) + path.extname(new URL(url).pathname)
+					await mkdir(path.join(dir, "resources"), { recursive: true })
+					await writeFile(path.join(dir, "resources", file), body)
+					resources[url] = { file, type: response.headers()["content-type"] ?? "" }
+				}
+			})
+			.catch(() => {}),
+	)
+})
+
+await page.goto(args.url, { waitUntil: "load" })
+await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
+if (args["seek-from-end"]) {
+	const fromEnd = Number(args["seek-from-end"])
+	await page.waitForFunction(() => Array.from(document.querySelectorAll("video")).some((video) => video.duration > 0))
+	// Netflix stops the player if its <video> is seeked directly; it has to go through Netflix's own player
+	await page.evaluate((seconds) => {
+		const video = Array.from(document.querySelectorAll("video")).sort((a, b) => b.duration - a.duration)[0]
+		const target = video.duration - seconds
+		type Players = {
+			getAllPlayerSessionIds(): string[]
+			getVideoPlayerBySessionId(id: string): { seek(ms: number): void }
+		}
+		const netflix = (
+			globalThis as { netflix?: { appContext: { state: { playerApp: { getAPI(): { videoPlayer: Players } } } } } }
+		).netflix
+		const players = netflix?.appContext.state.playerApp.getAPI().videoPlayer
+		if (players) players.getVideoPlayerBySessionId(players.getAllPlayerSessionIds()[0]).seek(target * 1000)
+		else video.currentTime = target
+	}, fromEnd)
+}
+if (args.click) await page.locator(args.click).first().click()
+if (args.hover) await page.locator(args.hover).first().hover()
+await page.waitForTimeout(Number(args.wait))
+
+const probe = await runProbe(page, service, await bundleProbe())
+await mkdir(dir, { recursive: true })
+await writeFile(path.join(dir, "shot.png"), await screenshotWithoutArt(page))
+await Promise.all(pending)
+const frozen = await page.evaluate((input) => (globalThis as unknown as { sbFreeze: typeof freeze }).sbFreeze(input), {
+	sheets,
+	scrub: args.scrub!.split(","),
+})
+const meta = {
+	state: args.state,
+	service,
+	url: page.url(),
+	capturedAt: new Date().toISOString(),
+	viewport: { width, height },
+	userAgent: await page.evaluate(() => navigator.userAgent),
+	language: await page.evaluate(() => navigator.language),
+	timeZone: await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone),
+	hover: args.hover ?? null,
+	click: args.click ?? null,
+	seekFromEnd: args["seek-from-end"] ? Number(args["seek-from-end"]) : null,
+	streamBuddy: execSync("git rev-parse --short HEAD").toString().trim(),
+	missingSheets: frozen.missingSheets,
+}
+await mkdir(dir, { recursive: true })
+await writeFile(path.join(dir, "page.html"), frozen.html)
+for (const [name, value] of Object.entries({ images: frozen.images, resources, feeds, probe, meta }))
+	await writeFile(path.join(dir, `${name}.json`), JSON.stringify(value, null, "\t"))
+console.log(
+	`${args.state}: ${probe.cards.length} cards, ${probe.episodes.length} episodes${probe.player ? ", player" : ""}; ` +
+		`${Object.keys(frozen.images).length} images, ${Object.keys(resources).length} files, ` +
+		`${Object.values(feeds).flat().length} feed responses${frozen.missingSheets.length ? `, ${frozen.missingSheets.length} stylesheets missing` : ""} → ${dir}`,
+)
+if (args.cdp) await page.close()
+else await browser.close()
