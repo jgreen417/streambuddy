@@ -1,7 +1,7 @@
 // The review pill at the end credits: works out what's playing, looks it up ahead of the credits and puts the pill up
 import { sendMessage } from "webext-bridge/content-script"
 import { findSeriesFinale } from "@/utils/lookup"
-import { CreditsRatingPrompt, creditsLength, inCredits } from "@/utils/credits-review"
+import { CreditsRatingPrompt, creditsLength, inCredits, playerTitle } from "@/utils/credits-review"
 import type { FeatureRating } from "@/utils/page-features"
 import { shareLookup, type PlayingEpisode } from "@/utils/series-finale"
 import { lookupMovieInfo, today, type MovieInfo } from "./cache"
@@ -66,11 +66,8 @@ export function updateCreditsPrompt(site: RatingsSite) {
 		return
 	}
 	const raw = episode ? episode.show : site.playingTitle(metadata)
-	const title = raw
-		?.replace(/^Prime Video:\s*/i, "")
-		.split(/\s*[•·|]\s*/)[0]
-		?.trim()
-	if (!title || /^(Netflix|Prime Video|HBO\s*Max)$/i.test(title)) {
+	const title = playerTitle(raw)
+	if (!title) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}

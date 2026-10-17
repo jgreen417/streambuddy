@@ -34,7 +34,7 @@ export type EpisodeRating = {
 	votes: number
 }
 // sites wrap labels in invisible direction marks (U+200E, U+2066…), which break ^-anchored matches
-const BIDI_MARKS = /[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g
+export const BIDI_MARKS = /[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g
 const clean = (value: string | null | undefined) => (value ?? "").replace(BIDI_MARKS, "").trim()
 const text = (element: Element | null) => clean(element?.textContent)
 // a heading's own text, or its title-art image's alt text when the title is a logo

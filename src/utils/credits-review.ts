@@ -1,6 +1,6 @@
 import { friendColors, palette } from "@/design/tokens"
 import { installPageFeatureStyle } from "./page-feature-styles"
-import type { FeatureRating } from "./page-features"
+import { BIDI_MARKS, type FeatureRating } from "./page-features"
 import { getLetterboxdSlug } from "./ratings"
 import { RATING_SOURCES, getScoreColor } from "./rating-sources"
 
@@ -24,6 +24,17 @@ const FRIENDS_IN_CARD = 3
 // during the last scene of a film with short credits is fine.
 export function creditsLength(duration: number) {
 	return Math.min(10 * 60, Math.max(3 * 60, duration * 0.07))
+}
+
+// The title in the player's tab title ("The Batman • HBO Max", "Prime Video: Dune"), without the service's name or the
+// invisible direction marks Max wraps it in; undefined when it's only the service's name
+export function playerTitle(raw: string | null | undefined) {
+	const title = raw
+		?.replace(BIDI_MARKS, "")
+		.replace(/^Prime Video:\s*/i, "")
+		.split(/\s*[•·|]\s*/)[0]
+		?.trim()
+	return title && !/^(Netflix|Prime Video|HBO\s*Max)$/i.test(title) ? title : undefined
 }
 
 // anything shorter is a trailer, an extra or an episode, not a film
