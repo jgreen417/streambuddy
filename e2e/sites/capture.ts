@@ -22,6 +22,7 @@ import { handle } from "../visual/harness"
 import { bundleProbe, runProbe } from "./bundle"
 import type { freeze } from "./freeze"
 import { FEEDS, screenshotWithoutArt } from "./replay"
+import { putInState, type Steps } from "./steps"
 
 const { values: args } = parseArgs({
 	options: {
@@ -86,28 +87,13 @@ page.on("response", (response) => {
 
 await page.goto(args.url, { waitUntil: "load" })
 await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
-if (args["seek-from-end"]) {
-	const fromEnd = Number(args["seek-from-end"])
-	await page.waitForFunction(() => Array.from(document.querySelectorAll("video")).some((video) => video.duration > 0))
-	// Netflix stops the player if its <video> is seeked directly; it has to go through Netflix's own player
-	await page.evaluate((seconds) => {
-		const video = Array.from(document.querySelectorAll("video")).sort((a, b) => b.duration - a.duration)[0]
-		const target = video.duration - seconds
-		type Players = {
-			getAllPlayerSessionIds(): string[]
-			getVideoPlayerBySessionId(id: string): { seek(ms: number): void }
-		}
-		const netflix = (
-			globalThis as { netflix?: { appContext: { state: { playerApp: { getAPI(): { videoPlayer: Players } } } } } }
-		).netflix
-		const players = netflix?.appContext.state.playerApp.getAPI().videoPlayer
-		if (players) players.getVideoPlayerBySessionId(players.getAllPlayerSessionIds()[0]).seek(target * 1000)
-		else video.currentTime = target
-	}, fromEnd)
+const steps: Steps = {
+	seekFromEnd: args["seek-from-end"] ? Number(args["seek-from-end"]) : null,
+	click: args.click ?? null,
+	hover: args.hover ?? null,
+	wait: Number(args.wait),
 }
-if (args.click) await page.locator(args.click).first().click()
-if (args.hover) await page.locator(args.hover).first().hover()
-await page.waitForTimeout(Number(args.wait))
+await putInState(page, steps, false)
 
 // A copy has to be the site alone. With streamBuddy running, its badges are in the screenshot and the cards it has
 // picked up are marked so its own code skips them, so neither the probe nor the screenshot would describe the site.
@@ -137,9 +123,7 @@ const meta = {
 	userAgent: await page.evaluate(() => navigator.userAgent),
 	language: await page.evaluate(() => navigator.language),
 	timeZone: await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone),
-	hover: args.hover ?? null,
-	click: args.click ?? null,
-	seekFromEnd: args["seek-from-end"] ? Number(args["seek-from-end"]) : null,
+	...steps,
 	streamBuddy: execSync("git rev-parse --short HEAD").toString().trim(),
 	missingSheets: frozen.missingSheets,
 }

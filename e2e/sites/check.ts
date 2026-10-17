@@ -8,7 +8,7 @@
 // state, and compares the shape of what streamBuddy's site code finds there with what it found in the capture: which
 // kinds of cards, where their badges go, which player controls it can see. Titles and counts change every day, so
 // they aren't compared; a selector that stops matching is.
-import { chromium, type Page } from "@playwright/test"
+import { chromium } from "@playwright/test"
 import { readdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { parseArgs } from "node:util"
@@ -17,6 +17,7 @@ import { PNG } from "pngjs"
 import { bundleProbe, runProbe } from "./bundle"
 import type { ProbeReport } from "./probe"
 import { loadCapture, routeCapture, screenshotWithoutArt, type Capture } from "./replay"
+import { putInState, type Steps } from "./steps"
 
 const { values: args, positionals } = parseArgs({
 	allowPositionals: true,
@@ -26,15 +27,8 @@ const root = path.resolve((positionals[0] ?? "e2e/.captures").replace(/^~/, proc
 const states = (await readdir(root, { withFileTypes: true })).filter((entry) => entry.isDirectory())
 const script = await bundleProbe()
 
-type Meta = Capture["meta"] & { hover: string | null; click: string | null; seekFromEnd: number | null }
-
-// the steps capture.ts took after the page loaded, minus seeking: a copy's video is already where it was. A copy
-// already holds what the click or hover opened, often over the element itself, so there the pointer only goes back to
-// where it was (for :hover styles) without waiting for the element to be clear.
-async function putInState(page: Page, meta: Meta, copy: boolean) {
-	if (meta.click) await page.locator(meta.click).first().click({ force: copy })
-	if (meta.hover) await page.locator(meta.hover).first().hover({ force: copy })
-}
+// captures from before the wait was saved settled for capture.ts's default
+type Meta = Capture["meta"] & Omit<Steps, "wait"> & { wait?: number }
 
 // every path where two JSON values differ, as "path: before → after"
 function differences(a: unknown, b: unknown, at = ""): string[] {
@@ -119,7 +113,7 @@ async function checkState(capture: Capture, meta: Meta, captured: ProbeReport, p
 		await page.setViewportSize(meta.viewport)
 		await page.goto(meta.url, { waitUntil: "load" })
 		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
-		await putInState(page, meta, false)
+		await putInState(page, { ...meta, wait: meta.wait ?? 3000 }, false)
 		const live = await runProbe(page, meta.service as ProbeReport["service"], script)
 		problems.push(...differences(shape(captured), shape(live)))
 		await page.close()
@@ -129,7 +123,7 @@ async function checkState(capture: Capture, meta: Meta, captured: ProbeReport, p
 		const page = await context.newPage()
 		await page.goto(meta.url, { waitUntil: "load" })
 		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
-		await putInState(page, meta, true)
+		await putInState(page, { ...meta, wait: 0 }, true)
 		const copy = await runProbe(page, meta.service as ProbeReport["service"], script)
 		problems.push(...differences(captured, copy))
 		const shot = await screenshotWithoutArt(page)

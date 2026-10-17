@@ -7,6 +7,7 @@ sites, so new UI can be built against them without opening the live sites.
 |---|---|
 | `probe.ts` | Runs streamBuddy's own site code (the adapters, the episode reader) on a page and reports what it finds |
 | `capture.ts` | Saves a live page state: the frozen page, its fonts, the data feeds streamBuddy reads, a screenshot, the probe's report |
+| `steps.ts` | Puts a loaded page into a saved state again: the seek, click or hover the capture took |
 | `replay.ts` | Serves a saved state as the live site, with same-size stand-ins for artwork and video |
 | `check.ts` | Checks every copy against the live page it came from, or, with `--live`, the live site against the copies |
 | `report.ts` | Runs the probe on every saved state; `--coverage` lists the site code no saved page reaches |
