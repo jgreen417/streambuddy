@@ -29,9 +29,9 @@ sites, so new UI can be built against them without opening the live sites.
    `--wait` is how long to let the page settle afterwards. `--scrub` replaces words such as profile names.
 3. Check the copies against the pages they came from: `npm run sites:check -- ~/streambuddy-firefox-test/captures`.
 
-A browser with streamBuddy installed draws badges into the page; the capture removes them, along with the marks the
-extension leaves on cards. The playback itself can't be saved (DRM), so a copy plays a silent clip of the same length
-from the same place.
+The browser runs without extensions: a page streamBuddy has drawn into (badges, cards it has marked as picked up)
+isn't the site, so the capture refuses it. The playback itself can't be saved (DRM), so a copy plays a silent clip of
+the same length from the same place.
 
 ## When a site changes
 

@@ -115,19 +115,6 @@ export function freeze({ sheets, scrub }: FreezeInput): FrozenPage {
 		if (href) style.dataset.sbFrom = absolute(href, location.href)
 		el.replaceWith(style)
 	}
-	// a browser with streamBuddy installed draws it into the page; the copy has to be the site alone, or the adapters
-	// would see their own marks (the "imdb" picked-up class) and skip every card
-	for (const el of everywhere('[class^="sb-"], [class*=" sb-"], [data-streambuddy]')) el.remove()
-	for (const el of everywhere('style[data-sb-from^="chrome-extension:"], style[data-sb-from^="moz-extension:"]'))
-		el.remove()
-	for (const el of everywhere("[data-streambuddy-hidden]")) {
-		el.removeAttribute("data-streambuddy-hidden")
-		;(el as HTMLElement).style.removeProperty("display")
-	}
-	for (const el of everywhere(".imdb")) el.classList.remove("imdb")
-	for (const el of everywhere("[style*='--sb-']") as HTMLElement[])
-		for (const name of Array.from(el.style).filter((property) => property.startsWith("--sb-")))
-			el.style.removeProperty(name)
 	for (const el of everywhere("iframe")) el.removeAttribute("src")
 	for (const el of everywhere("*"))
 		for (const attr of Array.from(el.attributes)) {

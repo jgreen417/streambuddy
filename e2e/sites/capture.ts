@@ -109,6 +109,17 @@ if (args.click) await page.locator(args.click).first().click()
 if (args.hover) await page.locator(args.hover).first().hover()
 await page.waitForTimeout(Number(args.wait))
 
+// A copy has to be the site alone. With streamBuddy running, its badges are in the screenshot and the cards it has
+// picked up are marked so its own code skips them, so neither the probe nor the screenshot would describe the site.
+// Undoing that in the copy would leave the two sides of sites:check describing different pages.
+const marked = await page
+	.locator("[data-sb-build], [data-streambuddy], [data-streambuddy-hidden], .sb-episode-host")
+	.count()
+if (marked)
+	throw new Error(
+		"streamBuddy is running in this browser and has drawn into the page. Capture from a browser started with " +
+			"--disable-extensions (open-browser.sh does this) so the copy is the site alone.",
+	)
 const probe = await runProbe(page, service, await bundleProbe())
 await mkdir(dir, { recursive: true })
 await writeFile(path.join(dir, "shot.png"), await screenshotWithoutArt(page))
