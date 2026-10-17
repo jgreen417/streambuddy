@@ -10,7 +10,8 @@ export function setFilmEnded(film: { duration: number; at: number } | null) {
 }
 export function filmOver(video: HTMLVideoElement | null) {
 	if (!ended) return false
-	if (!video) return true
+	// no video, or one still loading: wait until it's known whether it's a trailer
+	if (!video || !Number.isFinite(video.duration)) return true
 	// the same film: over unless scrubbed back before the credits; another video: over while it's a trailer
 	return video.duration === ended.duration ? video.currentTime >= ended.at - 1 : video.duration < SHORTEST_FILM
 }

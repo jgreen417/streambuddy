@@ -254,7 +254,12 @@ describe("playback engine", () => {
 		tick()
 		window.dispatchEvent(new KeyboardEvent("keydown", { key: ">", shiftKey: true }))
 		expect(video.playbackRate).toBe(1.25)
-		// a trailer keeps its own speed, and the saved one survives
+		// a trailer keeps its own speed, and the saved one survives, including while it loads
+		video.duration = NaN
+		video.currentTime = 0
+		video.playbackRate = 1
+		tick()
+		expect(video.playbackRate).toBe(1)
 		video.duration = 90
 		video.currentTime = 0
 		video.playbackRate = 1
