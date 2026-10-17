@@ -27,8 +27,9 @@ sites, so new UI can be built against them without opening the live sites.
 
    `--hover` and `--click` take a selector to act on before saving, `--seek-from-end <seconds>` puts a player that
    many seconds before the end (through Netflix's own player, which stops if its video is seeked directly), and
-   `--wait` is how long to let the page settle afterwards. `--scrub` replaces whole names, such as the profile names the site shows, with "Viewer" in every saved file, the
-   probe's report included. Give each service its own list: a name that is also in a title is replaced there too.
+   `--wait` is how long to let the page settle afterwards. `--scrub` replaces whole names, such as the profile names
+   the site shows, with "Viewer" in every saved file, the probe's report included. Give each service its own list: a
+   name that is also in a title is replaced there too.
 3. Check the copies against the pages they came from: `npm run sites:check -- ~/streambuddy-firefox-test/captures`.
 
 The browser runs without extensions: a page streamBuddy has drawn into (badges, cards it has marked as picked up)
