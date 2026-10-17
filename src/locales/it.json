@@ -56,7 +56,7 @@
   "statisticSegmentsDescription": "Numero di segmenti individuali saltati (intro, annunci, ecc.) su Netflix, Amazon e Disney+.",
   "importSettings": "Importa/Esporta impostazioni",
   "saveSettings": "Salva impostazioni su file",
-  "uploadSettings": "Ripristina da un file",
+  "uploadSettings": "Importa da un file",
   "resetAddon": "Ripristina streamBuddy",
   "backupHint": "Salva le tue impostazioni in un file per conservarle o trasferirle su un altro browser.",
   "resetHint": "Riporta tutte le impostazioni a come erano al momento dell'installazione.",

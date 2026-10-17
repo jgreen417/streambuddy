@@ -56,7 +56,7 @@
   "statisticSegmentsDescription": "Mängden enskilda segment som hoppats över som ett intro eller en annons för Netflix, Amazon och Disney+",
   "importSettings": "Importera/exportera alla inställningar",
   "saveSettings": "Spara inställningar som fil",
-  "uploadSettings": "Återställ från en fil",
+  "uploadSettings": "Läs in från en fil",
   "resetAddon": "Återställ streamBuddy",
   "backupHint": "Spara dina inställningar i en fil för att behålla dem eller flytta dem till en annan webbläsare.",
   "resetHint": "Återställer alla inställningar till hur de var vid installationen.",

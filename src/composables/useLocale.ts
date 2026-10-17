@@ -21,10 +21,12 @@ export function useLocale() {
 	browser.storage.local.get(localeKey).then(async (result) => {
 		if (result?.[localeKey] == undefined) {
 			// browser lang
-			// locale files are named like zh_CN, so try the full tag before the bare language
-			const tag = navigator.language.replace("-", "_")
-			const lang = tag.split("_")[0]
-			defaultLocale = [tag, lang].find((l) => i18n.global.availableLocales.includes(l)) ?? defaultLocale
+			// locale files are named like zh_CN, so try language_region, then the bare language,
+			// then the likeliest region (zh and zh-Hans have none of their own but mean zh_CN)
+			const locale = new Intl.Locale(navigator.language)
+			const likely = locale.maximize()
+			const candidates = [`${locale.language}_${locale.region}`, locale.language, `${likely.language}_${likely.region}`]
+			defaultLocale = candidates.find((l) => i18n.global.availableLocales.includes(l)) ?? defaultLocale
 			i18n.global.locale.value = defaultLocale
 		}
 	})

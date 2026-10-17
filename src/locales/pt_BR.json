@@ -59,7 +59,7 @@
   "uploadSettings": "Restaurar de um arquivo",
   "resetAddon": "Redefinir o streamBuddy",
   "backupHint": "Salve suas configurações em um arquivo para guardá-las ou levá-las para outro navegador.",
-  "resetHint": "Volta todas as configurações para como estavam na instalação.",
+  "resetHint": "Restaura todas as configurações ao estado da instalação.",
   "save": "Salvar",
   "chooseFile": "Escolher arquivo",
   "noWrap": "nowrap",
