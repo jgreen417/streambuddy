@@ -255,11 +255,13 @@ export class PlaybackEngine {
 			return
 		}
 		if (this.overlay.hasSpeed() && this.renderedRate === this.rate) return
+		// the pill coming back after the film was over: the next film picks up the saved speed
+		if (!this.overlay.hasSpeed()) this.applyRate()
 		this.renderedRate = this.rate
 		this.overlay.renderSpeed(this.rate, SPEED_PRESETS, (rate) => this.chooseRate(rate))
 	}
 	private applyRate() {
-		if (!this.video || this.adRestore || this.rate === null || !this.settings().speedControl) return
+		if (!this.video || this.adRestore || this.rate === null || !this.settings().speedControl || filmOver()) return
 		this.setRate(this.video, this.rate)
 	}
 	private setRate(video: HTMLVideoElement, rate: number) {
@@ -269,7 +271,8 @@ export class PlaybackEngine {
 	// sites reset the rate on new episodes, and some have their own speed menu: re-apply after a reset,
 	// but treat any other change as the viewer choosing a new speed
 	private onRateChange(video: HTMLVideoElement) {
-		if (this.adRestore || this.rate === null || !this.settings().speedControl) return
+		// once the film is over the site's own rate stands, and doesn't replace the saved speed
+		if (this.adRestore || this.rate === null || !this.settings().speedControl || filmOver()) return
 		// our own change (rate change events arrive after the fact, so compare rather than flag)
 		if (Math.abs(video.playbackRate - this.rate) < 0.001) return
 		if (video.playbackRate === 1 && this.rate !== 1 && video.currentTime < 3) {

@@ -252,6 +252,16 @@ describe("playback engine", () => {
 		window.dispatchEvent(new KeyboardEvent("keydown", { key: ">", shiftKey: true }))
 		expect(video.playbackRate).toBe(1)
 		setFilmOver(false)
+		window.dispatchEvent(new KeyboardEvent("keydown", { key: ">", shiftKey: true }))
+		expect(video.playbackRate).toBe(1.25)
+		// a trailer swapped in once the film is over keeps its own speed, and the saved one survives
+		setFilmOver(true)
+		tick()
+		video.playbackRate = 1
+		expect(video.playbackRate).toBe(1)
+		setFilmOver(false)
+		tick()
+		expect(video.playbackRate).toBe(1.25)
 		engine.stop()
 	})
 })
