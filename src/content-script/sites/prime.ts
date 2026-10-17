@@ -111,9 +111,13 @@ export const primeSite: RatingsSite = {
 			text(".atvwebplayersdk-episode-info") || text(".atvwebplayersdk-subtitle-text"),
 			prime.showTitle(),
 		),
-	// the next-up row comes up within seconds of the end credits Prime marks in its own playback data
+	// the next-up row comes up within seconds of the end credits Prime marks in its own playback data. The player keeps
+	// hidden, zero-height next-up cards in the page all along, so only a card that takes up space counts.
 	endScreenShowing: (video) =>
-		video.duration - video.currentTime < 15 * 60 && !!document.querySelector("[class*=nextupcard]"),
+		video.duration - video.currentTime < 15 * 60 &&
+		Array.from(document.querySelectorAll("[class*=nextupcard]")).some(
+			(card) => card.getBoundingClientRect().height > 0,
+		),
 	// the next-up row fills the bottom, so the pill goes top right
 	placeReview: (review) => review.classList.add("sb-review-top"),
 }
