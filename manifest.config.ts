@@ -30,7 +30,13 @@ export default {
 		...Object.values(SERVICES).map(({ script, matches }) => ({ js: [script], matches: [...matches] })),
 		{
 			js: ["src/content-script/credits-marker-start.ts"],
-			matches: [...SERVICES.HBO.matches, "*://*.primevideo.com/*"],
+			matches: [
+				...SERVICES.HBO.matches,
+				"*://*.primevideo.com/*",
+				...SERVICES.Amazon.matches
+					.filter((match) => match.includes("amazon."))
+					.map((match) => match.replace(/\/\*$/, "/gp/video/*")),
+			],
 			run_at: "document_start",
 		},
 	],

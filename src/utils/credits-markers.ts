@@ -5,9 +5,10 @@ export const CREDITS_MESSAGE = "streambuddy:credits-marker"
 // the content script asking the page script for the markers it found before the content script was listening
 export const CREDITS_REQUEST = "streambuddy:credits-marker-request"
 
+// a title the player loaded, with its credits when the service marks them
 export type CreditsMarker = {
 	// seconds of credits up to the end of the title
-	creditsFromEnd: number
+	creditsFromEnd?: number
 	// the title's own length in seconds, without ads
 	duration: number
 }
@@ -21,7 +22,8 @@ type PrimePlayback = {
 }
 
 function marker(start: unknown, duration: unknown): CreditsMarker | undefined {
-	if (typeof start !== "number" || typeof duration !== "number" || !(start > 0 && start < duration)) return undefined
+	if (typeof duration !== "number" || !(duration > 0)) return undefined
+	if (typeof start !== "number" || !(start > 0 && start < duration)) return { duration }
 	return { creditsFromEnd: duration - start, duration }
 }
 
@@ -42,5 +44,8 @@ export function primeCreditsMarker(json: PrimePlayback) {
 	const credits = json.transitionTimecodes?.result?.events?.find((event) => event.eventType === "END_CREDITS")
 	const duration = json.vodPlaylistedPlaybackUrls?.result?.playbackUrls?.fullTitleDurationMs
 	const found = marker(credits?.startTimeMs, duration)
-	return found && { creditsFromEnd: found.creditsFromEnd / 1000, duration: found.duration / 1000 }
+	if (!found) return undefined
+	return found.creditsFromEnd === undefined
+		? { duration: found.duration / 1000 }
+		: { creditsFromEnd: found.creditsFromEnd / 1000, duration: found.duration / 1000 }
 }

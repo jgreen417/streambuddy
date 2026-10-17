@@ -25,16 +25,16 @@ describe("Max credits marker", () => {
 		expect(marker?.creditsFromEnd).toBeCloseTo(142.141)
 		expect(marker?.duration).toBeCloseTo(4245.032)
 	})
-	it("has no marker when Max doesn't mark the credits", () => {
+	it("has only the title's length when Max doesn't mark the credits", () => {
 		// The Dark Knight Rises came with no annotations
-		expect(
-			maxCreditsMarker({
-				videos: [
-					{ type: "promo", duration: 4.004 },
-					{ type: "main", duration: 9868.275 },
-				],
-			}),
-		).toBeUndefined()
+		const marker = maxCreditsMarker({
+			videos: [
+				{ type: "promo", duration: 4.004 },
+				{ type: "main", duration: 9868.275 },
+			],
+		})
+		expect(marker?.creditsFromEnd).toBeUndefined()
+		expect(marker?.duration).toBeCloseTo(9872.279)
 		expect(maxCreditsMarker({})).toBeUndefined()
 	})
 })
@@ -54,8 +54,13 @@ describe("Prime Video credits marker", () => {
 		})
 		expect(marker).toEqual({ creditsFromEnd: 620, duration: 8372 })
 	})
-	it("has no marker without END_CREDITS or a length", () => {
-		expect(primeCreditsMarker({ transitionTimecodes: { result: { events: [] } } })).toBeUndefined()
+	it("has only the length without END_CREDITS, and nothing without a length", () => {
+		expect(
+			primeCreditsMarker({
+				transitionTimecodes: { result: { events: [] } },
+				vodPlaylistedPlaybackUrls: { result: { playbackUrls: { fullTitleDurationMs: 6462000 } } },
+			}),
+		).toEqual({ duration: 6462 })
 		expect(
 			primeCreditsMarker({
 				transitionTimecodes: { result: { events: [{ eventType: "END_CREDITS", startTimeMs: 1 }] } },
@@ -78,6 +83,11 @@ describe("picking the marker for the video playing", () => {
 		expect(markedCreditsFromEnd(video(11134.5))).toBe(551.5)
 		expect(markedCreditsFromEnd(video(10010))).toBe(400)
 		expect(markedCreditsFromEnd(video(5000))).toBeUndefined()
+	})
+	it("gives a title the service didn't mark no marker, not a similar title's", () => {
+		send({ creditsFromEnd: 300, duration: 6000 })
+		send({ duration: 6010 })
+		expect(markedCreditsFromEnd(video(6200))).toBeUndefined()
 	})
 	it("ignores markers that make no sense", () => {
 		send({ creditsFromEnd: 3000, duration: 3000 })

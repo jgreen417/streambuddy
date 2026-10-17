@@ -12,13 +12,15 @@ export function injectCreditsMarkerReader() {
 	document.documentElement.append(script)
 }
 
-// the markers seen on this page, newest last: the player also loads trailers and the next title
+// the titles the player loaded on this page, newest last, marked or not: it also loads trailers and the next title
 const markers: CreditsMarker[] = []
 export function listenForCreditsMarkers() {
 	window.addEventListener("message", (event) => {
 		if (event.source !== window || event.data?.type !== CREDITS_MESSAGE) return
 		const { creditsFromEnd, duration } = event.data
-		if (Number.isFinite(creditsFromEnd) && Number.isFinite(duration) && creditsFromEnd > 0 && creditsFromEnd < duration)
+		if (!(Number.isFinite(duration) && duration > 0)) return
+		if (creditsFromEnd === undefined) markers.push({ duration })
+		else if (Number.isFinite(creditsFromEnd) && creditsFromEnd > 0 && creditsFromEnd < duration)
 			markers.push({ creditsFromEnd, duration })
 	})
 	injectCreditsMarkerReader()
@@ -26,7 +28,8 @@ export function listenForCreditsMarkers() {
 }
 
 // The marker for this video: the video is the title plus any ads stitched in (up to a fifth of its length), so of the
-// markers that fit, the one for the title closest to the video's length.
+// titles that fit, the one closest to the video's length, newest on a tie. A title the service didn't mark gets none,
+// rather than a similar-length title's.
 export function markedCreditsFromEnd(video: HTMLVideoElement) {
 	let best: CreditsMarker | undefined
 	for (const marker of markers) {
