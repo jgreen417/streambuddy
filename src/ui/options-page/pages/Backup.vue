@@ -43,13 +43,13 @@ function replaceSettings(event: Event) {
 				:href="href"
 				download="settings.json"
 			>
-				Save
+				{{ $t("save") }}
 			</a>
 		</li>
 		<li>
 			<span>{{ $t("uploadSettings") }}</span>
 			<label>
-				Choose file
+				{{ $t("chooseFile") }}
 				<input
 					type="file"
 					name="settings"
@@ -69,7 +69,7 @@ function replaceSettings(event: Event) {
 				class="sb-danger"
 				@click="resetAddon"
 			>
-				Reset
+				{{ $t("reset") }}
 			</button>
 		</li>
 	</ul>
