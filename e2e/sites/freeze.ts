@@ -5,8 +5,6 @@
 export type FreezeInput = {
 	// text of the stylesheets the page can't read itself (cross-origin), by URL, from the recorded network traffic
 	sheets: Record<string, string>
-	// words to replace wherever they appear in text or attributes: profile names and the like
-	scrub: string[]
 }
 export type FrozenPage = {
 	html: string
@@ -16,7 +14,7 @@ export type FrozenPage = {
 	missingSheets: string[]
 }
 
-export function freeze({ sheets, scrub }: FreezeInput): FrozenPage {
+export function freeze({ sheets }: FreezeInput): FrozenPage {
 	const missingSheets: string[] = []
 	const absolute = (url: string, base: string) => {
 		try {
@@ -79,7 +77,7 @@ export function freeze({ sheets, scrub }: FreezeInput): FrozenPage {
 		if (url && !url.startsWith("data:")) images[url] = [img.naturalWidth || img.width, img.naturalHeight || img.height]
 	}
 
-	let html = document.documentElement.getHTML({ serializableShadowRoots: true, shadowRoots: roots })
+	const html = document.documentElement.getHTML({ serializableShadowRoots: true, shadowRoots: roots })
 	for (const el of marked) {
 		el.removeAttribute("data-sb-scroll")
 		el.removeAttribute("data-sb-css")
@@ -117,15 +115,9 @@ export function freeze({ sheets, scrub }: FreezeInput): FrozenPage {
 	}
 	for (const el of everywhere("iframe")) el.removeAttribute("src")
 	for (const el of everywhere("*"))
-		for (const attr of Array.from(el.attributes)) {
-			if (attr.name.startsWith("on")) el.removeAttribute(attr.name)
-			else if (
-				["src", "href", "poster"].includes(attr.name) &&
-				!attr.value.startsWith("data:") &&
-				!attr.value.startsWith("#")
-			)
-				el.setAttribute(attr.name, absolute(attr.value, location.href))
-		}
+		// links and sources keep their own spelling (site code matches on it, e.g. href^="/video/watch/"); the copy is
+		// served at the page's own URL, so relative ones still resolve
+		for (const attr of Array.from(el.attributes)) if (attr.name.startsWith("on")) el.removeAttribute(attr.name)
 	for (const video of everywhere("video")) {
 		video.removeAttribute("src")
 		video.innerHTML = ""
@@ -136,7 +128,5 @@ export function freeze({ sheets, scrub }: FreezeInput): FrozenPage {
 		style.textContent = adopted.join("\n")
 		copy.head.append(style)
 	}
-	html = `<!doctype html>\n${copy.documentElement.outerHTML}`
-	for (const word of scrub.filter(Boolean)) html = html.split(word).join("Viewer")
-	return { html, images, missingSheets }
+	return { html: `<!doctype html>\n${copy.documentElement.outerHTML}`, images, missingSheets }
 }

@@ -112,8 +112,30 @@ await writeFile(path.join(dir, "shot.png"), await screenshotWithoutArt(page))
 await Promise.all(pending)
 const frozen = await page.evaluate((input) => (globalThis as unknown as { sbFreeze: typeof freeze }).sbFreeze(input), {
 	sheets,
-	scrub: args.scrub!.split(","),
 })
+// Profile names and the like, replaced as whole words in every file written, the probe's report included, so the
+// copy and the report still describe the same page. Longest first, so "Josh Green" goes before "Josh"; a space in a
+// name also matches the &nbsp; the page may serialise it as.
+const names = args
+	.scrub!.split(",")
+	.map((name) => name.trim())
+	.filter(Boolean)
+	.sort((a, b) => b.length - a.length)
+const named = names.length
+	? new RegExp(
+			names
+				.map(
+					(name) =>
+						`(?<![\\p{L}\\p{N}])${name
+							.split(/\s+/)
+							.map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+							.join("(?:\\s|&nbsp;)+")}(?![\\p{L}\\p{N}])`,
+				)
+				.join("|"),
+			"gu",
+		)
+	: null
+const scrub = (text: string) => (named ? text.replace(named, "Viewer") : text)
 const meta = {
 	state: args.state,
 	service,
@@ -128,9 +150,9 @@ const meta = {
 	missingSheets: frozen.missingSheets,
 }
 await mkdir(dir, { recursive: true })
-await writeFile(path.join(dir, "page.html"), frozen.html)
+await writeFile(path.join(dir, "page.html"), scrub(frozen.html))
 for (const [name, value] of Object.entries({ images: frozen.images, resources, feeds, probe, meta }))
-	await writeFile(path.join(dir, `${name}.json`), JSON.stringify(value, null, "\t"))
+	await writeFile(path.join(dir, `${name}.json`), scrub(JSON.stringify(value, null, "\t")))
 console.log(
 	`${args.state}: ${probe.cards.length} cards, ${probe.episodes.length} episodes${probe.player ? ", player" : ""}; ` +
 		`${Object.keys(frozen.images).length} images, ${Object.keys(resources).length} files, ` +
