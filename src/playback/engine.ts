@@ -250,7 +250,7 @@ export class PlaybackEngine {
 
 	// #region speed
 	private handleSpeed(settings: PlaybackSettings) {
-		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.() || filmOver()) {
+		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.() || filmOver(this.video)) {
 			this.overlay.removeSpeed()
 			return
 		}
@@ -261,7 +261,8 @@ export class PlaybackEngine {
 		this.overlay.renderSpeed(this.rate, SPEED_PRESETS, (rate) => this.chooseRate(rate))
 	}
 	private applyRate() {
-		if (!this.video || this.adRestore || this.rate === null || !this.settings().speedControl || filmOver()) return
+		if (!this.video || this.adRestore || this.rate === null || !this.settings().speedControl || filmOver(this.video))
+			return
 		this.setRate(this.video, this.rate)
 	}
 	private setRate(video: HTMLVideoElement, rate: number) {
@@ -272,7 +273,7 @@ export class PlaybackEngine {
 	// but treat any other change as the viewer choosing a new speed
 	private onRateChange(video: HTMLVideoElement) {
 		// once the film is over the site's own rate stands, and doesn't replace the saved speed
-		if (this.adRestore || this.rate === null || !this.settings().speedControl || filmOver()) return
+		if (this.adRestore || this.rate === null || !this.settings().speedControl || filmOver(this.video)) return
 		// our own change (rate change events arrive after the fact, so compare rather than flag)
 		if (Math.abs(video.playbackRate - this.rate) < 0.001) return
 		if (video.playbackRate === 1 && this.rate !== 1 && video.currentTime < 3) {
@@ -295,7 +296,7 @@ export class PlaybackEngine {
 		this.overlay.flashSpeed()
 	}
 	private onKey(event: KeyboardEvent) {
-		if (!this.video || !this.settings().speedControl || this.rate === null || filmOver()) return
+		if (!this.video || !this.settings().speedControl || this.rate === null || filmOver(this.video)) return
 		const target = event.target as HTMLElement | null
 		if (target?.isContentEditable || /^(input|textarea|select)$/i.test(target?.tagName ?? "")) return
 		// ">" / "<" on most layouts; some keyboards and tools report Shift with "." / ","
