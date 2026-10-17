@@ -12,6 +12,8 @@ export function filmOver(video: HTMLVideoElement | null) {
 	if (!ended) return false
 	// no video, or one still loading: wait until it's known whether it's a trailer
 	if (!video || !Number.isFinite(video.duration)) return true
-	// the same film: over unless scrubbed back before the credits; another video: over while it's a trailer
-	return video.duration === ended.duration ? video.currentTime >= ended.at - 1 : video.duration < SHORTEST_FILM
+	// the same film: over unless scrubbed back before the credits
+	if (video.duration === ended.duration) return video.currentTime >= ended.at - 1
+	// another video: over while it's a trailer, which lasts a couple of minutes at most (Netflix then leaves the player)
+	return video.duration < SHORTEST_FILM && video.currentTime <= 2 * 60
 }

@@ -265,6 +265,13 @@ describe("playback engine", () => {
 		video.playbackRate = 1
 		tick()
 		expect(video.playbackRate).toBe(1)
+		// a short video still playing after a couple of minutes isn't a trailer: an extra or an episode
+		video.currentTime = 150
+		tick()
+		expect(video.playbackRate).toBe(1.25)
+		video.currentTime = 0
+		tick()
+		video.playbackRate = 1
 		// the next film autoplays while the review pill isn't updating (a background tab)
 		video.duration = 6000
 		tick()
