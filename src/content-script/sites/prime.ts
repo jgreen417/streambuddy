@@ -45,6 +45,11 @@ function logoHeight(container: HTMLElement) {
 	const height = Number(match[1])
 	return (height - Number(match[2])) / height
 }
+// the badges in a carousel row share one line, clear of the tallest logo among the row's cards
+function rowLogoHeight(card: HTMLElement, host: HTMLElement) {
+	const row = card.closest("li")?.parentElement
+	return row ? Math.max(...Array.from(row.querySelectorAll<HTMLElement>(":scope > li"), logoHeight)) : logoHeight(host)
+}
 
 // kind 0: cards in rows (and the search grid's own listitems), which carry their title; kind 1: the other cards
 export const primeSite: RatingsSite = {
@@ -77,7 +82,7 @@ export const primeSite: RatingsSite = {
 	badgeHost(card) {
 		if (card.dataset.cardTitle) {
 			const host = card.firstChild?.firstChild as HTMLElement | null
-			return host ? { host, corner: "bottom", raise: logoHeight(host) } : null
+			return host ? { host, corner: "bottom", raise: rowLogoHeight(card, host) } : null
 		}
 		// the hero's metadata block has no artwork, only the title's logo image, which the badge mustn't cover
 		const hero = card.querySelector<HTMLElement>('div[data-testid="title-metadata-main"]')
