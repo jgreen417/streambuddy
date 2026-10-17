@@ -152,5 +152,9 @@ console.log(
 		`${Object.keys(frozen.images).length} images, ${Object.keys(resources).length} files, ` +
 		`${Object.values(feeds).flat().length} feed responses${frozen.missingSheets.length ? `, ${frozen.missingSheets.length} stylesheets missing` : ""} → ${dir}`,
 )
-if (args.cdp) await page.close()
-else await browser.close()
+// an attached browser keeps running (its connection would hold the process open); a launched one is closed
+if (args.cdp) {
+	await page.close()
+	process.exit(0)
+}
+await browser.close()
