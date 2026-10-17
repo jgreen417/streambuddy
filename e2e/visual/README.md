@@ -1,16 +1,18 @@
 # Visual checks
 
-Checks the rating badges and the credits prompt without opening a streaming site or a real browser. CI runs them on
-every pull request (`.github/workflows/visual.yml`).
+Checks the rating badges, the credits prompt, the episode chips, the toolbar popup and the settings pages without
+opening a streaming site or a real browser. CI runs them on every pull request (`.github/workflows/visual.yml`).
 
 ## What a run does
 
 1. Builds the Chrome extension as a store build (`global-setup.ts`).
 2. Loads it into headless Chromium and opens saved copies of the sites (`fixtures/`): Netflix's standard, Top 10,
    Continue Watching, episode and narrow cards; Prime's carousel cards (with and without the prime or a channel logo),
-   large cards, super carousel (also hovered, when Prime redraws the card around the badge), Top 10 and hero; Max's posters and landscape tiles; and Netflix's player at the
-   credits. Every request is answered by `harness.ts`, with ratings seeded from `ratings.ts`, so nothing touches the
-   network or needs an account.
+   large cards, super carousel (also hovered, when Prime redraws the card around the badge), Top 10 and hero; Max's
+   posters and landscape tiles; Netflix's player at the credits; and a Netflix series page with its episode list. The
+   popup and settings pages (`pages.visual.ts`) open from the extension itself, at a fixed date so the Stats tab draws
+   the same every run. Every request is answered by `harness.ts`, with ratings seeded from `ratings.ts`, so nothing
+   touches the network or needs an account.
 3. Measures every badge against the placement spec (`geometry.ts`): 3px from the artwork's right edge and from its top
    (Netflix) or bottom (Prime, Max), 3px above Prime's channel logo, inside the artwork, and corners concentric with
    the artwork's.
@@ -42,5 +44,6 @@ npx playwright show-report e2e/.report
   `data-sb-corner="top|bottom"`, give the title a rating in `ratings.ts`, and bump the site's badge count in
   `sites.ts`. Prime's cards must stay on one line with no whitespace inside them, as Prime serves them.
 - A new setting: add an entry to `LOOKS` in `cards.visual.ts`.
+- A new settings page: add its route to `pages.visual.ts`.
 - A new overlay (the after-credits pill): add a test in `credits.visual.ts` on the player fixture; its states are
   already listed there as pending tests.

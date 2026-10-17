@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Stranger Things | Netflix</title>
+		<!--
+  Netflix's title modal for a series, cut down to what streamBuddy reads for episode ratings: the details metadata,
+  the "About <title>" heading, the season dropdown and the episode list's titleCard containers with their index.
+  Artwork comes from /art/ (see art.ts).
+-->
+		<style>
+			body {
+				margin: 0;
+				background: #141414;
+				color: #e5e5e5;
+				font:
+					14px/1.4 Arial,
+					"Liberation Sans",
+					sans-serif;
+			}
+			[data-uia="modal-motion-container-DETAIL_MODAL"] {
+				width: 850px;
+				margin: 32px auto;
+				border-radius: 6px;
+				background: #181818;
+				overflow: hidden;
+			}
+			.hero img {
+				display: block;
+				width: 100%;
+			}
+			.body {
+				padding: 0 48px 32px;
+			}
+			[data-uia="previewModal--detailsMetadata"] {
+				padding: 16px 0 24px;
+				color: #bcbcbc;
+			}
+			.episodeSelector-header {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				margin: 0 0 16px;
+			}
+			.episodeSelector-header h3 {
+				margin: 0;
+				font-size: 24px;
+			}
+			[data-uia="dropdown-toggle"] {
+				padding: 8px 16px;
+				border: 1px solid #4d4d4d;
+				border-radius: 2px;
+				background: #242424;
+				color: inherit;
+				font: inherit;
+				font-size: 18px;
+			}
+			[data-uia="titleCard--container"] {
+				display: flex;
+				align-items: center;
+				gap: 16px;
+				min-height: 100px;
+				padding: 16px 32px 16px 24px;
+				border-bottom: 1px solid #404040;
+				border-radius: 4px;
+			}
+			.titleCard-title_index {
+				flex: 0 0 24px;
+				font-size: 24px;
+				color: #d2d2d2;
+				text-align: center;
+			}
+			.titleCard-imageWrapper {
+				flex: 0 0 144px;
+				height: 81px;
+				border-radius: 4px;
+				overflow: hidden;
+			}
+			.titleCard-imageWrapper img {
+				display: block;
+				width: 100%;
+				height: 100%;
+			}
+			.titleCardList--metadataWrapper {
+				flex: 1;
+				min-width: 0;
+			}
+			.titleCard-title {
+				display: flex;
+				justify-content: space-between;
+				margin: 0 0 6px;
+				font-weight: 700;
+			}
+			.titleCard-synopsis {
+				margin: 0;
+				color: #d2d2d2;
+			}
+			[data-uia="about-container"] h3 {
+				margin: 32px 0 8px;
+				font-size: 24px;
+				font-weight: 400;
+			}
+		</style>
+	</head>
+	<body>
+		<div data-uia="modal-motion-container-DETAIL_MODAL">
+			<div class="hero">
+				<img
+					alt=""
+					src="https://art.test/art/a.svg?w=850&h=300&hue=330"
+				/>
+			</div>
+			<div class="body">
+				<div data-uia="previewModal--detailsMetadata">
+					<span class="duration">4 Seasons</span>
+					<p>When a young boy vanishes, a small town uncovers a mystery involving secret experiments.</p>
+				</div>
+				<div
+					data-uia="episode-selector"
+					data-shot="episodes"
+				>
+					<div class="episodeSelector-header">
+						<h3>Episodes</h3>
+						<button
+							data-uia="dropdown-toggle"
+							type="button"
+						>
+							Season 1
+						</button>
+					</div>
+					<div data-uia="titleCard--container">
+						<div class="titleCard-title_index">1</div>
+						<div class="titleCard-imageWrapper">
+							<img
+								alt=""
+								src="https://art.test/art/a.svg?w=144&h=81&hue=200"
+							/>
+						</div>
+						<div class="titleCardList--metadataWrapper">
+							<div class="titleCard-title"><span>Chapter One</span><span>48m</span></div>
+							<p class="titleCard-synopsis">On his way home from a friend's house, a young boy sees something terrifying.</p>
+						</div>
+					</div>
+					<div data-uia="titleCard--container">
+						<div class="titleCard-title_index">2</div>
+						<div class="titleCard-imageWrapper">
+							<img
+								alt=""
+								src="https://art.test/art/a.svg?w=144&h=81&hue=20"
+							/>
+						</div>
+						<div class="titleCardList--metadataWrapper">
+							<div class="titleCard-title"><span>Chapter Two</span><span>55m</span></div>
+							<p class="titleCard-synopsis">Lucas, Mike and Dustin try to talk to the girl they found in the woods.</p>
+						</div>
+					</div>
+					<div data-uia="titleCard--container">
+						<div class="titleCard-title_index">3</div>
+						<div class="titleCard-imageWrapper">
+							<img
+								alt=""
+								src="https://art.test/art/a.svg?w=144&h=81&hue=110"
+							/>
+						</div>
+						<div class="titleCardList--metadataWrapper">
+							<div class="titleCard-title"><span>Chapter Three</span><span>51m</span></div>
+							<p class="titleCard-synopsis">An increasingly concerned Nancy looks for Barb and finds out what Jonathan's been up to.</p>
+						</div>
+					</div>
+					<div data-uia="titleCard--container">
+						<div class="titleCard-title_index">4</div>
+						<div class="titleCard-imageWrapper">
+							<img
+								alt=""
+								src="https://art.test/art/a.svg?w=144&h=81&hue=270"
+							/>
+						</div>
+						<div class="titleCardList--metadataWrapper">
+							<div class="titleCard-title"><span>Chapter Four</span><span>50m</span></div>
+							<p class="titleCard-synopsis">Refusing to believe Will is dead, Joyce tries to connect with her son.</p>
+						</div>
+					</div>
+				</div>
+				<div data-uia="about-container">
+					<h3>About <strong>Stranger Things</strong></h3>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

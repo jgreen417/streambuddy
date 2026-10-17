@@ -22,10 +22,13 @@ export type OpenOptions = {
 	// with signedIn, a TMDb key but no Letterboxd username linked
 	noLetterboxd?: boolean
 	viewport?: { width: number; height: number }
+	// more of the extension's local storage, such as the popup's viewing history
+	local?: Record<string, unknown>
 }
 
 const PAGES: { host: RegExp; path: RegExp; file: string }[] = [
 	{ host: /netflix\.com$/, path: /^\/watch\//, file: "netflix-player.html" },
+	{ host: /netflix\.com$/, path: /^\/title\//, file: "netflix-title.html" },
 	{ host: /netflix\.com$/, path: /^\//, file: "netflix.html" },
 	{ host: /primevideo\.com$/, path: /^\//, file: "prime.html" },
 	{ host: /max\.com$/, path: /^\//, file: "max.html" },
@@ -112,6 +115,22 @@ function letterboxdPage(url: URL) {
 	return null
 }
 
+// IMDb's ratings for the episodes on the title page (netflix-title.html), by episode number; 0 is an episode IMDb
+// has no rating for yet, which gets no chip
+const IMDB_EPISODES = [8.9, 7.4, 0, 6.2]
+function imdbEpisodes(query: string) {
+	const season = Number(/includeSeasons: \["(\d+)"\]/.exec(query)?.[1])
+	const edges = IMDB_EPISODES.map((rating, i) => ({
+		node: {
+			id: `tt${9000001 + i}`,
+			titleText: { text: `Chapter ${i + 1}` },
+			ratingsSummary: { aggregateRating: rating || null, voteCount: rating ? 41000 - i * 3000 : 0 },
+			series: { episodeNumber: { seasonNumber: season, episodeNumber: i + 1 } },
+		},
+	}))
+	return { data: { title: { episodes: { episodes: { edges, pageInfo: { hasNextPage: false, endCursor: null } } } } } }
+}
+
 const WAV = silentWav(22 * 60)
 
 async function handle(route: Route) {
@@ -138,6 +157,10 @@ async function handle(route: Route) {
 	if (url.hostname === "api.themoviedb.org" && url.pathname.startsWith("/3/search/")) {
 		const result = TMDB_RESULTS[url.searchParams.get("query") ?? ""]
 		return route.fulfill({ json: { page: 1, results: result ? [result] : [], total_results: result ? 1 : 0 } })
+	}
+	if (url.hostname === "caching.graphql.imdb.com") {
+		const { query } = JSON.parse(request.postData() ?? "{}")
+		if (/episodes\(/.test(query ?? "")) return route.fulfill({ json: imdbEpisodes(query) })
 	}
 	if (url.hostname === "letterboxd.com") {
 		const page = letterboxdPage(url)
@@ -205,6 +228,7 @@ async function launch(options: OpenOptions) {
 			local: {
 				DBCache: dbCache(today, options.settings?.General?.ratingSources as Parameters<typeof dbCache>[1]),
 				...(letterboxd ? { letterboxdProfile: { ...PROFILE, fetchedAt: Date.now() } } : {}),
+				...options.local,
 			},
 			sync: {
 				settings: {
