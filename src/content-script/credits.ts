@@ -51,7 +51,9 @@ export function updateCreditsPrompt(site: RatingsSite) {
 	}
 	const metadata = site.creditsMetadata?.()
 	// how long the service says the credits run, when it does
-	const marked = video && metadata?.creditsShare ? metadata.creditsShare * video.duration : undefined
+	const marked = video
+		? (site.creditsFromEnd?.(video) ?? (metadata?.creditsShare ? metadata.creditsShare * video.duration : undefined))
+		: undefined
 	// look the film up a couple of minutes before its credits, so it's ready when they start
 	if (!video || !inCredits(video, (marked ?? creditsLength(video.duration)) + 2 * 60)) {
 		creditsPrompt.tick(null, null, true)

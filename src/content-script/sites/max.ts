@@ -1,5 +1,6 @@
 import { hbo } from "@/playback/sites/hbo"
 import { episodeFromPlayer, gridsAround, text } from "./dom"
+import { markedCreditsFromEnd } from "../credits-marker"
 import type { RatingsSite } from "./types"
 
 // A tile's label is "⁦⁨⁨Title⁩⁩. ⁨1 of 20⁩. ⁨⁨Leaving Soon⁩⁩⁩": the title is the first isolated run
@@ -36,6 +37,7 @@ export const maxSite: RatingsSite = {
 	rowItem: (card) => card,
 	searchGrids: () => gridsAround('a[data-testid$="_tile"]', 'a[data-testid$="_tile"]'),
 	isPlayerPage: () => location.pathname.includes("/video/watch"),
+	creditsFromEnd: markedCreditsFromEnd,
 	playingTitle: () => document.title,
 	// the player can be missing its show title
 	playingEpisode: () => episodeFromPlayer(text('[data-testid="player-ux-season-episode"]'), hbo.showTitle()),

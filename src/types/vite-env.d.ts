@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 /// <reference types="vue-router/client" />
+/// <reference types="@crxjs/vite-plugin/client" />
 
 // Put your variables here:
 

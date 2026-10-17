@@ -1,6 +1,7 @@
 import { prime } from "@/playback/sites/prime"
 import { isSeasonOnlyTitle } from "@/utils/tmdb"
 import { raiseBadges } from "@/content-script/badge"
+import { markedCreditsFromEnd } from "../credits-marker"
 import { episodeFromPlayer, gridsAround, text } from "./dom"
 import type { MediaType, RatingsSite } from "./types"
 
@@ -102,10 +103,14 @@ export const primeSite: RatingsSite = {
 	searchGrids: () => gridsAround('article[data-card-title], article[data-testid*="-card"]', "article"),
 	// the same two player roots the playback engine looks for; newer players only have #dv-web-player
 	isPlayerPage: () => !!document.querySelector(".dv-player-fullscreen video, #dv-web-player video"),
+	creditsFromEnd: markedCreditsFromEnd,
 	playingTitle: () => document.title,
 	// newer players label the episode in episode-info
 	playingEpisode: () =>
-		episodeFromPlayer(text(".atvwebplayersdk-episode-info") || text(".atvwebplayersdk-subtitle-text"), prime.showTitle()),
+		episodeFromPlayer(
+			text(".atvwebplayersdk-episode-info") || text(".atvwebplayersdk-subtitle-text"),
+			prime.showTitle(),
+		),
 	// the next-up row comes up within seconds of the end credits Prime marks in its own playback data
 	endScreenShowing: (video) =>
 		video.duration - video.currentTime < 15 * 60 && !!document.querySelector("[class*=nextupcard]"),

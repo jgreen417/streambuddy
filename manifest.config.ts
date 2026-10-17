@@ -27,6 +27,10 @@ export default {
 		default_popup: "src/ui/action-popup/index.html",
 	},
 	content_scripts: Object.values(SERVICES).map(({ script, matches }) => ({ js: [script], matches: [...matches] })),
+	// scripts content scripts put into the page (the credits-marker reader) are reachable only from the streaming sites
+	web_accessible_resources: [
+		{ resources: ["<dynamic_resource>"], matches: Object.values(SERVICES).flatMap(({ matches }) => [...matches]) },
+	],
 	options_page: "src/ui/options-page/index.html",
 	// alarms only drives the sideloaded copy's reload-on-rebuild check; store builds don't need it
 	permissions: env.RELEASE ? ["storage", "activeTab"] : ["storage", "activeTab", "alarms"],
