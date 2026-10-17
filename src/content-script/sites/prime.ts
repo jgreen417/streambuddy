@@ -118,6 +118,20 @@ export const primeSite: RatingsSite = {
 		Array.from(document.querySelectorAll("[class*=nextupcard]")).some(
 			(card) => card.getBoundingClientRect().height > 0,
 		),
-	// the next-up row fills the bottom, so the pill goes top right
-	placeReview: (review) => review.classList.add("sb-review-top"),
+	// the next-up row fills the bottom, so the pill goes top right, under the player's top buttons and lined up with the
+	// last of them. Prime scales those buttons with the player and drops them while its controls are hidden, so the pill
+	// stays where they last were.
+	placeReview(review) {
+		review.classList.add("sb-review-top")
+		const buttons = Array.from(document.querySelectorAll("#dv-web-player button, .dv-player-fullscreen button"))
+			.filter((button) => !review.contains(button))
+			.map((button) => button.getBoundingClientRect())
+			.filter((rect) => rect.width > 0 && rect.bottom < innerHeight / 4)
+		if (!buttons.length) return
+		review.style.setProperty(
+			"--sb-review-right",
+			`${Math.round(innerWidth - Math.max(...buttons.map((rect) => rect.right)))}px`,
+		)
+		review.style.setProperty("--sb-review-top", `${Math.round(Math.max(...buttons.map((rect) => rect.bottom)) + 12)}px`)
+	},
 }

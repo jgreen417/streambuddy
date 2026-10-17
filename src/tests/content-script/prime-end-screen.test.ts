@@ -18,4 +18,18 @@ describe("Prime's end screen", () => {
 		card.getBoundingClientRect = () => ({ height: 120 }) as DOMRect
 		expect(primeSite.endScreenShowing(video)).toBe(true)
 	})
+	it("puts the review pill under the player's top buttons, lined up with the last one", () => {
+		document.body.innerHTML = `<div id="dv-web-player"><button></button><button></button></div><div class="sb-review"></div>`
+		const [subtitles, settings] = Array.from(document.querySelectorAll("button"))
+		subtitles.getBoundingClientRect = () => ({ width: 38, right: 943, bottom: 56 }) as DOMRect
+		settings.getBoundingClientRect = () => ({ width: 38, right: innerWidth - 24, bottom: 56 }) as DOMRect
+		const review = document.querySelector<HTMLElement>(".sb-review")!
+		primeSite.placeReview(review)
+		expect(review.style.getPropertyValue("--sb-review-right")).toBe("24px")
+		expect(review.style.getPropertyValue("--sb-review-top")).toBe("68px")
+		// once the controls hide, the pill stays put
+		document.getElementById("dv-web-player")!.remove()
+		primeSite.placeReview(review)
+		expect(review.style.getPropertyValue("--sb-review-top")).toBe("68px")
+	})
 })
