@@ -41,7 +41,7 @@ const { account, ratingsPaused } = useAccount()
 
 <style scoped>
 .sb-welcome {
-	max-width: 560px;
+	max-width: 620px;
 	margin-bottom: 20px;
 }
 .sb-welcome img {
@@ -54,7 +54,7 @@ const { account, ratingsPaused } = useAccount()
 	margin: 0 0 6px;
 }
 .sb-done {
-	max-width: 560px;
+	max-width: 620px;
 	margin-top: 16px;
 	padding: 12px 14px;
 	border-radius: 10px;

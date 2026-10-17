@@ -19,10 +19,8 @@ const href = URL.createObjectURL(file)
 function replaceSettings(event: Event) {
 	const input = event.target as HTMLInputElement
 	const file = input.files?.[0]
-	if (file === undefined || file.type !== "application/json") {
-		alert(t("invalidJson"))
-		return
-	}
+	// MIME types for local .json files vary by system; parsing it is the real check
+	if (file === undefined) return
 	const reader = new FileReader()
 	reader.addEventListener("load", () => {
 		try {
@@ -36,42 +34,97 @@ function replaceSettings(event: Event) {
 </script>
 
 <template>
-	<div>
-		<div class="flex flex-col flex-align">
-			<h2>{{ $t("importSettings") }}</h2>
-			<div>
-				<a
-					class="btn btn-secondary rounded-2xl my-2"
-					:href="href"
-					download="settings.json"
-				>
-					{{ $t("saveSettings") }}
-				</a>
-			</div>
-			<div class="flex flex-row flex-align">
-				<p>{{ $t("uploadSettings") }}</p>
+	<h1>{{ $t("backup") }}</h1>
+	<p class="description">{{ $t("backupHint") }}</p>
+	<ul class="sb-backup">
+		<li>
+			<span>{{ $t("saveSettings") }}</span>
+			<a
+				:href="href"
+				download="settings.json"
+			>
+				Save
+			</a>
+		</li>
+		<li>
+			<span>{{ $t("uploadSettings") }}</span>
+			<label>
+				Choose file
 				<input
 					type="file"
 					name="settings"
-					accept="text/json"
-					class="file-input w-full max-w-xs"
+					accept="application/json,.json"
+					class="sr-only"
 					@change="replaceSettings"
 				/>
-			</div>
-			<!-- <div class="flex flex-row flex-align">
-				<input
-					type="file"
-					name="settings"
-					accept="text/json"
-				/>
-				<div class="btn btn-secondary rounded-2xl">{{ $t("uploadSettings") }}</div>
-			</div> -->
-		</div>
-	</div>
-	<div
-		class="btn btn-secondary rounded-2xl reset my-2"
-		@click="resetAddon"
-	>
-		{{ $t("resetAddon") }}
-	</div>
+			</label>
+		</li>
+		<li>
+			<span>
+				{{ $t("resetAddon") }}
+				<small>{{ $t("resetHint") }}</small>
+			</span>
+			<button
+				type="button"
+				class="sb-danger"
+				@click="resetAddon"
+			>
+				Reset
+			</button>
+		</li>
+	</ul>
 </template>
+
+<style scoped>
+.sb-backup {
+	list-style: none;
+	padding: 0;
+	margin: 12px 0 0;
+	max-width: 620px;
+	display: grid;
+	gap: 6px;
+}
+.sb-backup li {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 10px 12px;
+	border-radius: 10px;
+	background: var(--sb-surface-sunken);
+	border: 1px solid var(--sb-line);
+}
+.sb-backup small {
+	display: block;
+	color: var(--sb-text-muted);
+	font-size: 13px;
+}
+.sb-backup a,
+.sb-backup label,
+.sb-backup button {
+	flex: none;
+	padding: 5px 12px;
+	border-radius: 999px;
+	border: 1px solid var(--sb-line-raised);
+	background: var(--sb-surface);
+	color: var(--sb-text);
+	font-size: 13px;
+	text-decoration: none;
+	cursor: pointer;
+}
+.sb-backup a:hover,
+.sb-backup label:hover,
+.sb-backup button:hover {
+	background: var(--sb-surface-hover);
+}
+.sb-backup label {
+	position: relative;
+}
+.sb-backup label:has(input:focus-visible) {
+	outline: 2px solid var(--sb-focus);
+	outline-offset: 2px;
+}
+.sb-backup .sb-danger {
+	color: var(--sb-danger);
+}
+</style>

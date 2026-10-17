@@ -144,6 +144,15 @@ export function readEpisodeCards(site: FeatureSite, root: HTMLElement) {
 	return cards
 }
 
+// the rounding of an episode thumbnail's bottom-right corner, where the chip sits: on the thumbnail or its image
+function episodeCornerRadius(target: HTMLElement) {
+	const radius = (el: Element | null) => {
+		const value = el ? getComputedStyle(el).borderBottomRightRadius : ""
+		return value.endsWith("px") ? Number.parseFloat(value) || 0 : 0
+	}
+	return Math.max(radius(target), radius(target.querySelector("img")))
+}
+
 // IMDb scores beside each episode on a series' title page
 export class EpisodeRatings {
 	private info = new Map<string, Promise<FeatureRating | null>>()
@@ -244,6 +253,9 @@ export class EpisodeRatings {
 					source.textContent = "IMDb"
 					chip.append(score, source)
 					look.apply(chip)
+					const radius = episodeCornerRadius(entry.target)
+					chip.style.setProperty("--sb-badge-r", `${Math.max(radius - 3, 2)}px`)
+					chip.style.setProperty("--sb-pill-r", `${Math.max(radius - 6, 2)}px`)
 					chip.title = `S${season} E${entry.episode}: ${rating.title} · ${rating.votes.toLocaleString()} ratings`
 					chip.setAttribute("aria-label", `IMDb ${rating.rating.toFixed(1)}, ${chip.title}`)
 					chip.addEventListener("click", (event) => event.stopPropagation())
