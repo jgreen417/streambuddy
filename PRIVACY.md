@@ -1,6 +1,6 @@
 # streamBuddy privacy policy
 
-_Last updated: 12 October 2026_
+_Last updated: 16 October 2026_
 
 streamBuddy is a browser extension that shows film and TV ratings on streaming sites. It has no server, no analytics and no advertising. The developer never receives your data.
 
@@ -19,6 +19,8 @@ All of the following stays in your browser's extension storage. "Synced" items t
 | Titles you choose to hide | This device | To hide them |
 
 Uninstalling streamBuddy deletes all of it. You can also erase it with "Reset" on the Backup page in settings.
+
+Removing streamBuddy opens a short, optional form asking why. streamBuddy sends nothing with it; the form only gets what you choose to type.
 
 ## What streamBuddy sends, and to whom
 

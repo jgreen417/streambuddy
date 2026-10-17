@@ -3,6 +3,7 @@ import { debugLog, logLookupFailure } from "@/utils/log"
 import { BUILT_IN_TMDB_TOKEN, getAccount, onAccountChanged, setBuiltInKeyRejected, tmdbRequest } from "@/utils/account"
 import { createProfileSync } from "@/utils/profile-sync"
 import { onMessage } from "webext-bridge/background"
+import { UNINSTALL_SURVEY_URL } from "@/constants/links"
 import type { FetchRequestType, LookupError } from "@/utils/messages"
 import {
 	fetchImdbRating,
@@ -27,6 +28,9 @@ browser.runtime.onInstalled.addListener(async ({ reason }) => {
 		url: browser.runtime.getURL("src/ui/options-page/index.html#/options-page/install"),
 	})
 })
+
+// an empty URL also clears one an earlier version registered
+browser.runtime.setUninstallURL(UNINSTALL_SURVEY_URL)
 
 self.onerror = function (message, source, lineno, colno, error) {
 	console.info("Error: " + message)

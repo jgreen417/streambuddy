@@ -15,7 +15,7 @@ it.each(["timeout", "broken body", "malformed JSON"])(
 	"classifies %s in the background response and error channel",
 	async (scenario) => {
 		vi.useFakeTimers()
-		Object.assign(browser.runtime, { onInstalled: { addListener: vi.fn() } })
+		Object.assign(browser.runtime, { onInstalled: { addListener: vi.fn() }, setUninstallURL: vi.fn() })
 		Object.assign(browser, {
 			alarms: { create: vi.fn(), onAlarm: { addListener: vi.fn() } },
 			tabs: { create: vi.fn() },

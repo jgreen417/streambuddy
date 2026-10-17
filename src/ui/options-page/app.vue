@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DONATE_URL, ISSUES_URL, PRIVACY_URL, SOURCE_URL } from "@/constants/links"
+import { BUG_REPORT_URL, DONATE_URL, PRIVACY_URL, SOURCE_URL } from "@/constants/links"
 import { useFrontendStore } from "@/stores/options.store"
 const version = __VERSION__
 // won't sync without opening once
@@ -105,7 +105,7 @@ const hash = computed(() => router.currentRoute.value.path)
 					</a>
 					·
 					<a
-						:href="ISSUES_URL"
+						:href="BUG_REPORT_URL"
 						target="_blank"
 						rel="noopener"
 					>
