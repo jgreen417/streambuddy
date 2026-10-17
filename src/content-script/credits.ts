@@ -9,6 +9,7 @@ import { letterboxdUsername, loggedRating } from "./profile"
 import { settings } from "@/stores/settings"
 import { locale, ratingSources } from "./settings"
 import type { RatingsSite } from "./sites/types"
+import { setFilmOver } from "@/utils/film-over"
 import type { RatingSources } from "@/stores/storeTypes"
 
 const creditsPrompt = new CreditsRatingPrompt(() => {
@@ -26,8 +27,11 @@ let playerLookup: {
 // Netflix swaps the film for a trailer about 10 seconds into its end screen and then leaves the player, and Prime
 // autoplays the next film in the same video and moves to its page
 let creditsShownFor: number | null = null
+// where in the film the pill came up, to tell scrubbing back into the film from the credits rolling on
+let creditsShownAt = 0
 export function updateCreditsPrompt(site: RatingsSite) {
 	const enabled = settings.value.General.rateOnCredits
+	setFilmOver(false)
 	if (!enabled) {
 		creditsPrompt.tick(null, null, false)
 		return
@@ -36,6 +40,7 @@ export function updateCreditsPrompt(site: RatingsSite) {
 	const watchingSomethingElse =
 		!!video && video.duration !== creditsShownFor && video.currentTime > 2 * 60 && !video.paused
 	if (creditsPrompt.showing && creditsShownFor !== null && !watchingSomethingElse) {
+		setFilmOver(!video || video.duration !== creditsShownFor || video.currentTime >= creditsShownAt - 1)
 		placeCreditsReview(site)
 		return
 	}
@@ -99,6 +104,8 @@ export function updateCreditsPrompt(site: RatingsSite) {
 	)
 	if (creditsPrompt.showing) {
 		creditsShownFor = video.duration
+		creditsShownAt = video.currentTime
+		setFilmOver(true)
 		placeCreditsReview(site)
 	}
 }

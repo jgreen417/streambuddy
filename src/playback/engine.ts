@@ -2,7 +2,7 @@ import { PlayerOverlay, formatRate, formatSaved, type NoticeAction } from "./ove
 import { isExcepted, loadRules, onRulesChanged, saveRules, withException } from "./rules"
 import { SKIP_LABELS, type PlaybackSettings, type SiteAdapter, type SkipKind, type SkipRules } from "./types"
 import { addSavedSeconds, type SavedLog } from "@/utils/stats"
-import { inCredits } from "@/utils/credits-review"
+import { filmOver } from "@/utils/film-over"
 
 const TICK_MS = 250
 const SPEED_PRESETS = [0.75, 1, 1.25, 1.5, 1.75, 2]
@@ -11,10 +11,6 @@ const SPEED_MIN = 0.25
 const SPEED_MAX = 4
 const FAST_FORWARD_RATE = 8
 const SKIP_ORDER: SkipKind[] = ["intro", "recap", "credits", "stillWatching"]
-// the film is over (in its credits, with the review pill up): speed controls step out of the pill's way. Scrub back
-// into the film and they return, even while the pill stays.
-const filmOver = (video: HTMLVideoElement | null) =>
-	!!video && inCredits(video) && !!document.querySelector(".sb-review")
 
 // One engine per tab. It watches the site's player through an adapter and does what the viewer asked for:
 // skips, passes ads, holds their speed, and pauses long autoplay runs. Every skip is announced and undoable.
@@ -254,7 +250,7 @@ export class PlaybackEngine {
 
 	// #region speed
 	private handleSpeed(settings: PlaybackSettings) {
-		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.() || filmOver(this.video)) {
+		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.() || filmOver()) {
 			this.overlay.removeSpeed()
 			return
 		}
@@ -296,7 +292,7 @@ export class PlaybackEngine {
 		this.overlay.flashSpeed()
 	}
 	private onKey(event: KeyboardEvent) {
-		if (!this.video || !this.settings().speedControl || this.rate === null || filmOver(this.video)) return
+		if (!this.video || !this.settings().speedControl || this.rate === null || filmOver()) return
 		const target = event.target as HTMLElement | null
 		if (target?.isContentEditable || /^(input|textarea|select)$/i.test(target?.tagName ?? "")) return
 		// ">" / "<" on most layouts; some keyboards and tools report Shift with "." / ","
