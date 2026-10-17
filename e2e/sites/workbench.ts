@@ -1,9 +1,11 @@
-// npm run sites:workbench -- <saved state folder> [--shot out.png] [--settings '{"General":{"badgeStyle":"glass"}}']
+// npm run sites:workbench -- <saved state folder> [--interactive] [--shot out.png]
+//   [--settings '{"General":{"badgeStyle":"glass"}}']
 //
 // Opens a saved page state with the built extension running on it, the way a viewer would see it, without the live
 // site. The extension is rebuilt as src/ changes and the page reopens with the new build. A small panel bottom left
 // switches the badge settings and sign-in. With --shot it saves one screenshot and exits instead, for checking a
-// change without a window.
+// change without a window. --interactive runs the site's own code from the state's recording (capture.ts --record)
+// instead of the frozen page, so hovering, menus and the site's transitions work.
 import type { BrowserContext, Page } from "@playwright/test"
 import { spawn } from "node:child_process"
 import { watch } from "node:fs"
@@ -11,14 +13,19 @@ import { readFile, rm } from "node:fs/promises"
 import path from "node:path"
 import { parseArgs } from "node:util"
 import buildExtension from "../visual/global-setup"
-import { EXTENSION_DIR, launch, loaded, type OpenOptions } from "../visual/harness"
+import { EXTENSION_DIR, handle, launch, loaded, type OpenOptions } from "../visual/harness"
 import { seedsFor } from "../visual/ratings"
 import type { ProbeReport } from "./probe"
+import { routeRecording } from "./record"
 import { loadCapture, routeCapture } from "./replay"
 
 const { values: args, positionals } = parseArgs({
 	allowPositionals: true,
-	options: { shot: { type: "string" }, settings: { type: "string", default: "{}" } },
+	options: {
+		shot: { type: "string" },
+		settings: { type: "string", default: "{}" },
+		interactive: { type: "boolean", default: false },
+	},
 })
 if (!positionals[0]) throw new Error("name the saved state folder to open")
 const capture = await loadCapture(path.resolve(positionals[0].replace(/^~/, process.env.HOME ?? "~")))
@@ -31,7 +38,8 @@ let options: OpenOptions = {
 	settings: JSON.parse(args.settings!),
 	seeds,
 	viewport: capture.meta.viewport,
-	route: (context) => routeCapture(context, capture),
+	route: (context) =>
+		args.interactive ? routeRecording(context, capture.dir, handle) : routeCapture(context, capture),
 	headless: !!args.shot,
 }
 

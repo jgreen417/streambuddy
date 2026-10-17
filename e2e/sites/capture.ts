@@ -2,7 +2,7 @@
 //
 //   npx tsx e2e/sites/capture.ts --state netflix-browse --service Netflix --url https://www.netflix.com/browse \
 //     --cdp http://localhost:9333 --out ~/streambuddy-firefox-test/captures [--hover <selector>] [--click <selector>]
-//     [--seek-from-end <seconds>] [--wait <ms>] [--front] [--viewport 1440x900] [--scrub "Josh,joshuagreen"]
+//     [--seek-from-end <seconds>] [--wait <ms>] [--front] [--record] [--viewport 1440x900] [--scrub "Josh,joshuagreen"]
 //
 // --cdp attaches to a signed-in Chrome started with --remote-debugging-port (see docs/site-fixtures.md). Without it,
 // the page is opened in Playwright's Chromium with the visual harness answering every request, which is how the
@@ -21,6 +21,7 @@ import type { StreamingService } from "@/constants/streamingServices"
 import { handle } from "../visual/harness"
 import { bundleProbe, runProbe } from "./bundle"
 import type { freeze } from "./freeze"
+import { startRecording } from "./record"
 import { FEEDS, screenshotWithoutArt } from "./replay"
 import { putInState, type Steps } from "./steps"
 
@@ -38,6 +39,7 @@ const { values: args } = parseArgs({
 		viewport: { type: "string", default: "1440x900" },
 		scrub: { type: "string", default: "" },
 		front: { type: "boolean", default: false },
+		record: { type: "boolean", default: false },
 	},
 })
 if (!args.state || !args.service || !args.url) throw new Error("--state, --service and --url are required")
@@ -90,6 +92,7 @@ page.on("response", (response) => {
 	)
 })
 
+const finishRecording = args.record ? startRecording(page, dir) : null
 await page.goto(args.url, { waitUntil: "load" })
 // a zoomed page lays out for a different width than the copy will have
 const cssWidth = await page.evaluate(() => innerWidth)
@@ -163,12 +166,13 @@ const meta = {
 }
 await mkdir(dir, { recursive: true })
 await writeFile(path.join(dir, "page.html"), scrub(frozen.html))
+const recorded = finishRecording ? await finishRecording() : 0
 for (const [name, value] of Object.entries({ images: frozen.images, resources, feeds, probe, meta }))
 	await writeFile(path.join(dir, `${name}.json`), scrub(JSON.stringify(value, null, "\t")))
 console.log(
 	`${args.state}: ${probe.cards.length} cards, ${probe.episodes.length} episodes${probe.player ? ", player" : ""}; ` +
 		`${Object.keys(frozen.images).length} images, ${Object.keys(resources).length} files, ` +
-		`${Object.values(feeds).flat().length} feed responses${frozen.missingSheets.length ? `, ${frozen.missingSheets.length} stylesheets missing` : ""} → ${dir}`,
+		`${Object.values(feeds).flat().length} feed responses${frozen.missingSheets.length ? `, ${frozen.missingSheets.length} stylesheets missing` : ""}${recorded ? `, ${recorded} responses recorded` : ""} → ${dir}`,
 )
 // an attached browser keeps running (its connection would hold the process open); a launched one is closed
 if (args.cdp) {
