@@ -3,6 +3,7 @@ import { PlaybackEngine } from "../../playback/engine"
 import { isExcepted, showKey, withException, withoutException } from "../../playback/rules"
 import { parseClock, parseEpisodeNumber } from "../../playback/sites/dom"
 import type { PlaybackSettings, SiteAdapter, SkipKind } from "../../playback/types"
+import { setFilmOver } from "../../utils/film-over"
 
 describe("player text parsing", () => {
 	it.each([
@@ -239,6 +240,27 @@ describe("playback engine", () => {
 		// a new episode starts at 1x
 		video.currentTime = 0
 		video.playbackRate = 1
+		expect(video.playbackRate).toBe(1.25)
+		engine.stop()
+	})
+
+	it("leaves the speed keys alone once the film is over", async () => {
+		const { video, tick, engine } = setup()
+		await engine.start()
+		tick()
+		setFilmOver(true)
+		window.dispatchEvent(new KeyboardEvent("keydown", { key: ">", shiftKey: true }))
+		expect(video.playbackRate).toBe(1)
+		setFilmOver(false)
+		window.dispatchEvent(new KeyboardEvent("keydown", { key: ">", shiftKey: true }))
+		expect(video.playbackRate).toBe(1.25)
+		// a trailer swapped in once the film is over keeps its own speed, and the saved one survives
+		setFilmOver(true)
+		tick()
+		video.playbackRate = 1
+		expect(video.playbackRate).toBe(1)
+		setFilmOver(false)
+		tick()
 		expect(video.playbackRate).toBe(1.25)
 		engine.stop()
 	})

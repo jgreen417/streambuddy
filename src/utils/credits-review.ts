@@ -26,11 +26,14 @@ export function creditsLength(duration: number) {
 	return Math.min(10 * 60, Math.max(3 * 60, duration * 0.07))
 }
 
+// anything shorter is a trailer, an extra or an episode, not a film
+export const SHORTEST_FILM = 20 * 60
+
 // a film long enough to be one, playing its credits. `length` is how long the service says they run, if it does.
 export function inCredits(video: HTMLVideoElement, length?: number) {
 	return (
 		Number.isFinite(video.duration) &&
-		video.duration >= 20 * 60 &&
+		video.duration >= SHORTEST_FILM &&
 		video.currentTime >= video.duration - (length ?? creditsLength(video.duration))
 	)
 }

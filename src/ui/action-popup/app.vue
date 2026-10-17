@@ -6,6 +6,7 @@ import { OTHER_SERVICES, SERVICES, SUPPORTED_SERVICE_NAMES, streamingServices } 
 import { useAccount } from "@/components/popup/useAccount"
 import { SERVICE_REQUEST_URL } from "@/constants/links"
 import { serviceColors } from "@/design/tokens"
+import { releaseSummary } from "@/utils/changelog"
 
 const SITES = streamingServices.map((service) => ({
 	service,
@@ -28,6 +29,17 @@ const context = computed(() => {
 	if (unsupported.value) return `Not on ${unsupported.value.name} yet`
 	return "Choose your service below"
 })
+
+// shown after an update until it's opened or dismissed
+const { version } = browser.runtime.getManifest()
+const whatsNewSummary = releaseSummary(__CHANGELOG__, version)
+const whatsNew = ref(false)
+browser.storage.local.get("whatsNew").then((stored) => (whatsNew.value = stored.whatsNew === version))
+function closeWhatsNew(openChangelog: boolean) {
+	whatsNew.value = false
+	browser.storage.local.remove("whatsNew")
+	if (openChangelog) openSettings("/options-page/Changelog")
+}
 
 function openSettings(route = "/options-page/Experience") {
 	browser.tabs.create({ url: browser.runtime.getURL(`src/ui/options-page/index.html#${route}`) })
@@ -91,6 +103,30 @@ function navigateTabs(event: KeyboardEvent) {
 			</button>
 		</header>
 
+		<div
+			v-if="whatsNew"
+			class="sb-setup-banner sb-whats-new"
+		>
+			<button
+				type="button"
+				@click="closeWhatsNew(true)"
+			>
+				<span>
+					<strong>New in {{ version }}</strong>
+					{{ whatsNewSummary }}
+				</span>
+				<span class="sb-request-go">See all →</span>
+			</button>
+			<button
+				type="button"
+				class="sb-whats-new-close"
+				aria-label="Dismiss"
+				title="Dismiss"
+				@click="closeWhatsNew(false)"
+			>
+				✕
+			</button>
+		</div>
 		<button
 			v-if="needsSetup || ratingsPaused"
 			type="button"

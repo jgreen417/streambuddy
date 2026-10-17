@@ -2,6 +2,7 @@ import { PlayerOverlay, formatRate, formatSaved, type NoticeAction } from "./ove
 import { isExcepted, loadRules, onRulesChanged, saveRules, withException } from "./rules"
 import { SKIP_LABELS, type PlaybackSettings, type SiteAdapter, type SkipKind, type SkipRules } from "./types"
 import { addSavedSeconds, type SavedLog } from "@/utils/stats"
+import { filmOver } from "@/utils/film-over"
 
 const TICK_MS = 250
 const SPEED_PRESETS = [0.75, 1, 1.25, 1.5, 1.75, 2]
@@ -249,16 +250,18 @@ export class PlaybackEngine {
 
 	// #region speed
 	private handleSpeed(settings: PlaybackSettings) {
-		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.()) {
+		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.() || filmOver()) {
 			this.overlay.removeSpeed()
 			return
 		}
 		if (this.overlay.hasSpeed() && this.renderedRate === this.rate) return
+		// the pill coming back after the film was over: the next film picks up the saved speed
+		if (!this.overlay.hasSpeed()) this.applyRate()
 		this.renderedRate = this.rate
 		this.overlay.renderSpeed(this.rate, SPEED_PRESETS, (rate) => this.chooseRate(rate))
 	}
 	private applyRate() {
-		if (!this.video || this.adRestore || this.rate === null || !this.settings().speedControl) return
+		if (!this.video || this.adRestore || this.rate === null || !this.settings().speedControl || filmOver()) return
 		this.setRate(this.video, this.rate)
 	}
 	private setRate(video: HTMLVideoElement, rate: number) {
@@ -268,7 +271,8 @@ export class PlaybackEngine {
 	// sites reset the rate on new episodes, and some have their own speed menu: re-apply after a reset,
 	// but treat any other change as the viewer choosing a new speed
 	private onRateChange(video: HTMLVideoElement) {
-		if (this.adRestore || this.rate === null || !this.settings().speedControl) return
+		// once the film is over the site's own rate stands, and doesn't replace the saved speed
+		if (this.adRestore || this.rate === null || !this.settings().speedControl || filmOver()) return
 		// our own change (rate change events arrive after the fact, so compare rather than flag)
 		if (Math.abs(video.playbackRate - this.rate) < 0.001) return
 		if (video.playbackRate === 1 && this.rate !== 1 && video.currentTime < 3) {
@@ -291,7 +295,7 @@ export class PlaybackEngine {
 		this.overlay.flashSpeed()
 	}
 	private onKey(event: KeyboardEvent) {
-		if (!this.video || !this.settings().speedControl || this.rate === null) return
+		if (!this.video || !this.settings().speedControl || this.rate === null || filmOver()) return
 		const target = event.target as HTMLElement | null
 		if (target?.isContentEditable || /^(input|textarea|select)$/i.test(target?.tagName ?? "")) return
 		// ">" / "<" on most layouts; some keyboards and tools report Shift with "." / ","
