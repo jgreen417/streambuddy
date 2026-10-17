@@ -4,6 +4,7 @@ import { debugLog } from "@/utils/log"
 import { CheckedCards } from "@/utils/tmdb"
 import { RowPresentation, isBelowRatingCutoff } from "@/utils/row-presentation"
 import { SearchRatingSort } from "@/utils/page-features"
+import { badgeLook } from "@/utils/page-feature-styles"
 import { SERVICES } from "@/constants/streamingServices"
 import { localDateKey } from "@/utils/stats"
 import { TMDB_LOW_RATING, getNormalizedScore, getRatingVoteCount, isDimmed, placeBadge, renderBadge } from "./badge"
@@ -286,7 +287,13 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		return
 	}
 	const personal = getPersonalStatus(data)
-	const div = renderBadge(data, { general: settings.value.General, personal, position: site.badge, cardTitle: title })
+	const div = renderBadge(data, {
+		general: settings.value.General,
+		look: badgeLook(settings.value.General),
+		personal,
+		position: site.badge,
+		cardTitle: title,
+	})
 	if (data.source !== "tmdb" && data.rating) {
 		queueSeenTitle(
 			{

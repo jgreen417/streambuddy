@@ -1,7 +1,7 @@
 // The rating badge on a card: drawn from a looked-up rating and the badge settings, then fitted into a corner of
 // the card's artwork
 import { color, ease, font, friendColors as FRIEND_DOT_COLORS, shadow } from "@/design/tokens"
-import { applyGlass, installPageFeatureStyle } from "@/utils/page-feature-styles"
+import { installPageFeatureStyle, type BadgeLook } from "@/utils/page-feature-styles"
 import { getScoreBand, getScoreColor, normalizeScore } from "@/utils/rating-sources"
 import type { MovieInfo } from "./cache"
 import type { PersonalStatus } from "./profile"
@@ -292,13 +292,14 @@ function watchBadgeResizes() {
 
 export type BadgeOptions = {
 	general: settingsType["General"]
+	look: BadgeLook
 	personal: PersonalStatus
 	position: RatingsSite["badge"]
 	// the title as read off the card, for the badge's alt text
 	cardTitle: string
 }
 // the badge for a title that has a rating: a link to it, styled and filled in, not yet on the page
-export function renderBadge(data: MovieInfo, { general, personal, position, cardTitle }: BadgeOptions) {
+export function renderBadge(data: MovieInfo, { general, look, personal, position, cardTitle }: BadgeOptions) {
 	let div: HTMLElement
 	if (data.id) {
 		const a = document.createElement("a")
@@ -342,7 +343,7 @@ export function renderBadge(data: MovieInfo, { general, personal, position, card
 		fontSize: /mobile/i.test(navigator.userAgent) ? "clamp(13px, 4vw, 19px)" : "clamp(13px, 0.95vw, 17px)",
 	})
 
-	if (general.badgeStyle === "glass") applyGlass(div, general.glassFrost)
+	look.apply(div)
 	requestAnimationFrame(() => Object.assign(div.style, { opacity: "1", transform: "none" }))
 	fillBadge(div, data, general, personal)
 	div.setAttribute(

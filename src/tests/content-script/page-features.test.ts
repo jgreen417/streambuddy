@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { readDetailContext, readEpisodeCards, EpisodeRatings, SearchRatingSort } from "../../utils/page-features"
+import { badgeLook } from "../../utils/page-feature-styles"
 
 describe("page adapters", () => {
 	beforeEach(() => {
@@ -118,7 +119,7 @@ describe("episode ratings", () => {
 		expect(chip.querySelector(".sb-episode-score")?.textContent).toBe("8.1")
 		expect(chip.querySelector(".sb-episode-source")?.textContent).toBe("IMDb")
 		expect(chip.style.backdropFilter).toBe("")
-		await features.tick("netflix", { episodes: true, glassFrost: 60 })
+		await features.tick("netflix", { episodes: true, look: badgeLook({ badgeStyle: "glass", glassFrost: 60 }) })
 		chip = document.querySelector<HTMLElement>(".sb-episode-rating")!
 		expect(chip.style.backdropFilter).toContain("blur")
 		expect(chip.style.getPropertyValue("--sb-badge-label")).not.toBe("")

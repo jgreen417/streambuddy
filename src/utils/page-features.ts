@@ -1,4 +1,4 @@
-import { applyGlass, installPageFeatureStyle } from "./page-feature-styles"
+import { classicLook, installPageFeatureStyle, type BadgeLook } from "./page-feature-styles"
 import type { RatingSource } from "./ratings"
 import { getScoreColor } from "./rating-sources"
 
@@ -157,12 +157,13 @@ export class EpisodeRatings {
 	async tick(
 		site: FeatureSite,
 		// sources: the rating-source setting; results looked up under another one are not reused
-		// glassFrost: set when badges use the Liquid Glass look, so the episode chips match them
-		options: { episodes: boolean; sources?: string; glassFrost?: number },
+		// look: the card badges' look, so the episode chips match them
+		options: { episodes: boolean; sources?: string; look?: BadgeLook },
 		path = location.pathname,
 	) {
+		const { look = classicLook } = options
 		const context = readDetailContext(site, path)
-		const active = `${site}|${path}|${context?.title}|${context?.mediaType}|${context?.year}|${options.episodes}|${options.sources}|${options.glassFrost}`
+		const active = `${site}|${path}|${context?.title}|${context?.mediaType}|${context?.year}|${options.episodes}|${options.sources}|${look.id}`
 		if (this.active !== active) {
 			document.querySelectorAll(".sb-episode-rating").forEach((el) => el.remove())
 			document.querySelectorAll(".sb-episode-host").forEach((el) => el.classList.remove("sb-episode-host"))
@@ -242,7 +243,7 @@ export class EpisodeRatings {
 					source.className = "sb-episode-source"
 					source.textContent = "IMDb"
 					chip.append(score, source)
-					if (options.glassFrost !== undefined) applyGlass(chip, options.glassFrost)
+					look.apply(chip)
 					chip.title = `S${season} E${entry.episode}: ${rating.title} · ${rating.votes.toLocaleString()} ratings`
 					chip.setAttribute("aria-label", `IMDb ${rating.rating.toFixed(1)}, ${chip.title}`)
 					chip.addEventListener("click", (event) => event.stopPropagation())
