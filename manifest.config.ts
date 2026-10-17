@@ -26,7 +26,24 @@ export default {
 	action: {
 		default_popup: "src/ui/action-popup/index.html",
 	},
-	content_scripts: Object.values(SERVICES).map(({ script, matches }) => ({ js: [script], matches: [...matches] })),
+	content_scripts: [
+		...Object.values(SERVICES).map(({ script, matches }) => ({ js: [script], matches: [...matches] })),
+		{
+			js: ["src/content-script/credits-marker-start.ts"],
+			matches: [
+				...SERVICES.HBO.matches,
+				"*://*.primevideo.com/*",
+				...SERVICES.Amazon.matches
+					.filter((match) => match.includes("amazon."))
+					.map((match) => match.replace(/\/\*$/, "/gp/video/*")),
+			],
+			run_at: "document_start",
+		},
+	],
+	// scripts content scripts put into the page (the credits-marker reader) are reachable only from the streaming sites
+	web_accessible_resources: [
+		{ resources: ["<dynamic_resource>"], matches: Object.values(SERVICES).flatMap(({ matches }) => [...matches]) },
+	],
 	options_page: "src/ui/options-page/index.html",
 	// alarms only drives the sideloaded copy's reload-on-rebuild check; store builds don't need it
 	permissions: env.RELEASE ? ["storage", "activeTab"] : ["storage", "activeTab", "alarms"],

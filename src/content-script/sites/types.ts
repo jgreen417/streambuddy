@@ -38,6 +38,8 @@ export type RatingsSite = {
 	isPlayerPage(): boolean
 	// the service's own metadata for what's playing, when it marks its credits
 	creditsMetadata?(): NetflixCredits | undefined
+	// seconds of end credits up to the end of the video, where the service's player marks them (Prime Video, Max)
+	creditsFromEnd?(video: HTMLVideoElement): number | undefined
 	// the raw title of what's playing, before the shared clean-up
 	playingTitle(metadata: NetflixCredits | undefined): string | null | undefined
 	// undefined for a film, null for an episode that isn't a limited series' finale (or can't be placed in its show)
