@@ -3,7 +3,7 @@ import { PlaybackEngine } from "../../playback/engine"
 import { isExcepted, showKey, withException, withoutException } from "../../playback/rules"
 import { parseClock, parseEpisodeNumber } from "../../playback/sites/dom"
 import type { PlaybackSettings, SiteAdapter, SkipKind } from "../../playback/types"
-import { setFilmOver } from "../../utils/film-over"
+import { setFilmEnded } from "../../utils/film-over"
 
 describe("player text parsing", () => {
 	it.each([
@@ -244,24 +244,39 @@ describe("playback engine", () => {
 		engine.stop()
 	})
 
-	it("leaves the speed keys alone once the film is over", async () => {
+	it("steps aside once the film is over and comes back for the next one", async () => {
 		const { video, tick, engine } = setup()
 		await engine.start()
 		tick()
-		setFilmOver(true)
-		window.dispatchEvent(new KeyboardEvent("keydown", { key: ">", shiftKey: true }))
-		expect(video.playbackRate).toBe(1)
-		setFilmOver(false)
 		window.dispatchEvent(new KeyboardEvent("keydown", { key: ">", shiftKey: true }))
 		expect(video.playbackRate).toBe(1.25)
-		// a trailer swapped in once the film is over keeps its own speed, and the saved one survives
-		setFilmOver(true)
+		setFilmEnded({ duration: video.duration, at: video.currentTime })
+		tick()
+		window.dispatchEvent(new KeyboardEvent("keydown", { key: ">", shiftKey: true }))
+		expect(video.playbackRate).toBe(1.25)
+		// a trailer keeps its own speed, and the saved one survives, including while it loads
+		video.duration = NaN
+		video.currentTime = 0
+		video.playbackRate = 1
+		tick()
+		expect(video.playbackRate).toBe(1)
+		video.duration = 90
+		video.currentTime = 0
+		video.playbackRate = 1
+		tick()
+		expect(video.playbackRate).toBe(1)
+		// a short video still playing after a couple of minutes isn't a trailer: an extra or an episode
+		video.currentTime = 150
+		tick()
+		expect(video.playbackRate).toBe(1.25)
+		video.currentTime = 0
 		tick()
 		video.playbackRate = 1
-		expect(video.playbackRate).toBe(1)
-		setFilmOver(false)
+		// the next film autoplays while the review pill isn't updating (a background tab)
+		video.duration = 6000
 		tick()
 		expect(video.playbackRate).toBe(1.25)
+		setFilmEnded(null)
 		engine.stop()
 	})
 })

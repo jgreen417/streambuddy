@@ -1,7 +1,7 @@
 // The review pill at the end credits: works out what's playing, looks it up ahead of the credits and puts the pill up
 import { sendMessage } from "webext-bridge/content-script"
 import { findSeriesFinale } from "@/utils/lookup"
-import { CreditsRatingPrompt, SHORTEST_FILM, creditsLength, inCredits } from "@/utils/credits-review"
+import { CreditsRatingPrompt, creditsLength, inCredits } from "@/utils/credits-review"
 import type { FeatureRating } from "@/utils/page-features"
 import { shareLookup, type PlayingEpisode } from "@/utils/series-finale"
 import { lookupMovieInfo, today, type MovieInfo } from "./cache"
@@ -9,7 +9,7 @@ import { letterboxdUsername, loggedRating } from "./profile"
 import { settings } from "@/stores/settings"
 import { locale, ratingSources } from "./settings"
 import type { RatingsSite } from "./sites/types"
-import { setFilmOver } from "@/utils/film-over"
+import { setFilmEnded } from "@/utils/film-over"
 import type { RatingSources } from "@/stores/storeTypes"
 
 const creditsPrompt = new CreditsRatingPrompt(() => {
@@ -31,7 +31,7 @@ let creditsShownFor: number | null = null
 let creditsShownAt = 0
 export function updateCreditsPrompt(site: RatingsSite) {
 	const enabled = settings.value.General.rateOnCredits
-	setFilmOver(false)
+	setFilmEnded(null)
 	if (!enabled) {
 		creditsPrompt.tick(null, null, false)
 		return
@@ -40,11 +40,7 @@ export function updateCreditsPrompt(site: RatingsSite) {
 	const watchingSomethingElse =
 		!!video && video.duration !== creditsShownFor && video.currentTime > 2 * 60 && !video.paused
 	if (creditsPrompt.showing && creditsShownFor !== null && !watchingSomethingElse) {
-		// a different, short video is Netflix's trailer; a different full-length one is the next film starting
-		setFilmOver(
-			!video ||
-				(video.duration === creditsShownFor ? video.currentTime >= creditsShownAt - 1 : video.duration < SHORTEST_FILM),
-		)
+		setFilmEnded({ duration: creditsShownFor, at: creditsShownAt })
 		placeCreditsReview(site)
 		return
 	}
@@ -109,7 +105,7 @@ export function updateCreditsPrompt(site: RatingsSite) {
 	if (creditsPrompt.showing) {
 		creditsShownFor = video.duration
 		creditsShownAt = video.currentTime
-		setFilmOver(true)
+		setFilmEnded({ duration: creditsShownFor, at: creditsShownAt })
 		placeCreditsReview(site)
 	}
 }
