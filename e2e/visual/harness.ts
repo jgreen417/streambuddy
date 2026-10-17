@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { artSvg, silentWav } from "./art"
-import { dbCache, PROFILE } from "./ratings"
+import { dbCache, PROFILE, type Seed } from "./ratings"
 
 // Runs the real, built extension (see global-setup.ts) in Chromium against saved copies of the streaming sites.
 // Every request is answered here: the fixture pages, their artwork, the few site and TMDb calls streamBuddy makes,
@@ -24,6 +24,11 @@ export type OpenOptions = {
 	viewport?: { width: number; height: number }
 	// more of the extension's local storage, such as the popup's viewing history
 	local?: Record<string, unknown>
+	// ratings for titles beyond the fixtures' own (a saved live page's real titles)
+	seeds?: Record<string, Seed>
+	// answers the web instead of handle (a saved live page, see e2e/sites/replay.ts)
+	route?: (context: BrowserContext) => Promise<void>
+	headless?: boolean
 }
 
 const PAGES: { host: RegExp; path: RegExp; file: string }[] = [
@@ -193,11 +198,11 @@ export function fulfillRange(route: Route, body: Buffer, contentType: string) {
 	})
 }
 
-async function launch(options: OpenOptions) {
+export async function launch(options: OpenOptions) {
 	const profileDir = await mkdtemp(path.join(tmpdir(), "sb-visual-"))
 	const context = await chromium.launchPersistentContext(profileDir, {
 		channel: "chromium",
-		headless: true,
+		headless: options.headless ?? true,
 		viewport: options.viewport ?? { width: 1440, height: 900 },
 		deviceScaleFactor: 1,
 		reducedMotion: "reduce",
@@ -206,7 +211,8 @@ async function launch(options: OpenOptions) {
 		args: [`--disable-extensions-except=${EXTENSION_DIR}`, `--load-extension=${EXTENSION_DIR}`],
 	})
 	// only the web; the extension's own files load as usual
-	await context.route(/^https?:\/\//, handle)
+	if (options.route) await options.route(context)
+	else await context.route(/^https?:\/\//, handle)
 	// polled rather than awaited as an event: the worker can register between launch returning and a listener
 	// being added, and then the event never comes and the test hangs until it times out
 	await expect.poll(() => context.serviceWorkers().length, { timeout: 15_000 }).toBeGreaterThan(0)
@@ -226,7 +232,11 @@ async function launch(options: OpenOptions) {
 		},
 		{
 			local: {
-				DBCache: dbCache(today, options.settings?.General?.ratingSources as Parameters<typeof dbCache>[1]),
+				DBCache: dbCache(
+					today,
+					options.settings?.General?.ratingSources as Parameters<typeof dbCache>[1],
+					options.seeds,
+				),
 				...(letterboxd ? { letterboxdProfile: { ...PROFILE, fetchedAt: Date.now() } } : {}),
 				...options.local,
 			},

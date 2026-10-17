@@ -27,6 +27,7 @@
 		"sites:capture": "tsx e2e/sites/capture.ts",
 		"sites:check": "tsx e2e/sites/check.ts",
 		"sites:report": "tsx e2e/sites/report.ts",
+		"sites:workbench": "tsx e2e/sites/workbench.ts",
 		"typecheck": "vue-tsc --noEmit",
 		"tokens": "tsx scripts/design-tokens.ts"
 	},
