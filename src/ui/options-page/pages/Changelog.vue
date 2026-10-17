@@ -2,7 +2,7 @@
 import { marked } from "marked"
 
 // one page heading like the other pages; each release is a section under it
-const changelog = marked.parse(__CHANGELOG__.replace(/^# (?!Changelog)/gm, "## "), { async: false })
+const changelog = marked.parse(__CHANGELOG__.replace(/^# (?!Changelog$)/gm, "## "), { async: false })
 </script>
 
 <template>

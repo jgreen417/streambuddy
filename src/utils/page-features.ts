@@ -146,7 +146,10 @@ export function readEpisodeCards(site: FeatureSite, root: HTMLElement) {
 
 // the rounding of an episode thumbnail's bottom-right corner, where the chip sits: on the thumbnail or its image
 function episodeCornerRadius(target: HTMLElement) {
-	const radius = (el: Element | null) => (el ? Number.parseFloat(getComputedStyle(el).borderBottomRightRadius) || 0 : 0)
+	const radius = (el: Element | null) => {
+		const value = el ? getComputedStyle(el).borderBottomRightRadius : ""
+		return value.endsWith("px") ? Number.parseFloat(value) || 0 : 0
+	}
 	return Math.max(radius(target), radius(target.querySelector("img")))
 }
 

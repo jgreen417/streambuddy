@@ -40,7 +40,7 @@ function replaceSettings(event: Event) {
 	<p class="description">Save your settings to a file to keep them or move them to another browser.</p>
 	<ul class="sb-backup">
 		<li>
-			<span>Save settings to a file</span>
+			<span>{{ $t("saveSettings") }}</span>
 			<a
 				:href="href"
 				download="settings.json"
@@ -49,7 +49,7 @@ function replaceSettings(event: Event) {
 			</a>
 		</li>
 		<li>
-			<span>Restore from a file</span>
+			<span>{{ $t("uploadSettings") }}</span>
 			<label>
 				Choose file
 				<input
@@ -63,7 +63,7 @@ function replaceSettings(event: Event) {
 		</li>
 		<li>
 			<span>
-				Reset streamBuddy
+				{{ $t("resetAddon") }}
 				<small>Puts every setting back to how it was when installed.</small>
 			</span>
 			<button
@@ -119,7 +119,10 @@ function replaceSettings(event: Event) {
 .sb-backup button:hover {
 	background: var(--sb-surface-hover);
 }
-.sb-backup label:focus-within {
+.sb-backup label {
+	position: relative;
+}
+.sb-backup label:has(input:focus-visible) {
 	outline: 2px solid var(--sb-focus);
 	outline-offset: 2px;
 }
