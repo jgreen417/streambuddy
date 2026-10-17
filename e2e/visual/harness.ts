@@ -268,6 +268,13 @@ export { expect }
 // screenshot shows the settled page.
 export async function settle(page: Page, badges: number) {
 	await expect(page.locator(".sb-card-rating")).toHaveCount(badges, { timeout: 15_000 })
+	await loaded(page)
+	// badges re-measure a beat after layout changes; let that finish
+	await page.waitForTimeout(300)
+}
+
+// fonts and images in, and the frame after drawn
+export async function loaded(page: Page) {
 	await page.evaluate(async () => {
 		await document.fonts.ready
 		await Promise.all(
@@ -277,6 +284,4 @@ export async function settle(page: Page, badges: number) {
 		)
 		await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))
 	})
-	// badges re-measure a beat after layout changes; let that finish
-	await page.waitForTimeout(300)
 }
