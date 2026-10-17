@@ -11,8 +11,6 @@ const RGB = {
 	white: [255, 255, 255],
 	black: [0, 0, 0],
 	seaGlass: [196, 228, 220],
-	// the old borrowed Letterboxd green, still on the install page's welcome note
-	legacyGreen: [0, 224, 84],
 } as const satisfies Record<string, readonly [number, number, number]>
 export type Tint = keyof typeof RGB
 
@@ -104,8 +102,6 @@ export const color = {
 	error: palette.red,
 	textOnError: palette.white,
 	warning: palette.yellow,
-	welcomeWash: alpha("legacyGreen", 0.1),
-	welcomeLine: alpha("legacyGreen", 0.25),
 	// the rating badge: a popcorn sticker with dark ink (Liquid Glass swaps these on the badge itself)
 	badgeBg: palette.popcorn,
 	badgeInk: palette.couch,

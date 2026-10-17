@@ -1,4 +1,5 @@
 import { cssDeclarations } from "@/design/tokens"
+import { installPageFont } from "@/utils/page-feature-styles"
 
 // streamBuddy's in-player UI: a notice pill (bottom left) and the speed pill (top right). Both live in one
 // shadow root so the site's CSS can't reach them, and the host moves into whichever element is fullscreen.
@@ -6,7 +7,7 @@ import { cssDeclarations } from "@/design/tokens"
 const STYLE = `
 :host { all: initial; ${cssDeclarations()} }
 .layer { position: absolute; inset: 0; pointer-events: none; z-index: 2147483000;
-	font: 500 14px/1.35 var(--sb-font-system);
+	font: 500 14px/1.35 var(--sb-font-page);
 	color: var(--sb-text); -webkit-font-smoothing: antialiased; }
 .pill { pointer-events: auto; display: flex; align-items: center; gap: 10px;
 	background: var(--sb-glass-dark); border: 1px solid var(--sb-line-raised);
@@ -49,6 +50,7 @@ export class PlayerOverlay {
 	private speedTimer: ReturnType<typeof setTimeout> | undefined
 
 	constructor(private findPlayerRoot: () => HTMLElement | null) {
+		installPageFont()
 		this.host.setAttribute("data-streambuddy", "player")
 		const style = document.createElement("style")
 		style.textContent = STYLE

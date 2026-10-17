@@ -8,6 +8,9 @@ export const BUG_REPORT_URL = `${ISSUES_URL}/new?template=bug_report.md`
 // "Request a service" opens a short form. A plain link too, so it carries nothing about the user.
 export const SERVICE_REQUEST_URL =
 	"https://docs.google.com/forms/d/e/1FAIpQLSe5fRBO6CdiuwK0kvUoFjVHwp3sXslugNYjXGM8M6MuOZy9uQ/viewform"
+// Where to leave a review, by store. Plain links, like the rest.
+export const CHROME_REVIEWS_URL = "https://chromewebstore.google.com/detail/lieihlkbpleoeoaiagnfcegegjgeeojc/reviews"
+export const FIREFOX_REVIEWS_URL = "https://addons.mozilla.org/firefox/addon/streambuddy-ratings/reviews/"
 // Opened when someone removes the extension. Leave empty to open nothing.
 export const UNINSTALL_SURVEY_URL =
 	"https://docs.google.com/forms/d/e/1FAIpQLSc6RDYA-c6TPtOBYnCiKIM9pyP3BrCdyvNh2ZW7_isImqYcyw/viewform"
