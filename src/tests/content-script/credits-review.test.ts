@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import {
+	playerTitle,
 	CreditsRatingPrompt,
 	creditsLength,
 	reviewState,
@@ -159,5 +160,18 @@ describe("credits review", () => {
 		expect(review()).not.toBeNull()
 		prompt.tick(null, null, true)
 		expect(review()).toBeNull()
+	})
+})
+
+describe("the player's title", () => {
+	it.each([
+		// Max wraps the title in direction marks
+		["\u2068The Batman\u2069 \u2022 HBO Max", "The Batman"],
+		["Prime Video: Dune: Part Two", "Dune: Part Two"],
+		["Weapons | Netflix", "Weapons"],
+		["HBO Max", undefined],
+		[undefined, undefined],
+	])("%s", (raw, title) => {
+		expect(playerTitle(raw)).toBe(title)
 	})
 })
