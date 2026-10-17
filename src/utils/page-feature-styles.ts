@@ -6,14 +6,23 @@ import type { BadgeStyle } from "@/stores/storeTypes"
 // streamBuddy's own so it can't clash with a font the site loads.
 export const BADGE_FONT = font.pageFamily
 
+// Declared on the document so it also reaches the player overlay's shadow root (a shadow root can't declare fonts).
+export function installPageFont() {
+	if (document.getElementById("sb-page-font")) return
+	const style = document.createElement("style")
+	style.id = "sb-page-font"
+	style.textContent = `@font-face { font-family:${BADGE_FONT}; src:url("${browser.runtime.getURL(bricolageLatin)}") format("woff2"); font-weight:200 800; font-display:swap; }`
+	document.head.append(style)
+}
+
 // Scoped to streamBuddy's injected controls; avoid styling the host site's UI. The design tokens are set on each of
 // those controls rather than on the page's :root.
 export function installPageFeatureStyle() {
 	if (document.getElementById("sb-page-features-style")) return
+	installPageFont()
 	const style = document.createElement("style")
 	style.id = "sb-page-features-style"
 	style.textContent = `
- @font-face { font-family:${BADGE_FONT}; src:url("${browser.runtime.getURL(bricolageLatin)}") format("woff2"); font-weight:200 800; font-display:swap; }
  .sb-review, .sb-feature-button, .sb-hide-title, .sb-episode-rating, .sb-card-rating { ${cssDeclarations()} }
  .sb-review { color:var(--sb-text); font:14px/1.5 var(--sb-font-system); }
  .sb-feature-button { display:inline-flex; align-items:center; justify-content:center; min-height:40px; box-sizing:border-box; cursor:pointer; padding:8px 12px; background:var(--sb-button); color:var(--sb-text); border:1px solid var(--sb-line-control); border-radius:var(--sb-radius-md); font:500 13px/1.4 var(--sb-font-system); }

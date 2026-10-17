@@ -118,7 +118,5 @@ add the **accept-visuals** label to the pull request.
 
 ## Known gaps
 
-- The install page's welcome note still uses the old Letterboxd green (`welcomeWash`, `welcomeLine`).
-- The player overlay uses the system font rather than Bricolage.
 - daisyUI's light theme in `base.css` is inherited from the original extension and never shown.
 - A few near-duplicate greys (`well` and `button`, `line` and `buttonHover`) could be merged.

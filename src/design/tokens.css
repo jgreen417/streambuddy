@@ -45,8 +45,6 @@
 	--sb-error: #ff5861;
 	--sb-text-on-error: #ffffff;
 	--sb-warning: #ffd23f;
-	--sb-welcome-wash: rgba(0, 224, 84, 0.1);
-	--sb-welcome-line: rgba(0, 224, 84, 0.25);
 	--sb-badge-bg: #fbf4ec;
 	--sb-badge-ink: #1b1918;
 	--sb-badge-label: #7a716a;
@@ -145,8 +143,6 @@
 	--color-sb-error: var(--sb-error);
 	--color-sb-text-on-error: var(--sb-text-on-error);
 	--color-sb-warning: var(--sb-warning);
-	--color-sb-welcome-wash: var(--sb-welcome-wash);
-	--color-sb-welcome-line: var(--sb-welcome-line);
 	--color-sb-badge-bg: var(--sb-badge-bg);
 	--color-sb-badge-ink: var(--sb-badge-ink);
 	--color-sb-badge-label: var(--sb-badge-label);

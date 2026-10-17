@@ -7,6 +7,7 @@ import { settingsReady } from "@/stores/settings"
 import { getRatingPercentile, getScoreColor } from "@/utils/rating-sources"
 import { color, serviceColors } from "@/design/tokens"
 import { useLetterboxdProfile } from "./useLetterboxdProfile"
+import { CHROME_REVIEWS_URL, FIREFOX_REVIEWS_URL } from "@/constants/links"
 import {
 	formatDuration,
 	summarizeWatchLog,
@@ -22,6 +23,7 @@ const watchLog = ref<WatchLog>({})
 const seenTop = ref<SeenTop>({})
 const watchlistSeen = ref<SeenTop>({})
 const savedLog = ref<SavedLog>({})
+const rateLinkOpened = ref(true)
 const loading = ref(true)
 const error = ref(false)
 const settingsFailed = ref(false)
@@ -35,7 +37,14 @@ async function loadStats() {
 			settingsFailed.value = true
 			throw new Error("Settings unavailable")
 		}
-		const result = await browser.storage.local.get(["watchLog", "seenTop", "watchlistSeen", "savedLog"])
+		const result = await browser.storage.local.get([
+			"watchLog",
+			"seenTop",
+			"watchlistSeen",
+			"savedLog",
+			"rateLinkOpened",
+		])
+		rateLinkOpened.value = !!result.rateLinkOpened
 		savedLog.value = (result.savedLog as SavedLog) ?? {}
 		watchLog.value = (result.watchLog as WatchLog) ?? {}
 		seenTop.value = (result.seenTop as SeenTop) ?? {}
@@ -70,6 +79,15 @@ const bestTitles = computed(() =>
 		.filter((title) => !watchlistTitles.value.some((watchlist) => watchlist.title === title.title))
 		.slice(0, watchlistTitles.value.length ? 2 : 3),
 )
+// asked only once streamBuddy has been used on a few days, and never again once the link has been opened
+const onFirefox = browser.runtime.getURL("").startsWith("moz-extension:")
+const storeName = onFirefox ? "Firefox Add-ons" : "the Chrome Web Store"
+const reviewsUrl = onFirefox ? FIREFOX_REVIEWS_URL : CHROME_REVIEWS_URL
+const askForRating = computed(() => !rateLinkOpened.value && Object.keys(watchLog.value).length >= 3)
+function openedRateLink() {
+	rateLinkOpened.value = true
+	browser.storage.local.set({ rateLinkOpened: true })
+}
 const formatRating = (title: { source: string; rating: number }) =>
 	title.source === "letterboxd" ? `Letterboxd ${title.rating.toFixed(2)}/5` : `IMDb ${title.rating.toFixed(1)}/10`
 </script>
@@ -231,6 +249,21 @@ const formatRating = (title: { source: string; rating: number }) =>
 			>
 				Browse a streaming homepage and the best-rated titles you scroll past will show up here.
 			</div>
+		</div>
+		<div
+			v-if="askForRating"
+			class="sb-ask-card"
+		>
+			<strong>Enjoying streamBuddy?</strong>
+			<p>It's new, and a quick rating on {{ storeName }} helps other Letterboxd fans find it.</p>
+			<a
+				:href="reviewsUrl"
+				target="_blank"
+				rel="noopener"
+				@click="openedRateLink"
+			>
+				Rate streamBuddy
+			</a>
 		</div>
 	</template>
 </template>

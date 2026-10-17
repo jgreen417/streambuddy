@@ -729,7 +729,7 @@ a.sb-title-row:hover {
 }
 
 /* after the last setting: where streamBuddy works, and a way to ask for more */
-.sb-request-card {
+.sb-ask-card {
 	margin-top: var(--sb-space-lg);
 	padding: var(--sb-space-inset);
 	border: 1px dashed var(--sb-accent-line);
@@ -752,16 +752,16 @@ a.sb-title-row:hover {
 	font-style: normal;
 	font-weight: 800;
 }
-.sb-request-card strong {
+.sb-ask-card strong {
 	display: block;
 	font-weight: 600;
 }
-.sb-request-card p {
+.sb-ask-card p {
 	margin: var(--sb-space-xxs) 0 var(--sb-space-lg);
 	color: var(--sb-text-muted);
 	font-size: 12px;
 }
-.sb-request-card a {
+.sb-ask-card a {
 	display: block;
 	padding: 7px;
 	border-radius: var(--sb-radius-md);
@@ -770,7 +770,7 @@ a.sb-title-row:hover {
 	font-weight: 700;
 	text-align: center;
 }
-.sb-request-card a:hover {
+.sb-ask-card a:hover {
 	filter: brightness(1.08);
 }
 

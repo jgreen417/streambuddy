@@ -58,8 +58,8 @@ const { account, ratingsPaused } = useAccount()
 	margin-top: 16px;
 	padding: 12px 14px;
 	border-radius: 10px;
-	background: var(--sb-welcome-wash);
-	border: 1px solid var(--sb-welcome-line);
+	background: var(--sb-accent-wash);
+	border: 1px solid var(--sb-accent-line);
 	color: var(--sb-text);
 }
 .sb-more {

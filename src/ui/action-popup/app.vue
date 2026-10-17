@@ -162,7 +162,7 @@ function navigateTabs(event: KeyboardEvent) {
 				tabindex="0"
 			>
 				<PopupSettings :service="current?.service ?? null" />
-				<div class="sb-request-card">
+				<div class="sb-ask-card">
 					<div
 						class="sb-request-services"
 						aria-hidden="true"
