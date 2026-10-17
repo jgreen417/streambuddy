@@ -28,7 +28,9 @@ export async function screenshotWithoutArt(page: Page) {
 				el.style.setProperty("background-image", "none", "important")
 			}
 	})
-	const shot = await page.screenshot({ mask: [page.locator(MASK)], animations: "disabled" })
+	// a neutral grey: a browser that colour-manages its screenshots for the display (Dia does) shifts Playwright's
+	// default magenta, so the masks wouldn't match between the live page and the headless copy
+	const shot = await page.screenshot({ mask: [page.locator(MASK)], maskColor: "#777777", animations: "disabled" })
 	await page.evaluate(() => {
 		for (const el of Array.from(document.querySelectorAll<HTMLElement>("[data-sb-background]"))) {
 			el.style.setProperty("background-image", el.dataset.sbBackground ?? "")
