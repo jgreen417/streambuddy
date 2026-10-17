@@ -46,6 +46,7 @@ const shown = computed(() => loaded.value && dismissedIn.value !== version)
 .sb-request {
 	position: relative;
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 	gap: var(--sb-space-xl);
 	max-width: 660px;
@@ -56,7 +57,7 @@ const shown = computed(() => loaded.value && dismissedIn.value !== version)
 	background: var(--sb-accent-wash);
 }
 .sb-request-copy {
-	flex: 1;
+	flex: 1 1 280px;
 }
 .sb-request-tag {
 	color: var(--sb-accent);

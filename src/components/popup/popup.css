@@ -654,7 +654,6 @@ a.sb-title-row:hover {
 	justify-self: start;
 }
 .sb-footer > :last-child {
-	grid-column: 3;
 	justify-self: end;
 }
 .sb-footer button,
@@ -683,7 +682,7 @@ a.sb-title-row:hover {
 	color: var(--sb-text);
 }
 
-/* shown until a TMDb key is added: ratings can't load without one */
+/* shown until a TMDb key is added (ratings can't load without one), or on a service streamBuddy doesn't cover */
 .sb-setup-banner {
 	display: flex;
 	align-items: center;
@@ -716,7 +715,7 @@ a.sb-title-row:hover {
 .sb a.sb-setup-banner {
 	color: var(--sb-text-muted);
 }
-.sb-setup-banner .sb-request-go {
+.sb-setup-banner > .sb-request-go {
 	font-size: 13px;
 	font-weight: 700;
 	white-space: nowrap;

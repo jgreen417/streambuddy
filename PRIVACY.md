@@ -20,7 +20,7 @@ All of the following stays in your browser's extension storage. "Synced" items t
 
 Uninstalling streamBuddy deletes all of it. You can also erase it with "Reset" on the Backup page in settings.
 
-Removing streamBuddy opens a short, optional form asking why, and "Request a service" opens a form asking which streaming service to add next. streamBuddy sends nothing with either; the forms only get what you choose to type.
+Removing streamBuddy opens a short, optional form asking why, and "Request a service" opens a form asking which streaming service to add next. Both are Google Forms. streamBuddy adds nothing to either link, so the developer only sees what you type. Like any website, Google receives the usual details of a page visit, such as your IP address and browser, under [Google's privacy policy](https://policies.google.com/privacy).
 
 ## What streamBuddy sends, and to whom
 

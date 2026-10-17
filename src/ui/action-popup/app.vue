@@ -163,12 +163,14 @@ function navigateTabs(event: KeyboardEvent) {
 			>
 				<PopupSettings :service="current?.service ?? null" />
 				<div class="sb-request-card">
-					<div class="sb-request-services">
+					<div
+						class="sb-request-services"
+						aria-hidden="true"
+					>
 						<i
 							v-for="site in SITES"
 							:key="site.service"
 							:style="{ background: serviceColors[SERVICES[site.service].statsKey] }"
-							:title="site.name"
 						>
 							{{ site.name[0] }}
 						</i>
