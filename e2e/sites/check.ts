@@ -39,8 +39,21 @@ function differences(a: unknown, b: unknown, at = ""): string[] {
 			differences((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key], `${at}.${key}`),
 		)
 	}
+	if (
+		typeof a === "number" &&
+		typeof b === "number" &&
+		Math.abs(a - b) <= (SLACK.find(([path]) => path.test(at))?.[1] ?? 0)
+	)
+		return []
 	return [`${at || "."}: ${JSON.stringify(a)} → ${JSON.stringify(b)}`]
 }
+// Numbers that may differ by this much between a live page and its copy. A copy's video plays on from where it was
+// saved for as long as the check takes to reach it; a badge sized from the artwork can land a pixel or two apart.
+const SLACK: [RegExp, number][] = [
+	[/\.player\.video\.at$/, 60],
+	[/\.player\.video\.duration$/, 1],
+	[/\.badge\.size\.\d$/, 2],
+]
 
 // what a page's structure means to streamBuddy, without the content that changes daily
 function shape(report: ProbeReport) {

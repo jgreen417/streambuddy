@@ -14,29 +14,30 @@ export const FEEDS: Record<string, RegExp> = {
 	primePlayback: /\/GetVodPlaybackResources/,
 	maxPlayback: /\/playback\/v1\/playbackInfo/,
 }
-// what differs between a live page and its copy by design, masked out of both screenshots
+// what differs between a live page and its copy by design, left out of both screenshots
 // (SVG images are the site's own drawing, saved with the copy, so they're compared)
-const MASK = 'img:not([src*=".svg"]), video, picture, canvas, iframe'
+const ART = 'img:not([src*=".svg"]), video, picture, canvas, iframe'
 
-// A screenshot without the artwork: images and video are masked, and CSS background images (which a copy draws as
-// stand-ins) are switched off while it's taken. Set through each element's own style, which no site's content
-// security policy blocks, and put back afterwards.
+// A screenshot without the artwork: images and video are hidden, and CSS background images (which a copy draws as
+// stand-ins) are switched off while it's taken. Hidden rather than masked, so what the site draws over them (a
+// player's controls, a card's title) stays in the picture. Set through each element's own style, which no site's
+// content security policy blocks, and put back afterwards.
 export async function screenshotWithoutArt(page: Page) {
+	await page.evaluate((art) => {
+		for (const el of Array.from(document.querySelectorAll<HTMLElement>("*"))) {
+			const hide = el.matches(art)
+			if (!hide && !getComputedStyle(el).backgroundImage.includes("url(")) continue
+			el.dataset.sbStyle = el.getAttribute("style") ?? ""
+			if (hide) el.style.setProperty("visibility", "hidden", "important")
+			else el.style.setProperty("background-image", "none", "important")
+		}
+	}, ART)
+	const shot = await page.screenshot({ animations: "disabled" })
 	await page.evaluate(() => {
-		for (const el of Array.from(document.querySelectorAll<HTMLElement>("*")))
-			if (getComputedStyle(el).backgroundImage.includes("url(")) {
-				el.dataset.sbBackground = el.style.getPropertyValue("background-image")
-				el.style.setProperty("background-image", "none", "important")
-			}
-	})
-	// a neutral grey: a browser that colour-manages its screenshots for the display (Dia does) shifts Playwright's
-	// default magenta, so the masks wouldn't match between the live page and the headless copy
-	const shot = await page.screenshot({ mask: [page.locator(MASK)], maskColor: "#777777", animations: "disabled" })
-	await page.evaluate(() => {
-		for (const el of Array.from(document.querySelectorAll<HTMLElement>("[data-sb-background]"))) {
-			el.style.setProperty("background-image", el.dataset.sbBackground ?? "")
-			if (!el.dataset.sbBackground) el.style.removeProperty("background-image")
-			delete el.dataset.sbBackground
+		for (const el of Array.from(document.querySelectorAll<HTMLElement>("[data-sb-style]"))) {
+			if (el.dataset.sbStyle) el.setAttribute("style", el.dataset.sbStyle)
+			else el.removeAttribute("style")
+			delete el.dataset.sbStyle
 		}
 	})
 	return shot
