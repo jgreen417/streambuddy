@@ -57,6 +57,8 @@ export function installPageFeatureStyle() {
  .sb-review-score { flex:none; padding:3px 8px; border-radius:var(--sb-radius-md); color:var(--sb-text-on-accent); font-size:15px; font-weight:800; }
  .sb-review-stars { color:var(--sb-accent); letter-spacing:1px; white-space:nowrap; }
  .sb-review-stars s { color:var(--sb-star-empty); text-decoration:none; }
+ /* keep filled, half and empty stars apart in forced-colors mode, where they would all become one text colour */
+ @media (forced-colors:active) { .sb-review-stars { forced-color-adjust:none; } }
  .sb-review-half { font-style:normal; color:transparent; background:linear-gradient(90deg,var(--sb-accent) 50%,var(--sb-star-empty) 50%); -webkit-background-clip:text; background-clip:text; }
  .sb-review-sub .sb-review-stars { font-size:13px; }
  .sb-review-action { flex:none; padding:7px 12px; border:1px solid transparent; border-radius:var(--sb-radius-pill); background:var(--sb-accent); color:var(--sb-text-on-accent) !important; font-size:14px; font-weight:700; white-space:nowrap; }

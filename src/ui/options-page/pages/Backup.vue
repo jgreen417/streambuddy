@@ -19,10 +19,8 @@ const href = URL.createObjectURL(file)
 function replaceSettings(event: Event) {
 	const input = event.target as HTMLInputElement
 	const file = input.files?.[0]
-	if (file === undefined || file.type !== "application/json") {
-		alert(t("invalidJson"))
-		return
-	}
+	// MIME types for local .json files vary by system; parsing it is the real check
+	if (file === undefined) return
 	const reader = new FileReader()
 	reader.addEventListener("load", () => {
 		try {
@@ -36,8 +34,8 @@ function replaceSettings(event: Event) {
 </script>
 
 <template>
-	<h1>Backup</h1>
-	<p class="description">Save your settings to a file to keep them or move them to another browser.</p>
+	<h1>{{ $t("backup") }}</h1>
+	<p class="description">{{ $t("backupHint") }}</p>
 	<ul class="sb-backup">
 		<li>
 			<span>{{ $t("saveSettings") }}</span>
@@ -64,7 +62,7 @@ function replaceSettings(event: Event) {
 		<li>
 			<span>
 				{{ $t("resetAddon") }}
-				<small>Puts every setting back to how it was when installed.</small>
+				<small>{{ $t("resetHint") }}</small>
 			</span>
 			<button
 				type="button"
