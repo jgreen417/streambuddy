@@ -2,21 +2,32 @@
 import { computed, ref } from "vue"
 import PopupSettings from "@/components/popup/PopupSettings.vue"
 import PopupStats from "@/components/popup/PopupStats.vue"
-import { SERVICES, streamingServices } from "@/constants/streamingServices"
+import { OTHER_SERVICES, SERVICES, SUPPORTED_SERVICE_NAMES, streamingServices } from "@/constants/streamingServices"
 import { useAccount } from "@/components/popup/useAccount"
-import { DONATE_URL } from "@/constants/links"
+import { SERVICE_REQUEST_URL } from "@/constants/links"
+import { serviceColors } from "@/design/tokens"
 
-const SITES = streamingServices.map((service) => ({ service, name: SERVICES[service].name, pattern: SERVICES[service].host }))
+const SITES = streamingServices.map((service) => ({
+	service,
+	name: SERVICES[service].name,
+	pattern: SERVICES[service].host,
+}))
 
 const tab = ref<"settings" | "stats">("settings")
 const { needsSetup, ratingsPaused } = useAccount()
 const current = ref<(typeof SITES)[number] | null>(null)
+const unsupported = ref<(typeof OTHER_SERVICES)[number] | null>(null)
 // the activeTab permission lets us read the URL of the tab the popup was opened on
 browser.tabs.query({ active: true, currentWindow: true }).then(([activeTab]) => {
 	const hostname = activeTab?.url ? new URL(activeTab.url).hostname : ""
 	current.value = SITES.find(({ pattern }) => pattern.test(hostname)) ?? null
+	unsupported.value = OTHER_SERVICES.find(({ host }) => host.test(hostname)) ?? null
 })
-const context = computed(() => (current.value ? current.value.name : "Choose your service below"))
+const context = computed(() => {
+	if (current.value) return current.value.name
+	if (unsupported.value) return `Not on ${unsupported.value.name} yet`
+	return "Choose your service below"
+})
 
 function openSettings(route = "/options-page/Experience") {
 	browser.tabs.create({ url: browser.runtime.getURL(`src/ui/options-page/index.html#${route}`) })
@@ -96,6 +107,19 @@ function navigateTabs(event: KeyboardEvent) {
 			</span>
 			<span aria-hidden="true">→</span>
 		</button>
+		<a
+			v-if="unsupported"
+			class="sb-setup-banner"
+			:href="SERVICE_REQUEST_URL"
+			target="_blank"
+			rel="noopener"
+		>
+			<span>
+				<strong>streamBuddy doesn't work on {{ unsupported.name }} yet</strong>
+				It's new and covers {{ SUPPORTED_SERVICE_NAMES }} so far.
+			</span>
+			<span class="sb-request-go">Request →</span>
+		</a>
 		<nav
 			class="sb-tabs"
 			role="tablist"
@@ -138,6 +162,29 @@ function navigateTabs(event: KeyboardEvent) {
 				tabindex="0"
 			>
 				<PopupSettings :service="current?.service ?? null" />
+				<div class="sb-request-card">
+					<div
+						class="sb-request-services"
+						aria-hidden="true"
+					>
+						<i
+							v-for="site in SITES"
+							:key="site.service"
+							:style="{ background: serviceColors[SERVICES[site.service].statsKey] }"
+						>
+							{{ site.name[0] }}
+						</i>
+					</div>
+					<strong>Watching somewhere else?</strong>
+					<p>streamBuddy is still in development. Tell us which service to add next.</p>
+					<a
+						:href="SERVICE_REQUEST_URL"
+						target="_blank"
+						rel="noopener"
+					>
+						Request a service
+					</a>
+				</div>
 			</section>
 			<section
 				v-else
@@ -157,12 +204,12 @@ function navigateTabs(event: KeyboardEvent) {
 				Playback & rules
 			</button>
 			<a
-				v-if="DONATE_URL"
-				:href="DONATE_URL"
+				class="is-accent"
+				:href="SERVICE_REQUEST_URL"
 				target="_blank"
 				rel="noopener"
 			>
-				Support ♥
+				Request a service
 			</a>
 			<button
 				type="button"
