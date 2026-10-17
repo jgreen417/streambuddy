@@ -727,6 +727,45 @@ a.sb-title-row:hover {
 	outline: 2px solid var(--sb-focus);
 	outline-offset: 2px;
 }
+/* after an update: the note is two buttons, open the changelog or dismiss */
+.sb-whats-new {
+	padding: 0;
+	gap: 0;
+}
+.sb-whats-new button {
+	display: flex;
+	align-items: center;
+	gap: var(--sb-space-lg);
+	padding: var(--sb-space-md) var(--sb-space-inset);
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+.sb-whats-new button:first-child {
+	flex: 1;
+}
+.sb-whats-new .sb-request-go {
+	margin-left: auto;
+	color: var(--sb-accent);
+	font-size: 13px;
+	font-weight: 700;
+	white-space: nowrap;
+}
+.sb-whats-new-close {
+	padding-left: 0;
+	font-size: 13px;
+}
+.sb-whats-new button:hover {
+	color: var(--sb-text);
+}
+.sb-whats-new button:focus-visible {
+	outline: 2px solid var(--sb-focus);
+	outline-offset: -2px;
+	border-radius: var(--sb-radius-lg);
+}
 
 /* after the last setting: where streamBuddy works, and a way to ask for more */
 .sb-ask-card {

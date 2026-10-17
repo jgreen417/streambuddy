@@ -1,5 +1,17 @@
 # Changelog
 
+# streamBuddy 1.0.4
+
+Request your service, rate streamBuddy, and a tidier look.
+
+- Watching somewhere streamBuddy doesn't cover yet? The popup says so on that site, and the settings pages and popup have a "Request a service" link to a short form.
+- A "Rate streamBuddy" card in the popup's Stats tab once you've used it for a few days. It goes away once you've opened it.
+- After an update, the popup shows what's new until you open or dismiss it.
+- The speed control steps aside once the film is over and the review pill is up.
+- A tidier look: the review card, popup and settings pages line up on one grid, episode ratings match the card badges, Prime Video badges line up along each row, and the player's notices and welcome page use streamBuddy's own font and colours.
+- A "Report a problem" link in settings, and an optional short survey if you remove streamBuddy.
+- The Backup page is fully translated, and Chinese and Brazilian Portuguese browsers get their own translation.
+
 # streamBuddy 1.0.3
 
 - Ratings work straight after install: streamBuddy now comes with a shared TMDb key. Adding your own free key is optional and replaces it, and if TMDb ever pauses the shared key the popup says so and asks for one.

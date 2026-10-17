@@ -19,9 +19,12 @@ import {
 } from "@/utils/ratings"
 const is_DEV = process.env.NODE_ENV === "development"
 
-// first install: open the two-step welcome page
-browser.runtime.onInstalled.addListener(async ({ reason }) => {
-	if (reason !== "install" || is_DEV) return
+// first install: open the two-step welcome page. An update leaves a "what's new" note for the popup.
+browser.runtime.onInstalled.addListener(async ({ reason, previousVersion }) => {
+	if (is_DEV) return
+	const { version } = browser.runtime.getManifest()
+	if (reason === "update" && previousVersion !== version) browser.storage.local.set({ whatsNew: version })
+	if (reason !== "install") return
 	await browser.storage.local.clear()
 	browser.tabs.create({
 		active: true,
@@ -159,9 +162,7 @@ const syncLetterboxdProfile = createProfileSync(async () => (await getAccount())
 onMessage("openAccountSetup", () => {
 	browser.tabs.create({ url: browser.runtime.getURL("src/ui/options-page/index.html#/options-page/Account") })
 })
-onMessage("letterboxdProfile", async (message) =>
-	syncLetterboxdProfile(!!message.data?.force),
-)
+onMessage("letterboxdProfile", async (message) => syncLetterboxdProfile(!!message.data?.force))
 
 // a key or username saved on the settings page takes effect here straight away, not on the next worker restart
 onAccountChanged(() => {})

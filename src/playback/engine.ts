@@ -10,6 +10,8 @@ const SPEED_MIN = 0.25
 const SPEED_MAX = 4
 const FAST_FORWARD_RATE = 8
 const SKIP_ORDER: SkipKind[] = ["intro", "recap", "credits", "stillWatching"]
+// the review pill is up, so the film is over: speed controls step out of its way
+const reviewShowing = () => !!document.querySelector(".sb-review")
 
 // One engine per tab. It watches the site's player through an adapter and does what the viewer asked for:
 // skips, passes ads, holds their speed, and pauses long autoplay runs. Every skip is announced and undoable.
@@ -249,7 +251,7 @@ export class PlaybackEngine {
 
 	// #region speed
 	private handleSpeed(settings: PlaybackSettings) {
-		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.()) {
+		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.() || reviewShowing()) {
 			this.overlay.removeSpeed()
 			return
 		}
@@ -291,7 +293,7 @@ export class PlaybackEngine {
 		this.overlay.flashSpeed()
 	}
 	private onKey(event: KeyboardEvent) {
-		if (!this.video || !this.settings().speedControl || this.rate === null) return
+		if (!this.video || !this.settings().speedControl || this.rate === null || reviewShowing()) return
 		const target = event.target as HTMLElement | null
 		if (target?.isContentEditable || /^(input|textarea|select)$/i.test(target?.tagName ?? "")) return
 		// ">" / "<" on most layouts; some keyboards and tools report Shift with "." / ","
