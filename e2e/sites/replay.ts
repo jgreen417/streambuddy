@@ -15,7 +15,8 @@ export const FEEDS: Record<string, RegExp> = {
 	maxPlayback: /\/playback\/v1\/playbackInfo/,
 }
 // what differs between a live page and its copy by design, masked out of both screenshots
-const MASK = "img, video, picture, canvas, iframe"
+// (SVG images are the site's own drawing, saved with the copy, so they're compared)
+const MASK = 'img:not([src*=".svg"]), video, picture, canvas, iframe'
 
 // A screenshot without the artwork: images and video are masked, and CSS background images (which a copy draws as
 // stand-ins) are switched off while it's taken. Set through each element's own style, which no site's content

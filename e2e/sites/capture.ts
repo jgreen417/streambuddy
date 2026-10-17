@@ -70,7 +70,9 @@ page.on("response", (response) => {
 	const type = response.request().resourceType()
 	const url = response.url()
 	const feed = Object.entries(FEEDS).find(([, pattern]) => pattern.test(url))?.[0]
-	if (!feed && !["stylesheet", "font"].includes(type)) return
+	// SVG images are the site's own drawing (icons, backgrounds), not artwork, so they're kept like fonts
+	const svg = type === "image" && (response.headers()["content-type"] ?? "").includes("svg")
+	if (!feed && !svg && !["stylesheet", "font"].includes(type)) return
 	pending.push(
 		response
 			.body()
@@ -89,6 +91,13 @@ page.on("response", (response) => {
 })
 
 await page.goto(args.url, { waitUntil: "load" })
+// a zoomed page lays out for a different width than the copy will have
+const cssWidth = await page.evaluate(() => innerWidth)
+if (cssWidth !== width)
+	throw new Error(
+		`The page is ${cssWidth}px wide for a ${width}px window, so the site is zoomed in this browser. Reset its zoom ` +
+			"(Cmd+0 on one of its tabs) and capture again.",
+	)
 await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
 const steps: Steps = {
 	seekFromEnd: args["seek-from-end"] ? Number(args["seek-from-end"]) : null,
