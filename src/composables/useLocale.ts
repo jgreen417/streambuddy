@@ -21,8 +21,10 @@ export function useLocale() {
 	browser.storage.local.get(localeKey).then(async (result) => {
 		if (result?.[localeKey] == undefined) {
 			// browser lang
-			const lang = navigator.language.split("-")[0]
-			defaultLocale = i18n?.global?.availableLocales?.includes(lang) ? lang : defaultLocale
+			// locale files are named like zh_CN, so try the full tag before the bare language
+			const tag = navigator.language.replace("-", "_")
+			const lang = tag.split("_")[0]
+			defaultLocale = [tag, lang].find((l) => i18n.global.availableLocales.includes(l)) ?? defaultLocale
 			i18n.global.locale.value = defaultLocale
 		}
 	})

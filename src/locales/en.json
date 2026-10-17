@@ -82,6 +82,8 @@
   "resetAddon": "Reset streamBuddy",
   "backupHint": "Save your settings to a file to keep them or move them to another browser.",
   "resetHint": "Puts every setting back to how it was when installed.",
+  "save": "Save",
+  "chooseFile": "Choose file",
   "noWrap": "nowrap",
   "watchCreditsSwitch": "Always watch credits:",
   "watchCreditsDescription": "Always watch the credits of every series",
