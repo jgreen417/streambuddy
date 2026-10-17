@@ -1,5 +1,6 @@
 import { alpha, cssDeclarations, font, glass, shadow } from "@/design/tokens"
 import bricolageLatin from "@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-opsz-normal.woff2?url"
+import type { BadgeStyle } from "@/stores/storeTypes"
 
 // The badge's typeface, served from the extension itself (no request leaves the browser). The family name is
 // streamBuddy's own so it can't clash with a font the site loads.
@@ -92,9 +93,18 @@ export function installPageFeatureStyle() {
 	document.head.append(style)
 }
 
+// How card badges and episode chips look, picked once from the settings and handed to whatever draws them.
+// id changes whenever the look does, so drawn chips can tell they're out of date.
+export type BadgeLook = { id: string; apply(el: HTMLElement): void }
+export const classicLook: BadgeLook = { id: "classic", apply: () => {} }
+export function badgeLook({ badgeStyle, glassFrost }: { badgeStyle: BadgeStyle; glassFrost: number }): BadgeLook {
+	if (badgeStyle !== "glass") return classicLook
+	return { id: `glass-${glassFrost}`, apply: (el) => applyGlass(el, glassFrost) }
+}
+
 // Liquid Glass: a blurred, lightly tinted pane in place of the cream chip, with light text. frost runs from
 // 0 (clear glass: a hairline edge and highlight) to 100 (thick frosted sea glass). The score pill keeps its colour.
-export function applyGlass(div: HTMLElement, frost: number) {
+function applyGlass(div: HTMLElement, frost: number) {
 	const f = Math.min(Math.max(frost, 0), 100) / 100
 	Object.assign(div.style, {
 		background: alpha("popcorn", +(0.04 + 0.26 * f).toFixed(2)),

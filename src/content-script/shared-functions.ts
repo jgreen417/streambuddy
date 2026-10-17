@@ -2,6 +2,7 @@
 import { SERVICES } from "@/constants/streamingServices"
 import { fetchEpisodeRatings } from "@/utils/lookup"
 import { EpisodeRatings, type EpisodeRating, type FeatureRating } from "@/utils/page-features"
+import { badgeLook } from "@/utils/page-feature-styles"
 import { cached, getDiffInDays, isCacheCurrent, loadCache, lookupMovieInfo } from "./cache"
 import { updateCreditsPrompt } from "./credits"
 import { watchLetterboxdProfile } from "./profile"
@@ -76,7 +77,7 @@ function startPageFeatures(site: RatingsSite) {
 			.tick(SERVICES[site.service].feature, {
 				episodes: settings.value.General.episodeRatings,
 				sources: ratingSources(),
-				glassFrost: settings.value.General.badgeStyle === "glass" ? settings.value.General.glassFrost : undefined,
+				look: badgeLook(settings.value.General),
 			})
 			.catch((error) => console.debug("streamBuddy page ratings:", error))
 		updateSearchSorting()
