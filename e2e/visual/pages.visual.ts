@@ -59,6 +59,7 @@ test("popup", async ({ open }) => {
 	await expect.soft(page).toHaveScreenshot("popup-settings-end.png")
 	await page.getByRole("tab", { name: "Stats" }).click()
 	await expect(page.locator(".sb-bars")).toBeVisible()
+	await content.evaluate((el) => el.scrollTo(0, 0))
 	await expect.soft(page).toHaveScreenshot("popup-stats.png")
 	await content.evaluate((el) => el.scrollTo(0, el.scrollHeight))
 	await expect.soft(page).toHaveScreenshot("popup-stats-end.png")
@@ -76,7 +77,7 @@ const SETTINGS_PAGES: { name: string; route: string; options?: OpenOptions }[] =
 	{ name: "guide", route: "Guide" },
 	{ name: "changelog", route: "Changelog" },
 	{ name: "install", route: "install" },
-	// the welcome page as a new install first sees it, before any account is set up
+	// the welcome page as a new install from the store first sees it: the built-in key, no account set up
 	{ name: "install-fresh", route: "install", options: { signedIn: false } },
 ]
 for (const { name, route, options } of SETTINGS_PAGES) {
