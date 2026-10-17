@@ -42,7 +42,7 @@ export function installPageFeatureStyle() {
  @keyframes sb-review-in { from { opacity:0; transform:translateY(10px) scale(.98); } }
  @keyframes sb-review-in-down { from { opacity:0; transform:translateY(-10px) scale(.98); } }
  .sb-review-left { right:auto; left:var(--sb-review-left,max(16px,3vw)); }
- .sb-review-top { bottom:auto; top:80px; flex-direction:column-reverse; animation-name:sb-review-in-down; }
+ .sb-review-top { bottom:auto; top:var(--sb-review-top,80px); right:var(--sb-review-right,16px); flex-direction:column-reverse; animation-name:sb-review-in-down; }
  .sb-review *, .sb-review *::before, .sb-review *::after { box-sizing:border-box; }
  .sb-review svg { display:block; flex:none; }
  :where(.sb-review) button { font:inherit; color:inherit; cursor:pointer; }
