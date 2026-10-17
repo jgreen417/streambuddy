@@ -273,6 +273,13 @@ export function fitBadgeToCorner(div: HTMLElement, host: HTMLElement, corner: Ba
 	div.style.borderRadius = `${badgeRadius}px`
 	div.style.setProperty("--sb-pill-r", `${Math.max(badgeRadius - BADGE_PAD_PX, 2)}px`)
 }
+// lifts the badges drawn inside root that sit lower than raise
+export function raiseBadges(root: ParentNode, raise: number) {
+	for (const div of Array.from(root.querySelectorAll<HTMLElement>(".sb-card-rating"))) {
+		const fit = badgeFits.get(div)
+		if (fit && fit.raise < raise) fitBadgeToCorner(div, fit.host, fit.corner, raise)
+	}
+}
 // card sizes follow the window, so re-measure the badges on screen after a resize settles
 let badgeResizeTimer: ReturnType<typeof setTimeout> | undefined
 let watchingBadgeResizes = false

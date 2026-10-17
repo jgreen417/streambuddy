@@ -1,5 +1,6 @@
 import { prime } from "@/playback/sites/prime"
 import { isSeasonOnlyTitle } from "@/utils/tmdb"
+import { raiseBadges } from "@/content-script/badge"
 import { episodeFromPlayer, gridsAround, text } from "./dom"
 import type { MediaType, RatingsSite } from "./types"
 
@@ -45,6 +46,19 @@ function logoHeight(container: HTMLElement) {
 	const height = Number(match[1])
 	return (height - Number(match[2])) / height
 }
+// The badges in a carousel row share one line, clear of the tallest logo among the row's cards. Prime adds cards as
+// the row scrolls, so the height is worked out again when the row grows, and a taller logo lifts the badges already drawn.
+const rowLogos = new WeakMap<Element, { cards: number; height: number }>()
+function rowLogoHeight(card: HTMLElement, host: HTMLElement) {
+	const row = card.closest("li")?.parentElement
+	if (!row) return logoHeight(host)
+	const known = rowLogos.get(row)
+	if (known?.cards === row.children.length && logoHeight(host) <= known.height) return known.height
+	const height = Math.max(...Array.from(row.querySelectorAll<HTMLElement>(":scope > li"), logoHeight))
+	rowLogos.set(row, { cards: row.children.length, height })
+	if (known && height > known.height) raiseBadges(row, height)
+	return height
+}
 
 // kind 0: cards in rows (and the search grid's own listitems), which carry their title; kind 1: the other cards
 export const primeSite: RatingsSite = {
@@ -77,7 +91,7 @@ export const primeSite: RatingsSite = {
 	badgeHost(card) {
 		if (card.dataset.cardTitle) {
 			const host = card.firstChild?.firstChild as HTMLElement | null
-			return host ? { host, corner: "bottom", raise: logoHeight(host) } : null
+			return host ? { host, corner: "bottom", raise: rowLogoHeight(card, host) } : null
 		}
 		// the hero's metadata block has no artwork, only the title's logo image, which the badge mustn't cover
 		const hero = card.querySelector<HTMLElement>('div[data-testid="title-metadata-main"]')

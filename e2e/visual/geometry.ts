@@ -3,7 +3,8 @@ import { primeLogoBox } from "./art"
 
 // The badge placement rules (the "Buddy" spec), measured on the rendered page:
 // - it sits CORNER_GAP px in from the artwork's right edge and from its top (Netflix) or bottom (Prime, Max)
-// - on Prime it sits CORNER_GAP px above the channel logo baked into the artwork instead of the bottom edge
+// - on Prime it sits CORNER_GAP px above the channel logo baked into the artwork instead of the bottom edge; in a
+//   carousel row, above the tallest logo in that row, so the row's badges share one line
 // - it stays inside the artwork
 // - its corners are concentric with the artwork's: badge radius = artwork radius - CORNER_GAP
 export const CORNER_GAP = 3
@@ -21,13 +22,17 @@ export type Measurement = {
 
 // every element marked data-sb-art, with the badge drawn for its card
 export async function measure(page: Page) {
-	const raw = await page.evaluate(() =>
-		Array.from(document.querySelectorAll<HTMLElement>("[data-sb-art]")).map((art) => {
+	const raw = await page.evaluate(() => {
+		const rows: Element[] = []
+		return Array.from(document.querySelectorAll<HTMLElement>("[data-sb-art]")).map((art) => {
 			let host: HTMLElement | null = art
 			while (host && !host.querySelector(":scope > .sb-card-rating")) host = host.parentElement
 			const badge = host?.querySelector<HTMLElement>(":scope > .sb-card-rating")
 			const card = art.closest("a, article")
 			const label = card?.getAttribute("aria-label") ?? card?.getAttribute("data-card-title") ?? "?"
+			// the carousel row the card sits in (Prime's li cards)
+			const row = art.closest("li")?.parentElement
+			if (row && !rows.includes(row)) rows.push(row)
 			const rect = (el: Element) => el.getBoundingClientRect().toJSON() as DOMRect
 			const radius = (el: Element) => Number.parseFloat(getComputedStyle(el).borderTopRightRadius) || 0
 			const img = Array.from(art.querySelectorAll("img")).sort(
@@ -41,15 +46,23 @@ export async function measure(page: Page) {
 				badge: badge ? rect(badge) : null,
 				badgeRadius: badge ? radius(badge) : 0,
 				src: decodeURIComponent(img?.currentSrc ?? ""),
+				row: row ? rows.indexOf(row) : -1,
 			}
-		}),
-	)
+		})
+	})
+	// how far up the artwork Prime's logo reaches, as a fraction of its height
+	const logoReach = (src: string) => {
+		const logo = primeLogoBox(src)
+		return logo ? 1 - logo.y / logo.height : 0
+	}
+	const rowReach = new Map<number, number>()
+	for (const item of raw)
+		if (item.row >= 0) rowReach.set(item.row, Math.max(rowReach.get(item.row) ?? 0, logoReach(item.src)))
 	return raw.map((item): Measurement & { missing: boolean } => {
 		const { art, badge } = item
 		if (!badge) return { ...item, missing: true, gapRight: NaN, gapEdge: NaN, inside: false }
-		const logo = primeLogoBox(item.src)
-		// the edge the badge measures from: the artwork's top, its bottom, or the top of Prime's logo
-		const floor = logo ? art.top + (logo.y / logo.height) * art.height : art.bottom
+		// the edge the badge measures from: the artwork's top, its bottom, or the top of the tallest Prime logo in its row
+		const floor = art.bottom - (item.row >= 0 ? rowReach.get(item.row)! : logoReach(item.src)) * art.height
 		return {
 			card: item.card,
 			corner: item.corner,
