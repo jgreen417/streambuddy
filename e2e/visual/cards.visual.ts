@@ -60,3 +60,21 @@ test("prime: hovered large card keeps its badge", async ({ open }) => {
 	expect.soft(specProblems(await measure(page)), "badge placement").toEqual([])
 	await expect.soft(page.locator('[data-shot="super"]')).toHaveScreenshot("prime-super-hovered.png")
 })
+
+// Prime adds cards to a row as it scrolls. One arriving with a taller channel logo than the row has had so far must
+// lift the badges already drawn, so the row's badges stay on one line.
+test("prime: a card added to a row keeps its badges on one line", async ({ open }) => {
+	const prime = site("prime")
+	const page = await open(prime.url)
+	await settle(page, prime.badges)
+	await page.locator('[data-shot="carousel"] ul').evaluate((row) => {
+		const card = row.querySelector("li")!.cloneNode(true) as HTMLElement
+		card.classList.remove("imdb")
+		card.querySelector(".sb-card-rating")?.remove()
+		card.querySelector("img")!.src =
+			"https://art.test/art/boys._CLs|720,405|channels-logo-paramount|0,0,720,405+560,345,140,44_.svg?w=720&h=405&hue=0"
+		row.append(card)
+	})
+	await settle(page, prime.badges + 1)
+	expect.soft(specProblems(await measure(page)), "badge placement").toEqual([])
+})
