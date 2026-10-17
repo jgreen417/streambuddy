@@ -2,6 +2,8 @@
 // content-script/page/credits-marker.ts. Anything unexpected counts as "no marker".
 // the message the page script posts each marker in
 export const CREDITS_MESSAGE = "streambuddy:credits-marker"
+// the content script asking the page script for the markers it found before the content script was listening
+export const CREDITS_REQUEST = "streambuddy:credits-marker-request"
 
 export type CreditsMarker = {
 	// seconds of credits up to the end of the title

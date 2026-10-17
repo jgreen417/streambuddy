@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { maxCreditsMarker, primeCreditsMarker } from "../../utils/credits-markers"
+import { listenForCreditsMarkers, markedCreditsFromEnd } from "../../content-script/credits-marker"
+import { CREDITS_MESSAGE, maxCreditsMarker, primeCreditsMarker } from "../../utils/credits-markers"
 
 // shapes and numbers from real playback responses, trimmed to the fields read
 describe("Max credits marker", () => {
@@ -60,5 +61,27 @@ describe("Prime Video credits marker", () => {
 				transitionTimecodes: { result: { events: [{ eventType: "END_CREDITS", startTimeMs: 1 }] } },
 			}),
 		).toBeUndefined()
+	})
+})
+
+describe("picking the marker for the video playing", () => {
+	listenForCreditsMarkers()
+	const send = (data: object) =>
+		window.dispatchEvent(new MessageEvent("message", { source: window, data: { type: CREDITS_MESSAGE, ...data } }))
+	const video = (duration: number) => ({ duration }) as HTMLVideoElement
+
+	it("uses the marker whose title fits the video, ads included, not a trailer's or the next title's", () => {
+		send({ creditsFromEnd: 551.5, duration: 10570.9 })
+		send({ creditsFromEnd: 20, duration: 150 })
+		send({ creditsFromEnd: 400, duration: 10000 })
+		// The Batman with 563.6s of ads stitched in
+		expect(markedCreditsFromEnd(video(11134.5))).toBe(551.5)
+		expect(markedCreditsFromEnd(video(10010))).toBe(400)
+		expect(markedCreditsFromEnd(video(5000))).toBeUndefined()
+	})
+	it("ignores markers that make no sense", () => {
+		send({ creditsFromEnd: 3000, duration: 3000 })
+		send({ creditsFromEnd: Number.NaN, duration: 3000 })
+		expect(markedCreditsFromEnd(video(3000))).toBeUndefined()
 	})
 })
