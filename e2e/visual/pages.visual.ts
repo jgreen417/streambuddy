@@ -51,8 +51,8 @@ async function extensionPage(page: Page, path: string, ready: string) {
 test("popup", async ({ open }) => {
 	const page = await open("about:blank", { viewport: { width: 340, height: 600 }, local: LOCAL })
 	await extensionPage(page, "src/ui/action-popup/index.html", ".sb-header")
-	// Chromium draws the scope dropdown's text a pixel higher on some runs (about 130 pixels); allow that much
-	await expect.soft(page).toHaveScreenshot("popup-settings.png", { maxDiffPixels: 150 })
+	// Chromium draws the service dropdown's text a pixel higher on some runs, so that one box is left out
+	await expect.soft(page).toHaveScreenshot("popup-settings.png", { mask: [page.locator(".sb-scope select").first()] })
 	await page.getByRole("tab", { name: "Stats" }).click()
 	await expect(page.locator(".sb-bars")).toBeVisible()
 	await expect.soft(page).toHaveScreenshot("popup-stats.png")
@@ -66,9 +66,14 @@ for (const route of ["Experience", "Playback", "Account", "Backup", "Guide", "in
 		const page = await open("about:blank", { local: LOCAL })
 		await extensionPage(page, `src/ui/options-page/index.html#/options-page/${route}`, "h1")
 		// the version number changes every release
-		await expect
-			.soft(page)
-			.toHaveScreenshot(`settings-${route.toLowerCase()}.png`, { fullPage: true, mask: [page.locator(".version")] })
+		await page.locator(".version").evaluate((el) => (el.textContent = "All settings · v1.0.0"))
+		await expect.soft(page).toHaveScreenshot(`settings-${route.toLowerCase()}.png`)
+		// the page scrolls inside its content column, so a long one is also shot scrolled to the end
+		const content = page.locator(".content")
+		if (await content.evaluate((el) => el.scrollHeight > el.clientHeight)) {
+			await content.evaluate((el) => el.scrollTo(0, el.scrollHeight))
+			await expect.soft(page).toHaveScreenshot(`settings-${route.toLowerCase()}-end.png`)
+		}
 	})
 }
 
