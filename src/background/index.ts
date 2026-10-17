@@ -29,7 +29,8 @@ browser.runtime.onInstalled.addListener(async ({ reason }) => {
 	})
 })
 
-if (UNINSTALL_SURVEY_URL) browser.runtime.setUninstallURL(UNINSTALL_SURVEY_URL)
+// an empty URL also clears one an earlier version registered
+browser.runtime.setUninstallURL(UNINSTALL_SURVEY_URL)
 
 self.onerror = function (message, source, lineno, colno, error) {
 	console.info("Error: " + message)

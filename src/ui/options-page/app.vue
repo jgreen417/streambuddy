@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { DONATE_URL, PRIVACY_URL, SOURCE_URL, bugReportUrl } from "@/constants/links"
+import { BUG_REPORT_URL, DONATE_URL, PRIVACY_URL, SOURCE_URL } from "@/constants/links"
 import { useFrontendStore } from "@/stores/options.store"
 const version = __VERSION__
-const reportUrl = bugReportUrl(version, navigator.userAgent)
 // won't sync without opening once
 useFrontendStore()
 const router = useRouter()
@@ -106,7 +105,7 @@ const hash = computed(() => router.currentRoute.value.path)
 					</a>
 					·
 					<a
-						:href="reportUrl"
+						:href="BUG_REPORT_URL"
 						target="_blank"
 						rel="noopener"
 					>
