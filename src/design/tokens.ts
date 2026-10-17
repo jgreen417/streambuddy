@@ -188,7 +188,6 @@ export const space = {
 	md: "8px",
 	lg: "12px",
 	xl: "16px",
-	xxl: "24px",
 	// the popup's and the credits pill's outer edge
 	edge: "14px",
 	// from a group's border to its content

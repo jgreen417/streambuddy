@@ -85,7 +85,7 @@ player overlay uses the system font (`font.system`). Numbers in scores use tabul
   10px (groups), `xl` 12px (cards in the credits pill), `pill` 999px, and the credits pill's own `credits` 30px
   (closed) and `creditsOpen` 22px (opened into a card). The badge's radius is concentric with the card it sits on
   (card radius minus its 3px inset).
-- Spacing (`--sb-space-*`): `xxs` 2px, `xs` 4px, `sm` 6px, `md` 8px, `lg` 12px, `xl` 16px, `xxl` 24px for padding,
+- Spacing (`--sb-space-*`): `xxs` 2px, `xs` 4px, `sm` 6px, `md` 8px, `lg` 12px, `xl` 16px for padding,
   margins and gaps, and three named insets: `edge` 14px (the popup's and the credits pill's outer edge), `inset` 12px
   (from a group's border to its content) and `card` 18px (above the credits card's content). Sizes of things (toggles,
   icons, the badge's 3px inset) stay as plain values.
