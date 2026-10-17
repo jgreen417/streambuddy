@@ -1,8 +1,4 @@
-// The settings as this tab sees them, kept in step with the popup and the options page
-export const { data: settings, promise: settingsReady } = useBrowserSyncStorage<settingsType>(
-	"settings",
-	defaultSettings,
-)
+import { settings } from "@/stores/settings"
 
 export const ratingSources = () => settings.value.General.ratingSources
 

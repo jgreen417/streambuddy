@@ -18,7 +18,8 @@ import {
 	type MovieInfo,
 } from "./cache"
 import { getPersonalStatus, loggedRating } from "./profile"
-import { ratingSources, settings } from "./settings"
+import { settings } from "@/stores/settings"
+import { ratingSources } from "./settings"
 import type { RatingsSite } from "./sites/types"
 import { queueSeenTitle } from "./watch-stats"
 

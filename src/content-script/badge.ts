@@ -6,6 +6,7 @@ import { getScoreBand, getScoreColor, normalizeScore } from "@/utils/rating-sour
 import type { MovieInfo } from "./cache"
 import type { PersonalStatus } from "./profile"
 import type { BadgeHost, RatingsSite } from "./sites/types"
+import type { FriendsStyle, settingsType } from "@/stores/storeTypes"
 
 // TMDb is only the fallback: grey when too few people voted
 export const TMDB_LOW_RATING = 5.5

@@ -2,7 +2,8 @@
 import { SERVICE_NAMES_BY_STATS_KEY as PLATFORM_NAMES } from "@/constants/streamingServices"
 import { computed, ref } from "vue"
 import { storeToRefs } from "pinia"
-import { useOptionsStore, SettingsPromise } from "@/stores/options.store"
+import { useOptionsStore } from "@/stores/options.store"
+import { settingsReady } from "@/stores/settings"
 import { getRatingPercentile, getScoreColor } from "@/utils/rating-sources"
 import { color, serviceColors } from "@/design/tokens"
 import { useLetterboxdProfile } from "./useLetterboxdProfile"
@@ -29,7 +30,7 @@ async function loadStats() {
 	error.value = false
 	try {
 		try {
-			await SettingsPromise
+			await settingsReady
 		} catch {
 			settingsFailed.value = true
 			throw new Error("Settings unavailable")

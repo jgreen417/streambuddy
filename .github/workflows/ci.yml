@@ -30,5 +30,7 @@ jobs:
         run: npx eslint . --max-warnings=0
       - name: Typecheck
         run: npm run typecheck
+      - name: Dependency rules
+        run: npx depcruise src --config .dependency-cruiser.cjs
       - name: Test
         run: npx vitest run

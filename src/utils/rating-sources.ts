@@ -2,6 +2,7 @@
 // it's called. Anything that colours, ranks, normalises or labels a score reads it from here.
 import { scoreScale } from "@/design/tokens"
 import type { RatingSource } from "./ratings"
+import type { RatingSources } from "@/stores/storeTypes"
 
 type SourceDescriptor = {
 	name: string

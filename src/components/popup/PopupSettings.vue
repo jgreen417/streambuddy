@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import { storeToRefs } from "pinia"
-import { useOptionsStore, SettingsPromise } from "@/stores/options.store"
+import { useOptionsStore } from "@/stores/options.store"
+import { settingsReady } from "@/stores/settings"
 import type { StreamingService } from "@/constants/streamingServices"
 import ExperiencePreferences from "./ExperiencePreferences.vue"
 import { useLetterboxdProfile } from "./useLetterboxdProfile"
@@ -10,7 +11,7 @@ const props = defineProps<{ service: StreamingService | null; expanded?: boolean
 const { settings } = storeToRefs(useOptionsStore())
 const loaded = ref(false)
 const loadError = ref(false)
-SettingsPromise.then(() => {
+settingsReady.then(() => {
 	loaded.value = true
 }).catch(() => {
 	loadError.value = true

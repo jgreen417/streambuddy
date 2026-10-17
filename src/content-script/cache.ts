@@ -3,7 +3,9 @@ import { debugLog } from "@/utils/log"
 import { getExternalRating, prefetchLetterboxd, searchTitle } from "@/utils/lookup"
 import { usesSource } from "@/utils/rating-sources"
 import type { FriendRating, RatingSource } from "@/utils/ratings"
-import { locale, ratingSources, settings } from "./settings"
+import { settings } from "@/stores/settings"
+import { locale, ratingSources } from "./settings"
+import type { RatingSources } from "@/stores/storeTypes"
 
 export type MovieInfo = {
 	id: number

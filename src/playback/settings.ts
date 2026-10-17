@@ -1,3 +1,4 @@
+import type { settingsType } from "@/stores/storeTypes"
 import type { PlaybackSettings, ServiceKey } from "./types"
 
 // the playback engine's view of the stored settings for one service

@@ -8,6 +8,7 @@ import { isLastEpisode, type PlayingEpisode } from "./series-finale"
 import { usesSource } from "./rating-sources"
 import type { ExternalRating, ImdbEpisodeRating, LetterboxdFilm } from "./ratings"
 import type { LookupError } from "./messages"
+import type { RatingSources } from "@/stores/storeTypes"
 
 export type TMDBMovie = {
 	adult: boolean

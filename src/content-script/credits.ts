@@ -6,8 +6,10 @@ import type { FeatureRating } from "@/utils/page-features"
 import { shareLookup, type PlayingEpisode } from "@/utils/series-finale"
 import { lookupMovieInfo, today, type MovieInfo } from "./cache"
 import { letterboxdUsername, loggedRating } from "./profile"
-import { locale, ratingSources, settings } from "./settings"
+import { settings } from "@/stores/settings"
+import { locale, ratingSources } from "./settings"
 import type { RatingsSite } from "./sites/types"
+import type { RatingSources } from "@/stores/storeTypes"
 
 const creditsPrompt = new CreditsRatingPrompt(() => {
 	Promise.resolve(sendMessage("openAccountSetup", {}, "background")).catch(() => {})

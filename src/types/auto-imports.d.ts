@@ -8,35 +8,11 @@
 // biome-ignore lint: disable
 export {}
 declare global {
-  const BADGE_FONT: typeof import('../utils/page-feature-styles').BADGE_FONT
-  const BUILT_IN_TMDB_TOKEN: typeof import('../utils/account').BUILT_IN_TMDB_TOKEN
-  const CheckedCards: typeof import('../utils/tmdb').CheckedCards
-  const CreditsRatingPrompt: typeof import('../utils/credits-review').CreditsRatingPrompt
   const EffectScope: typeof import('vue').EffectScope
-  const EpisodeRatings: typeof import('../utils/page-features').EpisodeRatings
-  const HiddenTitlesPromise: typeof import('../stores/options.store').HiddenTitlesPromise
-  const NetflixShowTitles: typeof import('../utils/netflix-shows').NetflixShowTitles
-  const NetworkRequestError: typeof import('../utils/network').NetworkRequestError
-  const PLATFORM_NAMES: typeof import('../utils/stats').PLATFORM_NAMES
-  const RATING_SOURCES: typeof import('../utils/rating-sources').RATING_SOURCES
-  const RowPresentation: typeof import('../utils/row-presentation').RowPresentation
-  const SCORE_BANDS: typeof import('../utils/ratings').SCORE_BANDS
-  const SCORE_COLORS: typeof import('../utils/rating-sources').SCORE_COLORS
-  const SOURCE_CHOICES: typeof import('../utils/rating-sources').SOURCE_CHOICES
-  const SearchRatingSort: typeof import('../utils/page-features').SearchRatingSort
-  const SettingsPromise: typeof import('../stores/options.store').SettingsPromise
-  const TransientLookupError: typeof import('../utils/ratings').TransientLookupError
   const acceptHMRUpdate: typeof import('pinia').acceptHMRUpdate
-  const addSavedSeconds: typeof import('../utils/stats').addSavedSeconds
-  const addWatchSeconds: typeof import('../utils/stats').addWatchSeconds
-  const appRouter: typeof import('../utils/router/index').appRouter
-  const applyGlass: typeof import('../utils/page-feature-styles').applyGlass
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
   const browser: typeof import('webextension-polyfill')
-  const checkLetterboxdUsername: typeof import('../utils/account').checkLetterboxdUsername
-  const checkTmdbToken: typeof import('../utils/account').checkTmdbToken
-  const cleanUsername: typeof import('../utils/account').cleanUsername
   const computed: typeof import('vue').computed
   const computedAsync: typeof import('@vueuse/core').computedAsync
   const computedEager: typeof import('@vueuse/core').computedEager
@@ -50,72 +26,35 @@ declare global {
   const createGlobalState: typeof import('@vueuse/core').createGlobalState
   const createInjectionState: typeof import('@vueuse/core').createInjectionState
   const createPinia: typeof import('pinia').createPinia
-  const createProfileSync: typeof import('../utils/profile-sync').createProfileSync
   const createReactiveFn: typeof import('@vueuse/core').createReactiveFn
   const createRef: typeof import('@vueuse/core').createRef
   const createReusableTemplate: typeof import('@vueuse/core').createReusableTemplate
   const createSharedComposable: typeof import('@vueuse/core').createSharedComposable
   const createTemplatePromise: typeof import('@vueuse/core').createTemplatePromise
   const createUnrefFn: typeof import('@vueuse/core').createUnrefFn
-  const creditsLength: typeof import('../utils/credits-review').creditsLength
-  const crunchyListStore: typeof import('../stores/options.store').crunchyListStore
   const customRef: typeof import('vue').customRef
   const debouncedRef: typeof import('@vueuse/core').debouncedRef
   const debouncedWatch: typeof import('@vueuse/core').debouncedWatch
-  const debugLog: typeof import('../utils/log').debugLog
-  const defaultSettings: typeof import('../stores/storeTypes').defaultSettings
   const defineAsyncComponent: typeof import('vue').defineAsyncComponent
   const defineComponent: typeof import('vue').defineComponent
   const defineStore: typeof import('pinia').defineStore
   const eagerComputed: typeof import('@vueuse/core').eagerComputed
   const effectScope: typeof import('vue').effectScope
   const extendRef: typeof import('@vueuse/core').extendRef
-  const fetchEpisodeRatings: typeof import('../utils/lookup').fetchEpisodeRatings
-  const fetchImdbEpisodes: typeof import('../utils/ratings').fetchImdbEpisodes
-  const fetchImdbRating: typeof import('../utils/ratings').fetchImdbRating
-  const fetchLetterboxdByImdb: typeof import('../utils/ratings').fetchLetterboxdByImdb
-  const fetchLetterboxdGuess: typeof import('../utils/ratings').fetchLetterboxdGuess
-  const fetchLetterboxdProfile: typeof import('../utils/ratings').fetchLetterboxdProfile
-  const fetchLetterboxdRating: typeof import('../utils/ratings').fetchLetterboxdRating
-  const fetchNetflixMetadata: typeof import('../utils/netflix-credits').fetchNetflixMetadata
-  const fetchPosterInfo: typeof import('../utils/tmdb').fetchPosterInfo
-  const findSeriesFinale: typeof import('../utils/lookup').findSeriesFinale
-  const formatDuration: typeof import('../utils/stats').formatDuration
-  const getAccount: typeof import('../utils/account').getAccount
   const getActivePinia: typeof import('pinia').getActivePinia
   const getCurrentInstance: typeof import('vue').getCurrentInstance
   const getCurrentScope: typeof import('vue').getCurrentScope
   const getCurrentWatcher: typeof import('vue').getCurrentWatcher
-  const getEpisodeId: typeof import('../utils/netflix-shows').getEpisodeId
-  const getExternalRating: typeof import('../utils/lookup').getExternalRating
-  const getLetterboxdSlug: typeof import('../utils/ratings').getLetterboxdSlug
-  const getRatingMode: typeof import('../utils/preferences').getRatingMode
-  const getRatingPercentile: typeof import('../utils/rating-sources').getRatingPercentile
-  const getScoreBand: typeof import('../utils/rating-sources').getScoreBand
-  const getScoreColor: typeof import('../utils/rating-sources').getScoreColor
-  const getServiceState: typeof import('../utils/preferences').getServiceState
-  const guessLetterboxdSlug: typeof import('../utils/ratings').guessLetterboxdSlug
   const h: typeof import('vue').h
-  const i18n: typeof import('../utils/i18n').i18n
   const ignorableWatch: typeof import('@vueuse/core').ignorableWatch
-  const inCredits: typeof import('../utils/credits-review').inCredits
   const inject: typeof import('vue').inject
   const injectLocal: typeof import('@vueuse/core').injectLocal
-  const installPageFeatureStyle: typeof import('../utils/page-feature-styles').installPageFeatureStyle
-  const isBelowRatingCutoff: typeof import('../utils/row-presentation').isBelowRatingCutoff
-  const isBuiltInKeyRejected: typeof import('../utils/account').isBuiltInKeyRejected
   const isDefined: typeof import('@vueuse/core').isDefined
-  const isLastEpisode: typeof import('../utils/series-finale').isLastEpisode
-  const isLookupError: typeof import('../utils/lookup').isLookupError
   const isProxy: typeof import('vue').isProxy
   const isReactive: typeof import('vue').isReactive
   const isReadonly: typeof import('vue').isReadonly
   const isRef: typeof import('vue').isRef
-  const isSeasonOnlyTitle: typeof import('../utils/tmdb').isSeasonOnlyTitle
-  const isSetUp: typeof import('../utils/account').isSetUp
   const isShallow: typeof import('vue').isShallow
-  const localDateKey: typeof import('../utils/stats').localDateKey
-  const logLookupFailure: typeof import('../utils/log').logLookupFailure
   const makeDestructurable: typeof import('@vueuse/core').makeDestructurable
   const mapActions: typeof import('pinia').mapActions
   const mapGetters: typeof import('pinia').mapGetters
@@ -123,18 +62,13 @@ declare global {
   const mapStores: typeof import('pinia').mapStores
   const mapWritableState: typeof import('pinia').mapWritableState
   const markRaw: typeof import('vue').markRaw
-  const mergeSeenTitles: typeof import('../utils/stats').mergeSeenTitles
   const nextTick: typeof import('vue').nextTick
-  const normalizeRowScore: typeof import('../utils/row-presentation').normalizeRowScore
-  const normalizeScore: typeof import('../utils/rating-sources').normalizeScore
-  const onAccountChanged: typeof import('../utils/account').onAccountChanged
   const onActivated: typeof import('vue').onActivated
   const onBeforeMount: typeof import('vue').onBeforeMount
   const onBeforeRouteLeave: typeof import('vue-router').onBeforeRouteLeave
   const onBeforeRouteUpdate: typeof import('vue-router').onBeforeRouteUpdate
   const onBeforeUnmount: typeof import('vue').onBeforeUnmount
   const onBeforeUpdate: typeof import('vue').onBeforeUpdate
-  const onBuiltInKeyRejectedChanged: typeof import('../utils/account').onBuiltInKeyRejectedChanged
   const onClickOutside: typeof import('@vueuse/core').onClickOutside
   const onDeactivated: typeof import('vue').onDeactivated
   const onElementRemoval: typeof import('@vueuse/core').onElementRemoval
@@ -150,18 +84,7 @@ declare global {
   const onUnmounted: typeof import('vue').onUnmounted
   const onUpdated: typeof import('vue').onUpdated
   const onWatcherCleanup: typeof import('vue').onWatcherCleanup
-  const parseEpisodeLabel: typeof import('../utils/series-finale').parseEpisodeLabel
-  const parseFriendRatings: typeof import('../utils/ratings').parseFriendRatings
-  const parseFriendRows: typeof import('../utils/ratings').parseFriendRows
-  const parseLetterboxdHtml: typeof import('../utils/ratings').parseLetterboxdHtml
-  const parseLetterboxdTmdbId: typeof import('../utils/ratings').parseLetterboxdTmdbId
-  const parseNetflixCredits: typeof import('../utils/netflix-credits').parseNetflixCredits
-  const parseProfileGrid: typeof import('../utils/ratings').parseProfileGrid
-  const parseShowTitles: typeof import('../utils/netflix-shows').parseShowTitles
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
-  const pickBestMatch: typeof import('../utils/tmdb').pickBestMatch
-  const pinia: typeof import('../utils/pinia').pinia
-  const prefetchLetterboxd: typeof import('../utils/lookup').prefetchLetterboxd
   const provide: typeof import('vue').provide
   const provideLocal: typeof import('@vueuse/core').provideLocal
   const reactify: typeof import('@vueuse/core').reactify
@@ -170,12 +93,7 @@ declare global {
   const reactiveComputed: typeof import('@vueuse/core').reactiveComputed
   const reactiveOmit: typeof import('@vueuse/core').reactiveOmit
   const reactivePick: typeof import('@vueuse/core').reactivePick
-  const readDetailContext: typeof import('../utils/page-features').readDetailContext
-  const readEpisodeCards: typeof import('../utils/page-features').readEpisodeCards
-  const readJson: typeof import('../utils/network').readJson
-  const readText: typeof import('../utils/network').readText
   const readonly: typeof import('vue').readonly
-  const recentSeenTitles: typeof import('../utils/stats').recentSeenTitles
   const ref: typeof import('vue').ref
   const refAutoReset: typeof import('@vueuse/core').refAutoReset
   const refDebounced: typeof import('@vueuse/core').refDebounced
@@ -183,33 +101,18 @@ declare global {
   const refManualReset: typeof import('@vueuse/core').refManualReset
   const refThrottled: typeof import('@vueuse/core').refThrottled
   const refWithControl: typeof import('@vueuse/core').refWithControl
-  const request: typeof import('../utils/network').request
   const resolveComponent: typeof import('vue').resolveComponent
-  const resolveRef: typeof import('@vueuse/core').resolveRef
-  const reviewState: typeof import('../utils/credits-review').reviewState
-  const reviewable: typeof import('../utils/credits-review').reviewable
-  const saveAccount: typeof import('../utils/account').saveAccount
-  const searchTitle: typeof import('../utils/lookup').searchTitle
   const setActivePinia: typeof import('pinia').setActivePinia
-  const setBuiltInKeyRejected: typeof import('../utils/account').setBuiltInKeyRejected
   const setMapStoreSuffix: typeof import('pinia').setMapStoreSuffix
-  const setRatingMode: typeof import('../utils/preferences').setRatingMode
-  const setServiceState: typeof import('../utils/preferences').setServiceState
   const shallowReactive: typeof import('vue').shallowReactive
   const shallowReadonly: typeof import('vue').shallowReadonly
   const shallowRef: typeof import('vue').shallowRef
-  const shareLookup: typeof import('../utils/series-finale').shareLookup
-  const starText: typeof import('../utils/credits-review').starText
   const storeToRefs: typeof import('pinia').storeToRefs
-  const sumLastDays: typeof import('../utils/stats').sumLastDays
-  const summarizeWatchLog: typeof import('../utils/stats').summarizeWatchLog
   const syncRef: typeof import('@vueuse/core').syncRef
   const syncRefs: typeof import('@vueuse/core').syncRefs
   const t: typeof import('vue-i18n').t
-  const templateRef: typeof import('@vueuse/core').templateRef
   const throttledRef: typeof import('@vueuse/core').throttledRef
   const throttledWatch: typeof import('@vueuse/core').throttledWatch
-  const tmdbRequest: typeof import('../utils/account').tmdbRequest
   const toRaw: typeof import('vue').toRaw
   const toReactive: typeof import('@vueuse/core').toReactive
   const toRef: typeof import('vue').toRef
@@ -246,9 +149,7 @@ declare global {
   const useBluetooth: typeof import('@vueuse/core').useBluetooth
   const useBreakpoints: typeof import('@vueuse/core').useBreakpoints
   const useBroadcastChannel: typeof import('@vueuse/core').useBroadcastChannel
-  const useBrowserLocalStorage: typeof import('../composables/useBrowserStorage').useBrowserLocalStorage
   const useBrowserLocation: typeof import('@vueuse/core').useBrowserLocation
-  const useBrowserSyncStorage: typeof import('../composables/useBrowserStorage').useBrowserSyncStorage
   const useCached: typeof import('@vueuse/core').useCached
   const useClipboard: typeof import('@vueuse/core').useClipboard
   const useClipboardItems: typeof import('@vueuse/core').useClipboardItems
@@ -293,12 +194,9 @@ declare global {
   const useFocus: typeof import('@vueuse/core').useFocus
   const useFocusWithin: typeof import('@vueuse/core').useFocusWithin
   const useFps: typeof import('@vueuse/core').useFps
-  const useFrontendStore: typeof import('../stores/options.store').useFrontendStore
   const useFullscreen: typeof import('@vueuse/core').useFullscreen
   const useGamepad: typeof import('@vueuse/core').useGamepad
   const useGeolocation: typeof import('@vueuse/core').useGeolocation
-  const useHiddenTitlesStore: typeof import('../stores/options.store').useHiddenTitlesStore
-  const useHideTitlesStore: typeof import('../stores/options.store').useHideTitlesStore
   const useI18n: typeof import('vue-i18n').useI18n
   const useId: typeof import('vue').useId
   const useIdle: typeof import('@vueuse/core').useIdle
@@ -312,7 +210,6 @@ declare global {
   const useLink: typeof import('vue-router').useLink
   const useLiveAnnouncer: typeof import('@vueuse/core').useLiveAnnouncer
   const useLocalStorage: typeof import('@vueuse/core').useLocalStorage
-  const useLocale: typeof import('../composables/useLocale').useLocale
   const useMagicKeys: typeof import('@vueuse/core').useMagicKeys
   const useManualRefHistory: typeof import('@vueuse/core').useManualRefHistory
   const useMediaControls: typeof import('@vueuse/core').useMediaControls
@@ -331,7 +228,6 @@ declare global {
   const useObjectUrl: typeof import('@vueuse/core').useObjectUrl
   const useOffsetPagination: typeof import('@vueuse/core').useOffsetPagination
   const useOnline: typeof import('@vueuse/core').useOnline
-  const useOptionsStore: typeof import('../stores/options.store').useOptionsStore
   const usePageLeave: typeof import('@vueuse/core').usePageLeave
   const useParallax: typeof import('@vueuse/core').useParallax
   const useParentElement: typeof import('@vueuse/core').useParentElement
@@ -376,7 +272,6 @@ declare global {
   const useTextDirection: typeof import('@vueuse/core').useTextDirection
   const useTextSelection: typeof import('@vueuse/core').useTextSelection
   const useTextareaAutosize: typeof import('@vueuse/core').useTextareaAutosize
-  const useTheme: typeof import('../composables/useTheme').useTheme
   const useThrottle: typeof import('@vueuse/core').useThrottle
   const useThrottleFn: typeof import('@vueuse/core').useThrottleFn
   const useThrottledRefHistory: typeof import('@vueuse/core').useThrottledRefHistory
@@ -406,9 +301,6 @@ declare global {
   const useWindowFocus: typeof import('@vueuse/core').useWindowFocus
   const useWindowScroll: typeof import('@vueuse/core').useWindowScroll
   const useWindowSize: typeof import('@vueuse/core').useWindowSize
-  const usesImdb: typeof import('../utils/lookup').usesImdb
-  const usesLetterboxd: typeof import('../utils/lookup').usesLetterboxd
-  const usesSource: typeof import('../utils/rating-sources').usesSource
   const watch: typeof import('vue').watch
   const watchArray: typeof import('@vueuse/core').watchArray
   const watchAtMost: typeof import('@vueuse/core').watchAtMost
@@ -422,7 +314,6 @@ declare global {
   const watchPostEffect: typeof import('vue').watchPostEffect
   const watchSyncEffect: typeof import('vue').watchSyncEffect
   const watchThrottled: typeof import('@vueuse/core').watchThrottled
-  const watchTick: typeof import('../utils/stats').watchTick
   const watchTriggerable: typeof import('@vueuse/core').watchTriggerable
   const watchWithFilter: typeof import('@vueuse/core').watchWithFilter
   const whenever: typeof import('@vueuse/core').whenever
@@ -432,51 +323,6 @@ declare global {
   // @ts-ignore
   export type { Component, Slot, Slots, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, ShallowRef, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
   import('vue')
-  // @ts-ignore
-  export type { BadgeStyle, FriendsStyle, RatingSources, settingsType } from '../stores/storeTypes'
-  import('../stores/storeTypes')
-  // @ts-ignore
-  export type { Account, CheckResult } from '../utils/account'
-  import('../utils/account')
-  // @ts-ignore
-  export type { CreditsRatingPrompt, ReviewViewer } from '../utils/credits-review'
-  import('../utils/credits-review')
-  // @ts-ignore
-  export type { TMDBMovie } from '../utils/lookup'
-  import('../utils/lookup')
-  // @ts-ignore
-  export type { LookupError, FetchRequestType, ProtocolMap } from '../utils/messages'
-  import('../utils/messages')
-  // @ts-ignore
-  export type { NetflixCredits } from '../utils/netflix-credits'
-  import('../utils/netflix-credits')
-  // @ts-ignore
-  export type { NetflixShowTitles } from '../utils/netflix-shows'
-  import('../utils/netflix-shows')
-  // @ts-ignore
-  export type { NetworkRequestError } from '../utils/network'
-  import('../utils/network')
-  // @ts-ignore
-  export type { EpisodeRatings, SearchRatingSort, DetailContext, FeatureRating, EpisodeRating, FeatureSite } from '../utils/page-features'
-  import('../utils/page-features')
-  // @ts-ignore
-  export type { PreferenceState, RatingMode } from '../utils/preferences'
-  import('../utils/preferences')
-  // @ts-ignore
-  export type { TransientLookupError, RatingSource, ExternalRating, FriendRating, LetterboxdFilm, LetterboxdProfile, ImdbEpisodeRating } from '../utils/ratings'
-  import('../utils/ratings')
-  // @ts-ignore
-  export type { RowPresentation } from '../utils/row-presentation'
-  import('../utils/row-presentation')
-  // @ts-ignore
-  export type { PlayingEpisode } from '../utils/series-finale'
-  import('../utils/series-finale')
-  // @ts-ignore
-  export type { WatchLog, SeenTitle, SeenTop, WatchTimerState, WatchSummary, SavedLog } from '../utils/stats'
-  import('../utils/stats')
-  // @ts-ignore
-  export type { CheckedCards } from '../utils/tmdb'
-  import('../utils/tmdb')
 }
 
 // for vue template auto import
@@ -484,32 +330,11 @@ import { UnwrapRef } from 'vue'
 declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
-    readonly BADGE_FONT: UnwrapRef<typeof import('../utils/page-feature-styles')['BADGE_FONT']>
-    readonly BUILT_IN_TMDB_TOKEN: UnwrapRef<typeof import('../utils/account')['BUILT_IN_TMDB_TOKEN']>
-    readonly CheckedCards: UnwrapRef<typeof import('../utils/tmdb')['CheckedCards']>
-    readonly CreditsRatingPrompt: UnwrapRef<typeof import('../utils/credits-review')['CreditsRatingPrompt']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
-    readonly EpisodeRatings: UnwrapRef<typeof import('../utils/page-features')['EpisodeRatings']>
-    readonly NetflixShowTitles: UnwrapRef<typeof import('../utils/netflix-shows')['NetflixShowTitles']>
-    readonly NetworkRequestError: UnwrapRef<typeof import('../utils/network')['NetworkRequestError']>
-    readonly RATING_SOURCES: UnwrapRef<typeof import('../utils/rating-sources')['RATING_SOURCES']>
-    readonly RowPresentation: UnwrapRef<typeof import('../utils/row-presentation')['RowPresentation']>
-    readonly SCORE_COLORS: UnwrapRef<typeof import('../utils/rating-sources')['SCORE_COLORS']>
-    readonly SOURCE_CHOICES: UnwrapRef<typeof import('../utils/rating-sources')['SOURCE_CHOICES']>
-    readonly SearchRatingSort: UnwrapRef<typeof import('../utils/page-features')['SearchRatingSort']>
-    readonly SettingsPromise: UnwrapRef<typeof import('../stores/options.store')['SettingsPromise']>
-    readonly TransientLookupError: UnwrapRef<typeof import('../utils/ratings')['TransientLookupError']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
-    readonly addSavedSeconds: UnwrapRef<typeof import('../utils/stats')['addSavedSeconds']>
-    readonly addWatchSeconds: UnwrapRef<typeof import('../utils/stats')['addWatchSeconds']>
-    readonly appRouter: UnwrapRef<typeof import('../utils/router/index')['appRouter']>
-    readonly applyGlass: UnwrapRef<typeof import('../utils/page-feature-styles')['applyGlass']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly browser: UnwrapRef<typeof import('webextension-polyfill')>
-    readonly checkLetterboxdUsername: UnwrapRef<typeof import('../utils/account')['checkLetterboxdUsername']>
-    readonly checkTmdbToken: UnwrapRef<typeof import('../utils/account')['checkTmdbToken']>
-    readonly cleanUsername: UnwrapRef<typeof import('../utils/account')['cleanUsername']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly computedAsync: UnwrapRef<typeof import('@vueuse/core')['computedAsync']>
     readonly computedEager: UnwrapRef<typeof import('@vueuse/core')['computedEager']>
@@ -523,70 +348,35 @@ declare module 'vue' {
     readonly createGlobalState: UnwrapRef<typeof import('@vueuse/core')['createGlobalState']>
     readonly createInjectionState: UnwrapRef<typeof import('@vueuse/core')['createInjectionState']>
     readonly createPinia: UnwrapRef<typeof import('pinia')['createPinia']>
-    readonly createProfileSync: UnwrapRef<typeof import('../utils/profile-sync')['createProfileSync']>
     readonly createReactiveFn: UnwrapRef<typeof import('@vueuse/core')['createReactiveFn']>
     readonly createRef: UnwrapRef<typeof import('@vueuse/core')['createRef']>
     readonly createReusableTemplate: UnwrapRef<typeof import('@vueuse/core')['createReusableTemplate']>
     readonly createSharedComposable: UnwrapRef<typeof import('@vueuse/core')['createSharedComposable']>
     readonly createTemplatePromise: UnwrapRef<typeof import('@vueuse/core')['createTemplatePromise']>
     readonly createUnrefFn: UnwrapRef<typeof import('@vueuse/core')['createUnrefFn']>
-    readonly creditsLength: UnwrapRef<typeof import('../utils/credits-review')['creditsLength']>
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>
     readonly debouncedRef: UnwrapRef<typeof import('@vueuse/core')['debouncedRef']>
     readonly debouncedWatch: UnwrapRef<typeof import('@vueuse/core')['debouncedWatch']>
-    readonly debugLog: UnwrapRef<typeof import('../utils/log')['debugLog']>
-    readonly defaultSettings: UnwrapRef<typeof import('../stores/storeTypes')['defaultSettings']>
     readonly defineAsyncComponent: UnwrapRef<typeof import('vue')['defineAsyncComponent']>
     readonly defineComponent: UnwrapRef<typeof import('vue')['defineComponent']>
     readonly defineStore: UnwrapRef<typeof import('pinia')['defineStore']>
     readonly eagerComputed: UnwrapRef<typeof import('@vueuse/core')['eagerComputed']>
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
-    readonly fetchEpisodeRatings: UnwrapRef<typeof import('../utils/lookup')['fetchEpisodeRatings']>
-    readonly fetchImdbEpisodes: UnwrapRef<typeof import('../utils/ratings')['fetchImdbEpisodes']>
-    readonly fetchImdbRating: UnwrapRef<typeof import('../utils/ratings')['fetchImdbRating']>
-    readonly fetchLetterboxdByImdb: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdByImdb']>
-    readonly fetchLetterboxdGuess: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdGuess']>
-    readonly fetchLetterboxdProfile: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdProfile']>
-    readonly fetchLetterboxdRating: UnwrapRef<typeof import('../utils/ratings')['fetchLetterboxdRating']>
-    readonly fetchNetflixMetadata: UnwrapRef<typeof import('../utils/netflix-credits')['fetchNetflixMetadata']>
-    readonly findSeriesFinale: UnwrapRef<typeof import('../utils/lookup')['findSeriesFinale']>
-    readonly formatDuration: UnwrapRef<typeof import('../utils/stats')['formatDuration']>
-    readonly getAccount: UnwrapRef<typeof import('../utils/account')['getAccount']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
     readonly getCurrentWatcher: UnwrapRef<typeof import('vue')['getCurrentWatcher']>
-    readonly getEpisodeId: UnwrapRef<typeof import('../utils/netflix-shows')['getEpisodeId']>
-    readonly getExternalRating: UnwrapRef<typeof import('../utils/lookup')['getExternalRating']>
-    readonly getLetterboxdSlug: UnwrapRef<typeof import('../utils/ratings')['getLetterboxdSlug']>
-    readonly getRatingMode: UnwrapRef<typeof import('../utils/preferences')['getRatingMode']>
-    readonly getRatingPercentile: UnwrapRef<typeof import('../utils/rating-sources')['getRatingPercentile']>
-    readonly getScoreBand: UnwrapRef<typeof import('../utils/rating-sources')['getScoreBand']>
-    readonly getScoreColor: UnwrapRef<typeof import('../utils/rating-sources')['getScoreColor']>
-    readonly getServiceState: UnwrapRef<typeof import('../utils/preferences')['getServiceState']>
-    readonly guessLetterboxdSlug: UnwrapRef<typeof import('../utils/ratings')['guessLetterboxdSlug']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
-    readonly i18n: UnwrapRef<typeof import('../utils/i18n')['i18n']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
-    readonly inCredits: UnwrapRef<typeof import('../utils/credits-review')['inCredits']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
     readonly injectLocal: UnwrapRef<typeof import('@vueuse/core')['injectLocal']>
-    readonly installPageFeatureStyle: UnwrapRef<typeof import('../utils/page-feature-styles')['installPageFeatureStyle']>
-    readonly isBelowRatingCutoff: UnwrapRef<typeof import('../utils/row-presentation')['isBelowRatingCutoff']>
-    readonly isBuiltInKeyRejected: UnwrapRef<typeof import('../utils/account')['isBuiltInKeyRejected']>
     readonly isDefined: UnwrapRef<typeof import('@vueuse/core')['isDefined']>
-    readonly isLastEpisode: UnwrapRef<typeof import('../utils/series-finale')['isLastEpisode']>
-    readonly isLookupError: UnwrapRef<typeof import('../utils/lookup')['isLookupError']>
     readonly isProxy: UnwrapRef<typeof import('vue')['isProxy']>
     readonly isReactive: UnwrapRef<typeof import('vue')['isReactive']>
     readonly isReadonly: UnwrapRef<typeof import('vue')['isReadonly']>
     readonly isRef: UnwrapRef<typeof import('vue')['isRef']>
-    readonly isSeasonOnlyTitle: UnwrapRef<typeof import('../utils/tmdb')['isSeasonOnlyTitle']>
-    readonly isSetUp: UnwrapRef<typeof import('../utils/account')['isSetUp']>
     readonly isShallow: UnwrapRef<typeof import('vue')['isShallow']>
-    readonly localDateKey: UnwrapRef<typeof import('../utils/stats')['localDateKey']>
-    readonly logLookupFailure: UnwrapRef<typeof import('../utils/log')['logLookupFailure']>
     readonly makeDestructurable: UnwrapRef<typeof import('@vueuse/core')['makeDestructurable']>
     readonly mapActions: UnwrapRef<typeof import('pinia')['mapActions']>
     readonly mapGetters: UnwrapRef<typeof import('pinia')['mapGetters']>
@@ -594,17 +384,13 @@ declare module 'vue' {
     readonly mapStores: UnwrapRef<typeof import('pinia')['mapStores']>
     readonly mapWritableState: UnwrapRef<typeof import('pinia')['mapWritableState']>
     readonly markRaw: UnwrapRef<typeof import('vue')['markRaw']>
-    readonly mergeSeenTitles: UnwrapRef<typeof import('../utils/stats')['mergeSeenTitles']>
     readonly nextTick: UnwrapRef<typeof import('vue')['nextTick']>
-    readonly normalizeScore: UnwrapRef<typeof import('../utils/rating-sources')['normalizeScore']>
-    readonly onAccountChanged: UnwrapRef<typeof import('../utils/account')['onAccountChanged']>
     readonly onActivated: UnwrapRef<typeof import('vue')['onActivated']>
     readonly onBeforeMount: UnwrapRef<typeof import('vue')['onBeforeMount']>
     readonly onBeforeRouteLeave: UnwrapRef<typeof import('vue-router')['onBeforeRouteLeave']>
     readonly onBeforeRouteUpdate: UnwrapRef<typeof import('vue-router')['onBeforeRouteUpdate']>
     readonly onBeforeUnmount: UnwrapRef<typeof import('vue')['onBeforeUnmount']>
     readonly onBeforeUpdate: UnwrapRef<typeof import('vue')['onBeforeUpdate']>
-    readonly onBuiltInKeyRejectedChanged: UnwrapRef<typeof import('../utils/account')['onBuiltInKeyRejectedChanged']>
     readonly onClickOutside: UnwrapRef<typeof import('@vueuse/core')['onClickOutside']>
     readonly onDeactivated: UnwrapRef<typeof import('vue')['onDeactivated']>
     readonly onElementRemoval: UnwrapRef<typeof import('@vueuse/core')['onElementRemoval']>
@@ -620,18 +406,7 @@ declare module 'vue' {
     readonly onUnmounted: UnwrapRef<typeof import('vue')['onUnmounted']>
     readonly onUpdated: UnwrapRef<typeof import('vue')['onUpdated']>
     readonly onWatcherCleanup: UnwrapRef<typeof import('vue')['onWatcherCleanup']>
-    readonly parseEpisodeLabel: UnwrapRef<typeof import('../utils/series-finale')['parseEpisodeLabel']>
-    readonly parseFriendRatings: UnwrapRef<typeof import('../utils/ratings')['parseFriendRatings']>
-    readonly parseFriendRows: UnwrapRef<typeof import('../utils/ratings')['parseFriendRows']>
-    readonly parseLetterboxdHtml: UnwrapRef<typeof import('../utils/ratings')['parseLetterboxdHtml']>
-    readonly parseLetterboxdTmdbId: UnwrapRef<typeof import('../utils/ratings')['parseLetterboxdTmdbId']>
-    readonly parseNetflixCredits: UnwrapRef<typeof import('../utils/netflix-credits')['parseNetflixCredits']>
-    readonly parseProfileGrid: UnwrapRef<typeof import('../utils/ratings')['parseProfileGrid']>
-    readonly parseShowTitles: UnwrapRef<typeof import('../utils/netflix-shows')['parseShowTitles']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
-    readonly pickBestMatch: UnwrapRef<typeof import('../utils/tmdb')['pickBestMatch']>
-    readonly pinia: UnwrapRef<typeof import('../utils/pinia')['pinia']>
-    readonly prefetchLetterboxd: UnwrapRef<typeof import('../utils/lookup')['prefetchLetterboxd']>
     readonly provide: UnwrapRef<typeof import('vue')['provide']>
     readonly provideLocal: UnwrapRef<typeof import('@vueuse/core')['provideLocal']>
     readonly reactify: UnwrapRef<typeof import('@vueuse/core')['reactify']>
@@ -640,12 +415,7 @@ declare module 'vue' {
     readonly reactiveComputed: UnwrapRef<typeof import('@vueuse/core')['reactiveComputed']>
     readonly reactiveOmit: UnwrapRef<typeof import('@vueuse/core')['reactiveOmit']>
     readonly reactivePick: UnwrapRef<typeof import('@vueuse/core')['reactivePick']>
-    readonly readDetailContext: UnwrapRef<typeof import('../utils/page-features')['readDetailContext']>
-    readonly readEpisodeCards: UnwrapRef<typeof import('../utils/page-features')['readEpisodeCards']>
-    readonly readJson: UnwrapRef<typeof import('../utils/network')['readJson']>
-    readonly readText: UnwrapRef<typeof import('../utils/network')['readText']>
     readonly readonly: UnwrapRef<typeof import('vue')['readonly']>
-    readonly recentSeenTitles: UnwrapRef<typeof import('../utils/stats')['recentSeenTitles']>
     readonly ref: UnwrapRef<typeof import('vue')['ref']>
     readonly refAutoReset: UnwrapRef<typeof import('@vueuse/core')['refAutoReset']>
     readonly refDebounced: UnwrapRef<typeof import('@vueuse/core')['refDebounced']>
@@ -653,31 +423,18 @@ declare module 'vue' {
     readonly refManualReset: UnwrapRef<typeof import('@vueuse/core')['refManualReset']>
     readonly refThrottled: UnwrapRef<typeof import('@vueuse/core')['refThrottled']>
     readonly refWithControl: UnwrapRef<typeof import('@vueuse/core')['refWithControl']>
-    readonly request: UnwrapRef<typeof import('../utils/network')['request']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
-    readonly reviewState: UnwrapRef<typeof import('../utils/credits-review')['reviewState']>
-    readonly reviewable: UnwrapRef<typeof import('../utils/credits-review')['reviewable']>
-    readonly saveAccount: UnwrapRef<typeof import('../utils/account')['saveAccount']>
-    readonly searchTitle: UnwrapRef<typeof import('../utils/lookup')['searchTitle']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
-    readonly setBuiltInKeyRejected: UnwrapRef<typeof import('../utils/account')['setBuiltInKeyRejected']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>
-    readonly setRatingMode: UnwrapRef<typeof import('../utils/preferences')['setRatingMode']>
-    readonly setServiceState: UnwrapRef<typeof import('../utils/preferences')['setServiceState']>
     readonly shallowReactive: UnwrapRef<typeof import('vue')['shallowReactive']>
     readonly shallowReadonly: UnwrapRef<typeof import('vue')['shallowReadonly']>
     readonly shallowRef: UnwrapRef<typeof import('vue')['shallowRef']>
-    readonly shareLookup: UnwrapRef<typeof import('../utils/series-finale')['shareLookup']>
-    readonly starText: UnwrapRef<typeof import('../utils/credits-review')['starText']>
     readonly storeToRefs: UnwrapRef<typeof import('pinia')['storeToRefs']>
-    readonly sumLastDays: UnwrapRef<typeof import('../utils/stats')['sumLastDays']>
-    readonly summarizeWatchLog: UnwrapRef<typeof import('../utils/stats')['summarizeWatchLog']>
     readonly syncRef: UnwrapRef<typeof import('@vueuse/core')['syncRef']>
     readonly syncRefs: UnwrapRef<typeof import('@vueuse/core')['syncRefs']>
     readonly t: UnwrapRef<typeof import('vue-i18n')['t']>
     readonly throttledRef: UnwrapRef<typeof import('@vueuse/core')['throttledRef']>
     readonly throttledWatch: UnwrapRef<typeof import('@vueuse/core')['throttledWatch']>
-    readonly tmdbRequest: UnwrapRef<typeof import('../utils/account')['tmdbRequest']>
     readonly toRaw: UnwrapRef<typeof import('vue')['toRaw']>
     readonly toReactive: UnwrapRef<typeof import('@vueuse/core')['toReactive']>
     readonly toRef: UnwrapRef<typeof import('vue')['toRef']>
@@ -714,9 +471,7 @@ declare module 'vue' {
     readonly useBluetooth: UnwrapRef<typeof import('@vueuse/core')['useBluetooth']>
     readonly useBreakpoints: UnwrapRef<typeof import('@vueuse/core')['useBreakpoints']>
     readonly useBroadcastChannel: UnwrapRef<typeof import('@vueuse/core')['useBroadcastChannel']>
-    readonly useBrowserLocalStorage: UnwrapRef<typeof import('../composables/useBrowserStorage')['useBrowserLocalStorage']>
     readonly useBrowserLocation: UnwrapRef<typeof import('@vueuse/core')['useBrowserLocation']>
-    readonly useBrowserSyncStorage: UnwrapRef<typeof import('../composables/useBrowserStorage')['useBrowserSyncStorage']>
     readonly useCached: UnwrapRef<typeof import('@vueuse/core')['useCached']>
     readonly useClipboard: UnwrapRef<typeof import('@vueuse/core')['useClipboard']>
     readonly useClipboardItems: UnwrapRef<typeof import('@vueuse/core')['useClipboardItems']>
@@ -761,7 +516,6 @@ declare module 'vue' {
     readonly useFocus: UnwrapRef<typeof import('@vueuse/core')['useFocus']>
     readonly useFocusWithin: UnwrapRef<typeof import('@vueuse/core')['useFocusWithin']>
     readonly useFps: UnwrapRef<typeof import('@vueuse/core')['useFps']>
-    readonly useFrontendStore: UnwrapRef<typeof import('../stores/options.store')['useFrontendStore']>
     readonly useFullscreen: UnwrapRef<typeof import('@vueuse/core')['useFullscreen']>
     readonly useGamepad: UnwrapRef<typeof import('@vueuse/core')['useGamepad']>
     readonly useGeolocation: UnwrapRef<typeof import('@vueuse/core')['useGeolocation']>
@@ -778,7 +532,6 @@ declare module 'vue' {
     readonly useLink: UnwrapRef<typeof import('vue-router')['useLink']>
     readonly useLiveAnnouncer: UnwrapRef<typeof import('@vueuse/core')['useLiveAnnouncer']>
     readonly useLocalStorage: UnwrapRef<typeof import('@vueuse/core')['useLocalStorage']>
-    readonly useLocale: UnwrapRef<typeof import('../composables/useLocale')['useLocale']>
     readonly useMagicKeys: UnwrapRef<typeof import('@vueuse/core')['useMagicKeys']>
     readonly useManualRefHistory: UnwrapRef<typeof import('@vueuse/core')['useManualRefHistory']>
     readonly useMediaControls: UnwrapRef<typeof import('@vueuse/core')['useMediaControls']>
@@ -797,7 +550,6 @@ declare module 'vue' {
     readonly useObjectUrl: UnwrapRef<typeof import('@vueuse/core')['useObjectUrl']>
     readonly useOffsetPagination: UnwrapRef<typeof import('@vueuse/core')['useOffsetPagination']>
     readonly useOnline: UnwrapRef<typeof import('@vueuse/core')['useOnline']>
-    readonly useOptionsStore: UnwrapRef<typeof import('../stores/options.store')['useOptionsStore']>
     readonly usePageLeave: UnwrapRef<typeof import('@vueuse/core')['usePageLeave']>
     readonly useParallax: UnwrapRef<typeof import('@vueuse/core')['useParallax']>
     readonly useParentElement: UnwrapRef<typeof import('@vueuse/core')['useParentElement']>
@@ -842,7 +594,6 @@ declare module 'vue' {
     readonly useTextDirection: UnwrapRef<typeof import('@vueuse/core')['useTextDirection']>
     readonly useTextSelection: UnwrapRef<typeof import('@vueuse/core')['useTextSelection']>
     readonly useTextareaAutosize: UnwrapRef<typeof import('@vueuse/core')['useTextareaAutosize']>
-    readonly useTheme: UnwrapRef<typeof import('../composables/useTheme')['useTheme']>
     readonly useThrottle: UnwrapRef<typeof import('@vueuse/core')['useThrottle']>
     readonly useThrottleFn: UnwrapRef<typeof import('@vueuse/core')['useThrottleFn']>
     readonly useThrottledRefHistory: UnwrapRef<typeof import('@vueuse/core')['useThrottledRefHistory']>
@@ -872,7 +623,6 @@ declare module 'vue' {
     readonly useWindowFocus: UnwrapRef<typeof import('@vueuse/core')['useWindowFocus']>
     readonly useWindowScroll: UnwrapRef<typeof import('@vueuse/core')['useWindowScroll']>
     readonly useWindowSize: UnwrapRef<typeof import('@vueuse/core')['useWindowSize']>
-    readonly usesSource: UnwrapRef<typeof import('../utils/rating-sources')['usesSource']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>
     readonly watchArray: UnwrapRef<typeof import('@vueuse/core')['watchArray']>
     readonly watchAtMost: UnwrapRef<typeof import('@vueuse/core')['watchAtMost']>
@@ -886,7 +636,6 @@ declare module 'vue' {
     readonly watchPostEffect: UnwrapRef<typeof import('vue')['watchPostEffect']>
     readonly watchSyncEffect: UnwrapRef<typeof import('vue')['watchSyncEffect']>
     readonly watchThrottled: UnwrapRef<typeof import('@vueuse/core')['watchThrottled']>
-    readonly watchTick: UnwrapRef<typeof import('../utils/stats')['watchTick']>
     readonly watchTriggerable: UnwrapRef<typeof import('@vueuse/core')['watchTriggerable']>
     readonly watchWithFilter: UnwrapRef<typeof import('@vueuse/core')['watchWithFilter']>
     readonly whenever: UnwrapRef<typeof import('@vueuse/core')['whenever']>
