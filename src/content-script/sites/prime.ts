@@ -118,20 +118,21 @@ export const primeSite: RatingsSite = {
 		Array.from(document.querySelectorAll("[class*=nextupcard]")).some(
 			(card) => card.getBoundingClientRect().height > 0,
 		),
-	// the next-up row fills the bottom, so the pill goes top right, under the player's top buttons and lined up with the
-	// last of them. Prime scales those buttons with the player and drops them while its controls are hidden, so the pill
-	// stays where they last were.
+	// the next-up row fills the bottom, so the pill goes top right, under the player's top-right buttons and lined up
+	// with the last of them. Prime scales those buttons with the player and drops them while its controls are hidden, so
+	// the pill stays where they last were. Only the highest row on the right counts, not the X top left or an open menu.
 	placeReview(review) {
 		review.classList.add("sb-review-top")
+		const width = document.documentElement.clientWidth
 		const buttons = Array.from(document.querySelectorAll("#dv-web-player button, .dv-player-fullscreen button"))
 			.filter((button) => !review.contains(button))
 			.map((button) => button.getBoundingClientRect())
-			.filter((rect) => rect.width > 0 && rect.bottom < innerHeight / 4)
+			.filter((rect) => rect.width > 0 && rect.top >= 0 && rect.bottom < innerHeight / 4 && rect.left > width / 2)
 		if (!buttons.length) return
-		review.style.setProperty(
-			"--sb-review-right",
-			`${Math.round(innerWidth - Math.max(...buttons.map((rect) => rect.right)))}px`,
-		)
-		review.style.setProperty("--sb-review-top", `${Math.round(Math.max(...buttons.map((rect) => rect.bottom)) + 12)}px`)
+		const rowTop = Math.min(...buttons.map((rect) => rect.top))
+		const row = buttons.filter((rect) => rect.top - rowTop < 4)
+		const right = Math.max(0, width - Math.max(...row.map((rect) => rect.right)))
+		review.style.setProperty("--sb-review-right", `${Math.round(right)}px`)
+		review.style.setProperty("--sb-review-top", `${Math.round(Math.max(...row.map((rect) => rect.bottom)) + 12)}px`)
 	},
 }

@@ -18,11 +18,19 @@ describe("Prime's end screen", () => {
 		card.getBoundingClientRect = () => ({ height: 120 }) as DOMRect
 		expect(primeSite.endScreenShowing(video)).toBe(true)
 	})
-	it("puts the review pill under the player's top buttons, lined up with the last one", () => {
-		document.body.innerHTML = `<div id="dv-web-player"><button></button><button></button></div><div class="sb-review"></div>`
-		const [subtitles, settings] = Array.from(document.querySelectorAll("button"))
-		subtitles.getBoundingClientRect = () => ({ width: 38, right: 943, bottom: 56 }) as DOMRect
-		settings.getBoundingClientRect = () => ({ width: 38, right: innerWidth - 24, bottom: 56 }) as DOMRect
+	it("puts the review pill under the player's top-right buttons, lined up with the last one", () => {
+		// Prime's top bar at a 1005px window: the X top left, subtitles and settings top right, and an open menu's item
+		Object.defineProperty(document.documentElement, "clientWidth", { value: 1005, configurable: true })
+		document.body.innerHTML = `<div id="dv-web-player"><button></button><button></button><button></button><button></button></div><div class="sb-review"></div>`
+		const rects = [
+			{ left: 24, right: 62, top: 18, bottom: 56 },
+			{ left: 905, right: 943, top: 18, bottom: 56 },
+			{ left: 943, right: 981, top: 18, bottom: 56 },
+			{ left: 700, right: 990, top: 60, bottom: 100 },
+		]
+		Array.from(document.querySelectorAll("button")).forEach((button, i) => {
+			button.getBoundingClientRect = () => ({ width: rects[i].right - rects[i].left, ...rects[i] }) as DOMRect
+		})
 		const review = document.querySelector<HTMLElement>(".sb-review")!
 		primeSite.placeReview(review)
 		expect(review.style.getPropertyValue("--sb-review-right")).toBe("24px")
