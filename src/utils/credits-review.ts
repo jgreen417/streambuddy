@@ -1,7 +1,8 @@
 import { friendColors, palette } from "@/design/tokens"
 import { installPageFeatureStyle } from "./page-feature-styles"
 import type { FeatureRating } from "./page-features"
-import { getLetterboxdSlug, getScoreColor } from "./ratings"
+import { getLetterboxdSlug } from "./ratings"
+import { RATING_SOURCES, getScoreColor } from "./rating-sources"
 
 // Who's watching, as far as the credits review needs to know.
 export type ReviewViewer = {
@@ -76,8 +77,7 @@ function face(name: string) {
 
 function scorePill(source: FeatureRating["source"], rating: number) {
 	const pill = el("span", "sb-review-score", rating.toFixed(1))
-	// TMDb is out of 10 like IMDb, and is coloured on IMDb's scale on the badges too
-	pill.style.background = getScoreColor(source === "tmdb" ? "imdb" : source, rating)
+	pill.style.background = getScoreColor(source, rating)
 	return pill
 }
 
@@ -188,8 +188,7 @@ export class CreditsRatingPrompt {
 		} else {
 			const line = el("div", "sb-review-average")
 			if (score) line.append(scorePill(data.source, score))
-			const label = { letterboxd: "Letterboxd average", imdb: "IMDb rating", tmdb: "TMDb rating" }[data.source]
-			line.append(el("span", "", label))
+			line.append(el("span", "", RATING_SOURCES[data.source].scoreLabel))
 			section.append(line)
 			if (state === "unlinked")
 				section.append(el("p", "sb-review-note", "Link your Letterboxd to see what your friends thought."))

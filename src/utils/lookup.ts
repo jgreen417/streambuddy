@@ -5,6 +5,7 @@ import { sendMessage } from "webext-bridge/content-script"
 import { logLookupFailure } from "./log"
 import { pickBestMatch } from "./tmdb"
 import { isLastEpisode, type PlayingEpisode } from "./series-finale"
+import { usesSource } from "./rating-sources"
 import type { ExternalRating, ImdbEpisodeRating, LetterboxdFilm } from "./ratings"
 import type { LookupError } from "./messages"
 
@@ -49,8 +50,6 @@ async function tmdb<T>(path: string): Promise<T | null | LookupError> {
 }
 
 // a lookup takes the sources setting as it was when it started, so a change mid-lookup can't mislabel its result
-export const usesLetterboxd = (sources: RatingSources) => sources === "both" || sources === "letterboxd"
-export const usesImdb = (sources: RatingSources) => sources === "both" || sources === "imdb"
 
 // the best TMDb match for a card's title; null when there's none or TMDb is unreachable
 export async function searchTitle(
@@ -90,12 +89,13 @@ export async function getExternalRating(
 	let transient = false
 	try {
 		// Letterboxd's /tmdb/{id} only understands movie ids, a TV id would resolve to an unrelated film
-		if (mediaType === "movie" && usesLetterboxd(sources)) {
+		if (mediaType === "movie" && usesSource(sources, "letterboxd")) {
 			const letterboxd = await sendMessage("letterboxdRating", { tmdbId, friends, title }, "background")
 			if (isLookupError(letterboxd)) transient = true
 			else if (letterboxd?.rating) return { rating: letterboxd, transient: !!letterboxd.friends_unavailable }
 		}
-		if (!usesImdb(sources) || (mediaType !== "movie" && mediaType !== "tv")) return { rating: null, transient }
+		if (!usesSource(sources, "imdb") || (mediaType !== "movie" && mediaType !== "tv"))
+			return { rating: null, transient }
 		const imdbId = await imdbIdFor(mediaType, tmdbId)
 		if (isLookupError(imdbId)) return { rating: null, transient: true }
 		if (!imdbId) return { rating: null, transient }

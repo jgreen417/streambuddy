@@ -3,7 +3,7 @@ import { computed, ref, watch, useId } from "vue"
 import type { FriendsStyle, RatingSources, settingsType } from "@/stores/storeTypes"
 import { SERVICES, streamingServices, type StreamingService } from "@/constants/streamingServices"
 import { getServiceState, setServiceState, getRatingMode, setRatingMode, type RatingMode } from "@/utils/preferences"
-import { SCORE_BANDS } from "@/utils/ratings"
+import { RATING_SOURCES, usesSource } from "@/utils/rating-sources"
 import PopupToggle from "./PopupToggle.vue"
 import { useAccount } from "./useAccount"
 const settings = defineModel<settingsType>("settings", { required: true })
@@ -57,7 +57,7 @@ const badgeLooks = [
 const sourceLabel = computed(
 	() => sourceOptions.find((option) => option.value === settings.value.General.ratingSources)?.label ?? "",
 )
-const letterboxdOff = computed(() => ["imdb", "tmdb"].includes(settings.value.General.ratingSources))
+const letterboxdOff = computed(() => !usesSource(settings.value.General.ratingSources, "letterboxd"))
 // one picker for whether friends' ratings show and how: "hidden" turns them off (and stops fetching them)
 const friendsOptions: { value: FriendsStyle | "hidden"; label: string }[] = [
 	{ value: "labels", label: "Labelled" },
@@ -81,9 +81,10 @@ const mode = computed({
 	set: (value) => setRatingMode(settings.value, value, true),
 })
 const id = useId()
-const bands = SCORE_BANDS.letterboxd.map((score, index) => ({
+const { letterboxd, imdb } = RATING_SOURCES
+const bands = letterboxd.bands.map((score, index) => ({
 	value: index + 1,
-	label: `Letterboxd ${score.toFixed(1)}/5 · IMDb ${SCORE_BANDS.imdb[index].toFixed(1)}/10`,
+	label: `${letterboxd.name} ${score.toFixed(1)}/${letterboxd.max} · ${imdb.name} ${imdb.bands[index].toFixed(1)}/${imdb.max}`,
 }))
 const { username } = useAccount()
 function openAccount() {

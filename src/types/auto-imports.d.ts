@@ -18,9 +18,11 @@ declare global {
   const NetflixShowTitles: typeof import('../utils/netflix-shows').NetflixShowTitles
   const NetworkRequestError: typeof import('../utils/network').NetworkRequestError
   const PLATFORM_NAMES: typeof import('../utils/stats').PLATFORM_NAMES
+  const RATING_SOURCES: typeof import('../utils/rating-sources').RATING_SOURCES
   const RowPresentation: typeof import('../utils/row-presentation').RowPresentation
   const SCORE_BANDS: typeof import('../utils/ratings').SCORE_BANDS
-  const SCORE_COLORS: typeof import('../utils/ratings').SCORE_COLORS
+  const SCORE_COLORS: typeof import('../utils/rating-sources').SCORE_COLORS
+  const SOURCE_CHOICES: typeof import('../utils/rating-sources').SOURCE_CHOICES
   const SearchRatingSort: typeof import('../utils/page-features').SearchRatingSort
   const SettingsPromise: typeof import('../stores/options.store').SettingsPromise
   const TransientLookupError: typeof import('../utils/ratings').TransientLookupError
@@ -88,9 +90,9 @@ declare global {
   const getExternalRating: typeof import('../utils/lookup').getExternalRating
   const getLetterboxdSlug: typeof import('../utils/ratings').getLetterboxdSlug
   const getRatingMode: typeof import('../utils/preferences').getRatingMode
-  const getRatingPercentile: typeof import('../utils/stats').getRatingPercentile
-  const getScoreBand: typeof import('../utils/ratings').getScoreBand
-  const getScoreColor: typeof import('../utils/ratings').getScoreColor
+  const getRatingPercentile: typeof import('../utils/rating-sources').getRatingPercentile
+  const getScoreBand: typeof import('../utils/rating-sources').getScoreBand
+  const getScoreColor: typeof import('../utils/rating-sources').getScoreColor
   const getServiceState: typeof import('../utils/preferences').getServiceState
   const guessLetterboxdSlug: typeof import('../utils/ratings').guessLetterboxdSlug
   const h: typeof import('vue').h
@@ -124,6 +126,7 @@ declare global {
   const mergeSeenTitles: typeof import('../utils/stats').mergeSeenTitles
   const nextTick: typeof import('vue').nextTick
   const normalizeRowScore: typeof import('../utils/row-presentation').normalizeRowScore
+  const normalizeScore: typeof import('../utils/rating-sources').normalizeScore
   const onAccountChanged: typeof import('../utils/account').onAccountChanged
   const onActivated: typeof import('vue').onActivated
   const onBeforeMount: typeof import('vue').onBeforeMount
@@ -405,6 +408,7 @@ declare global {
   const useWindowSize: typeof import('@vueuse/core').useWindowSize
   const usesImdb: typeof import('../utils/lookup').usesImdb
   const usesLetterboxd: typeof import('../utils/lookup').usesLetterboxd
+  const usesSource: typeof import('../utils/rating-sources').usesSource
   const watch: typeof import('vue').watch
   const watchArray: typeof import('@vueuse/core').watchArray
   const watchAtMost: typeof import('@vueuse/core').watchAtMost
@@ -488,9 +492,10 @@ declare module 'vue' {
     readonly EpisodeRatings: UnwrapRef<typeof import('../utils/page-features')['EpisodeRatings']>
     readonly NetflixShowTitles: UnwrapRef<typeof import('../utils/netflix-shows')['NetflixShowTitles']>
     readonly NetworkRequestError: UnwrapRef<typeof import('../utils/network')['NetworkRequestError']>
+    readonly RATING_SOURCES: UnwrapRef<typeof import('../utils/rating-sources')['RATING_SOURCES']>
     readonly RowPresentation: UnwrapRef<typeof import('../utils/row-presentation')['RowPresentation']>
-    readonly SCORE_BANDS: UnwrapRef<typeof import('../utils/ratings')['SCORE_BANDS']>
-    readonly SCORE_COLORS: UnwrapRef<typeof import('../utils/ratings')['SCORE_COLORS']>
+    readonly SCORE_COLORS: UnwrapRef<typeof import('../utils/rating-sources')['SCORE_COLORS']>
+    readonly SOURCE_CHOICES: UnwrapRef<typeof import('../utils/rating-sources')['SOURCE_CHOICES']>
     readonly SearchRatingSort: UnwrapRef<typeof import('../utils/page-features')['SearchRatingSort']>
     readonly SettingsPromise: UnwrapRef<typeof import('../stores/options.store')['SettingsPromise']>
     readonly TransientLookupError: UnwrapRef<typeof import('../utils/ratings')['TransientLookupError']>
@@ -556,9 +561,9 @@ declare module 'vue' {
     readonly getExternalRating: UnwrapRef<typeof import('../utils/lookup')['getExternalRating']>
     readonly getLetterboxdSlug: UnwrapRef<typeof import('../utils/ratings')['getLetterboxdSlug']>
     readonly getRatingMode: UnwrapRef<typeof import('../utils/preferences')['getRatingMode']>
-    readonly getRatingPercentile: UnwrapRef<typeof import('../utils/stats')['getRatingPercentile']>
-    readonly getScoreBand: UnwrapRef<typeof import('../utils/ratings')['getScoreBand']>
-    readonly getScoreColor: UnwrapRef<typeof import('../utils/ratings')['getScoreColor']>
+    readonly getRatingPercentile: UnwrapRef<typeof import('../utils/rating-sources')['getRatingPercentile']>
+    readonly getScoreBand: UnwrapRef<typeof import('../utils/rating-sources')['getScoreBand']>
+    readonly getScoreColor: UnwrapRef<typeof import('../utils/rating-sources')['getScoreColor']>
     readonly getServiceState: UnwrapRef<typeof import('../utils/preferences')['getServiceState']>
     readonly guessLetterboxdSlug: UnwrapRef<typeof import('../utils/ratings')['guessLetterboxdSlug']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
@@ -591,7 +596,7 @@ declare module 'vue' {
     readonly markRaw: UnwrapRef<typeof import('vue')['markRaw']>
     readonly mergeSeenTitles: UnwrapRef<typeof import('../utils/stats')['mergeSeenTitles']>
     readonly nextTick: UnwrapRef<typeof import('vue')['nextTick']>
-    readonly normalizeRowScore: UnwrapRef<typeof import('../utils/row-presentation')['normalizeRowScore']>
+    readonly normalizeScore: UnwrapRef<typeof import('../utils/rating-sources')['normalizeScore']>
     readonly onAccountChanged: UnwrapRef<typeof import('../utils/account')['onAccountChanged']>
     readonly onActivated: UnwrapRef<typeof import('vue')['onActivated']>
     readonly onBeforeMount: UnwrapRef<typeof import('vue')['onBeforeMount']>
@@ -867,8 +872,7 @@ declare module 'vue' {
     readonly useWindowFocus: UnwrapRef<typeof import('@vueuse/core')['useWindowFocus']>
     readonly useWindowScroll: UnwrapRef<typeof import('@vueuse/core')['useWindowScroll']>
     readonly useWindowSize: UnwrapRef<typeof import('@vueuse/core')['useWindowSize']>
-    readonly usesImdb: UnwrapRef<typeof import('../utils/lookup')['usesImdb']>
-    readonly usesLetterboxd: UnwrapRef<typeof import('../utils/lookup')['usesLetterboxd']>
+    readonly usesSource: UnwrapRef<typeof import('../utils/rating-sources')['usesSource']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>
     readonly watchArray: UnwrapRef<typeof import('@vueuse/core')['watchArray']>
     readonly watchAtMost: UnwrapRef<typeof import('@vueuse/core')['watchAtMost']>

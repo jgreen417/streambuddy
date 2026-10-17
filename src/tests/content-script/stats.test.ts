@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest"
 import {
 	addWatchSeconds,
 	formatDuration,
-	getRatingPercentile,
 	localDateKey,
 	mergeSeenTitles,
 	summarizeWatchLog,
@@ -10,6 +9,7 @@ import {
 	type SeenTitle,
 	type WatchLog,
 } from "../../utils/stats"
+import { getRatingPercentile } from "../../utils/rating-sources"
 
 // Sunday 11 Oct 2026, evening
 const now = new Date(2026, 9, 11, 21, 30)

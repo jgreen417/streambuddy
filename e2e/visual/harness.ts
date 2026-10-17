@@ -184,7 +184,10 @@ async function launch(options: OpenOptions) {
 	})
 	// only the web; the extension's own files load as usual
 	await context.route(/^https?:\/\//, handle)
-	const worker = context.serviceWorkers()[0] ?? (await context.waitForEvent("serviceworker"))
+	// polled rather than awaited as an event: the worker can register between launch returning and a listener
+	// being added, and then the event never comes and the test hangs until it times out
+	await expect.poll(() => context.serviceWorkers().length, { timeout: 15_000 }).toBeGreaterThan(0)
+	const worker = context.serviceWorkers()[0]
 	// on first install the extension clears its local storage and then opens its welcome page; seed after that,
 	// or the clear can wipe the seeded ratings
 	const isWelcome = (page: Page) => page.url().includes("options-page")
