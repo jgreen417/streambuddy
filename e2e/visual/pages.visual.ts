@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test"
-import { test, expect, loaded } from "./harness"
+import { test, expect, loaded, type OpenOptions } from "./harness"
 import { PROFILE } from "./ratings"
 
 // The extension's own pages (the toolbar popup and the settings pages) and the episode chips on a series' page,
@@ -53,26 +53,46 @@ test("popup", async ({ open }) => {
 	await extensionPage(page, "src/ui/action-popup/index.html", ".sb-header")
 	// Chromium draws the service dropdown's text a pixel higher on some runs, so that one box is left out
 	await expect.soft(page).toHaveScreenshot("popup-settings.png", { mask: [page.locator(".sb-scope select").first()] })
+	// the popup stops at the browser's 600px limit and scrolls, so each tab is also shot scrolled to the end
+	const content = page.locator(".sb-content")
+	await content.evaluate((el) => el.scrollTo(0, el.scrollHeight))
+	await expect.soft(page).toHaveScreenshot("popup-settings-end.png")
 	await page.getByRole("tab", { name: "Stats" }).click()
 	await expect(page.locator(".sb-bars")).toBeVisible()
 	await expect.soft(page).toHaveScreenshot("popup-stats.png")
-	// the popup stops at the browser's 600px limit and scrolls; the titles you spotted are below that
-	await page.locator(".sb-content").evaluate((el) => el.scrollTo(0, el.scrollHeight))
+	await content.evaluate((el) => el.scrollTo(0, el.scrollHeight))
 	await expect.soft(page).toHaveScreenshot("popup-stats-end.png")
 })
 
-for (const route of ["Experience", "Playback", "Account", "Backup", "Guide", "install"]) {
-	test(`settings page: ${route}`, async ({ open }) => {
-		const page = await open("about:blank", { local: LOCAL })
+// the changelog's entries change every release, so it's drawn with a fixed sample of them
+const CHANGELOG_SAMPLE =
+	"<h1>Changelog</h1><h2>1.0.1</h2><ul><li>Ratings on episode lists.</li><li>A shorter label on the credits card.</li></ul>" +
+	"<h2>1.0.0</h2><ul><li>First release on the Chrome Web Store and Firefox Add-ons.</li></ul>"
+const SETTINGS_PAGES: { name: string; route: string; options?: OpenOptions }[] = [
+	{ name: "experience", route: "Experience" },
+	{ name: "playback", route: "Playback" },
+	{ name: "account", route: "Account" },
+	{ name: "backup", route: "Backup" },
+	{ name: "guide", route: "Guide" },
+	{ name: "changelog", route: "Changelog" },
+	{ name: "install", route: "install" },
+	// the welcome page as a new install first sees it, before any account is set up
+	{ name: "install-fresh", route: "install", options: { signedIn: false } },
+]
+for (const { name, route, options } of SETTINGS_PAGES) {
+	test(`settings page: ${name}`, async ({ open }) => {
+		const page = await open("about:blank", { local: LOCAL, ...options })
 		await extensionPage(page, `src/ui/options-page/index.html#/options-page/${route}`, "h1")
 		// the version number changes every release
 		await page.locator(".version").evaluate((el) => (el.textContent = "All settings · v1.0.0"))
-		await expect.soft(page).toHaveScreenshot(`settings-${route.toLowerCase()}.png`)
+		if (route === "Changelog")
+			await page.locator(".sb-changelog").evaluate((el, html) => (el.innerHTML = html), CHANGELOG_SAMPLE)
+		await expect.soft(page).toHaveScreenshot(`settings-${name}.png`)
 		// the page scrolls inside its content column, so a long one is also shot scrolled to the end
 		const content = page.locator(".content")
 		if (await content.evaluate((el) => el.scrollHeight > el.clientHeight)) {
 			await content.evaluate((el) => el.scrollTo(0, el.scrollHeight))
-			await expect.soft(page).toHaveScreenshot(`settings-${route.toLowerCase()}-end.png`)
+			await expect.soft(page).toHaveScreenshot(`settings-${name}-end.png`)
 		}
 	})
 }
