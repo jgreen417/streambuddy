@@ -28,10 +28,12 @@ const script = await bundleProbe()
 
 type Meta = Capture["meta"] & { hover: string | null; click: string | null; seekFromEnd: number | null }
 
-// the steps capture.ts took after the page loaded, minus seeking: a copy's video is already where it was
-async function putInState(page: Page, meta: Meta) {
-	if (meta.click) await page.locator(meta.click).first().click()
-	if (meta.hover) await page.locator(meta.hover).first().hover()
+// the steps capture.ts took after the page loaded, minus seeking: a copy's video is already where it was. A copy
+// already holds what the click or hover opened, often over the element itself, so there the pointer only goes back to
+// where it was (for :hover styles) without waiting for the element to be clear.
+async function putInState(page: Page, meta: Meta, copy: boolean) {
+	if (meta.click) await page.locator(meta.click).first().click({ force: copy })
+	if (meta.hover) await page.locator(meta.hover).first().hover({ force: copy })
 }
 
 // every path where two JSON values differ, as "path: before → after"
@@ -99,12 +101,25 @@ for (const { name } of states) {
 	const meta = capture.meta as Meta
 	const captured: ProbeReport = JSON.parse(await readFile(path.join(capture.dir, "probe.json"), "utf8"))
 	const problems: string[] = []
+	try {
+		await checkState(capture, meta, captured, problems)
+	} catch (error) {
+		problems.push(`could not check: ${(error as Error).message.split("\n")[0]}`)
+	}
+	if (problems.length) failed++
+	console.log(`${problems.length ? "✗" : "✓"} ${name}${problems.map((problem) => `\n    ${problem}`).join("")}`)
+}
+// a signed-in Chrome is left running; it's only disconnected from
+if (!args.live) await browser.close()
+process.exit(failed ? 1 : 0)
+
+async function checkState(capture: Capture, meta: Meta, captured: ProbeReport, problems: string[]) {
 	if (args.live) {
 		const page = await browser.contexts()[0].newPage()
 		await page.setViewportSize(meta.viewport)
 		await page.goto(meta.url, { waitUntil: "load" })
 		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
-		await putInState(page, meta)
+		await putInState(page, meta, false)
 		const live = await runProbe(page, meta.service as ProbeReport["service"], script)
 		problems.push(...differences(shape(captured), shape(live)))
 		await page.close()
@@ -114,7 +129,7 @@ for (const { name } of states) {
 		const page = await context.newPage()
 		await page.goto(meta.url, { waitUntil: "load" })
 		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
-		await putInState(page, meta)
+		await putInState(page, meta, true)
 		const copy = await runProbe(page, meta.service as ProbeReport["service"], script)
 		problems.push(...differences(captured, copy))
 		const shot = await screenshotWithoutArt(page)
@@ -126,9 +141,4 @@ for (const { name } of states) {
 		}
 		await context.close()
 	}
-	if (problems.length) failed++
-	console.log(`${problems.length ? "✗" : "✓"} ${name}${problems.map((problem) => `\n    ${problem}`).join("")}`)
 }
-// a signed-in Chrome is left running; it's only disconnected from
-if (!args.live) await browser.close()
-process.exit(failed ? 1 : 0)
