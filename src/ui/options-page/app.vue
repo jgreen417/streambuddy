@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { BUG_REPORT_URL, DONATE_URL, PRIVACY_URL, SOURCE_URL } from "@/constants/links"
+import ServiceRequestBanner from "@/components/options/ServiceRequestBanner.vue"
 import { useFrontendStore } from "@/stores/options.store"
 const version = __VERSION__
 // won't sync without opening once
@@ -126,6 +127,7 @@ const hash = computed(() => router.currentRoute.value.path)
 		<div class="content flex flex-col overflow-y-auto w-full">
 			<div class="page">
 				<div class="p-4 prose">
+					<ServiceRequestBanner />
 					<RouterView />
 				</div>
 			</div>

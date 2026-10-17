@@ -65,6 +65,19 @@ test("popup", async ({ open }) => {
 	await expect.soft(page).toHaveScreenshot("popup-stats-end.png")
 })
 
+test("popup on a service streamBuddy doesn't cover", async ({ open }) => {
+	const page = await open("about:blank", { viewport: { width: 340, height: 600 }, local: LOCAL })
+	// the popup reads the tab it was opened on; here that's Disney+
+	await page.addInitScript(() => {
+		chrome.tabs.query = (() => Promise.resolve([{ url: "https://www.disneyplus.com/home" }])) as typeof chrome.tabs.query
+	})
+	await extensionPage(page, "src/ui/action-popup/index.html", ".sb-header")
+	await expect(page.getByText("streamBuddy doesn't work on Disney+ yet")).toBeVisible()
+	await expect.soft(page).toHaveScreenshot("popup-unsupported-site.png", {
+		mask: [page.locator(".sb-scope select").first()],
+	})
+})
+
 // the changelog's entries change every release, so it's drawn with a fixed sample of them
 const CHANGELOG_SAMPLE =
 	"<h1>Changelog</h1><h2>1.0.1</h2><ul><li>Ratings on episode lists.</li><li>A shorter label on the credits card.</li></ul>" +

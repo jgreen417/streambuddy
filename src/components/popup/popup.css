@@ -675,6 +675,9 @@ a.sb-title-row:hover {
 .sb-footer a:hover {
 	color: var(--sb-text);
 }
+.sb-footer .is-accent {
+	color: var(--sb-accent);
+}
 .sb-footer .is-primary {
 	font-weight: 500;
 	color: var(--sb-text);
@@ -709,12 +712,67 @@ a.sb-title-row:hover {
 	color: var(--sb-accent);
 	font-size: 15px;
 }
+/* the "not on this service yet" banner is a link, which .sb a would otherwise colour */
+.sb a.sb-setup-banner {
+	color: var(--sb-text-muted);
+}
+.sb-setup-banner .sb-request-go {
+	font-size: 13px;
+	font-weight: 700;
+	white-space: nowrap;
+}
 .sb-setup-banner:hover {
 	background: var(--sb-accent-wash-hover);
 }
 .sb-setup-banner:focus-visible {
 	outline: 2px solid var(--sb-focus);
 	outline-offset: 2px;
+}
+
+/* after the last setting: where streamBuddy works, and a way to ask for more */
+.sb-request-card {
+	margin-top: var(--sb-space-lg);
+	padding: var(--sb-space-inset);
+	border: 1px dashed var(--sb-accent-line);
+	border-radius: var(--sb-radius-lg);
+	background: var(--sb-surface);
+}
+.sb-request-services {
+	display: flex;
+	gap: var(--sb-space-xs);
+	margin-bottom: var(--sb-space-md);
+}
+.sb-request-services i {
+	display: grid;
+	place-items: center;
+	width: 20px;
+	height: 20px;
+	border-radius: var(--sb-radius-xs);
+	color: var(--sb-text);
+	font-size: 11px;
+	font-style: normal;
+	font-weight: 800;
+}
+.sb-request-card strong {
+	display: block;
+	font-weight: 600;
+}
+.sb-request-card p {
+	margin: var(--sb-space-xxs) 0 var(--sb-space-lg);
+	color: var(--sb-text-muted);
+	font-size: 12px;
+}
+.sb-request-card a {
+	display: block;
+	padding: 7px;
+	border-radius: var(--sb-radius-md);
+	background: var(--sb-accent);
+	color: var(--sb-text-on-accent);
+	font-weight: 700;
+	text-align: center;
+}
+.sb-request-card a:hover {
+	filter: brightness(1.08);
 }
 
 /* motion: bars grow in, numbers settle, tab content fades */
