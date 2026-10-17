@@ -105,9 +105,9 @@ There is no rating panel on title or detail pages, by design.
 
 ## Checking a change
 
-The visual checks (`e2e/visual`, run in CI on every pull request) screenshot every badge look and the credits pill.
-A token change that moves a pixel shows up there; if it's intended, add the **accept-visuals** label to the pull
-request. The popup and settings pages aren't in those checks yet.
+The visual checks (`e2e/visual`, run in CI on every pull request) screenshot every badge look, the episode chips, the
+credits pill, the popup and the settings pages. A token change that moves a pixel shows up there; if it's intended,
+add the **accept-visuals** label to the pull request.
 
 ## Known gaps
 
