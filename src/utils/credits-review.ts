@@ -49,11 +49,11 @@ export function reviewState(data: FeatureRating, viewer: ReviewViewer): ReviewSt
 	return data.source === "letterboxd" && data.friends_count === 0 ? "nobody" : "plain"
 }
 
-// 4.5 -> "★★★★½" plus the unfilled stars, so ratings line up
-export function starText(rating: number): { filled: string; empty: string } {
+// 4.5 -> four filled stars, a half-filled one and none empty: always five stars, so ratings line up
+export function starText(rating: number): { filled: string; half: boolean; empty: string } {
 	const full = Math.floor(rating)
 	const half = rating - full >= 0.5
-	return { filled: "★".repeat(full) + (half ? "½" : ""), empty: "★".repeat(Math.max(0, 5 - full - (half ? 1 : 0))) }
+	return { filled: "★".repeat(full), half, empty: "★".repeat(Math.max(0, 5 - full - (half ? 1 : 0))) }
 }
 
 function faceColor(name: string) {
@@ -82,9 +82,10 @@ function scorePill(source: FeatureRating["source"], rating: number) {
 }
 
 function stars(rating: number) {
-	const { filled, empty } = starText(rating)
+	const { filled, half, empty } = starText(rating)
 	const span = el("span", "sb-review-stars", filled)
 	span.setAttribute("aria-label", `${rating} stars`)
+	if (half) span.append(el("i", "sb-review-half", "★"))
 	if (empty) span.append(el("s", "", empty))
 	return span
 }
@@ -213,7 +214,7 @@ export class CreditsRatingPrompt {
 			buttons.append(connect, link("sb-review-secondary", filmUrl, "Open on Letterboxd"))
 		} else {
 			buttons.append(
-				link("sb-review-primary", filmUrl, state === "logged" ? "Log again on Letterboxd" : "Rate on Letterboxd"),
+				link("sb-review-primary", filmUrl, state === "logged" ? "Log on Letterboxd" : "Rate on Letterboxd"),
 			)
 			const later = el("button", "sb-review-secondary", "Not now")
 			later.type = "button"

@@ -1,21 +1,31 @@
 <script setup lang="ts">
 import { marked } from "marked"
 
-const version = __VERSION__
-const changelog = __CHANGELOG__
+// one page heading like the other pages; each release is a section under it
+const changelog = marked.parse(__CHANGELOG__.replace(/^# (?!Changelog)/gm, "## "), { async: false })
 </script>
 
 <template>
-	<div>
-		<p>Version: {{ version }}</p>
-		<!-- eslint-disable vue/no-v-html -->
-		<div v-html="marked(changelog)" />
-		<!--eslint-enable-->
-	</div>
+	<!-- eslint-disable vue/no-v-html -->
+	<div
+		class="sb-changelog"
+		v-html="changelog"
+	/>
+	<!--eslint-enable-->
 </template>
 
-<style>
-ul {
-	color: var(--color-gray-300);
+<style scoped>
+.sb-changelog {
+	max-width: 620px;
+}
+.sb-changelog :deep(h2) {
+	margin: 28px 0 6px;
+}
+.sb-changelog :deep(ul) {
+	display: grid;
+	gap: 6px;
+	padding-left: 20px;
+	list-style: disc;
+	color: var(--sb-text-muted);
 }
 </style>

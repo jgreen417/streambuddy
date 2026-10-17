@@ -202,7 +202,7 @@ const messages: Record<string, Record<string, string>> = {
 .sb-setup {
 	display: grid;
 	gap: 16px;
-	max-width: 560px;
+	max-width: 620px;
 	text-align: left;
 }
 .sb-step {

@@ -55,8 +55,8 @@ describe("credits review", () => {
 		expect(document.querySelector(".sb-review")!.textContent).not.toContain("None of your friends")
 	})
 	it("writes half stars and pads to five", () => {
-		expect(starText(4.5)).toEqual({ filled: "★★★★½", empty: "" })
-		expect(starText(3)).toEqual({ filled: "★★★", empty: "★★" })
+		expect(starText(4.5)).toEqual({ filled: "★★★★", half: true, empty: "" })
+		expect(starText(3)).toEqual({ filled: "★★★", half: false, empty: "★★" })
 	})
 	it("starts as a collapsed pill and expands into the card", () => {
 		document.body.innerHTML = ""
