@@ -36,7 +36,7 @@ export function updateCreditsPrompt(site: RatingsSite) {
 		creditsPrompt.tick(null, null, false)
 		return
 	}
-	const video = filmVideo()
+	const video = site.playerClock ? site.playerClock() : filmVideo()
 	const watchingSomethingElse =
 		!!video && video.duration !== creditsShownFor && video.currentTime > 2 * 60 && !video.paused
 	if (creditsPrompt.showing && creditsShownFor !== null && !watchingSomethingElse) {

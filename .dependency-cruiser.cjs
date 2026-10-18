@@ -32,14 +32,14 @@ module.exports = {
 			name: "shared-code-not-into-sites",
 			comment: "only a service's own entry script may pick its site adapter; shared code receives it as a parameter",
 			severity: "error",
-			from: { path: "^src/(content-script/(?!sites/|netflix\\.ts|amazon\\.ts|max\\.ts)|playback/(?!sites/)|utils/)" },
-			to: { path: "^src/(playback/sites/(netflix|prime|hbo)|content-script/sites/(netflix|prime|max))\\.ts$" },
+			from: { path: "^src/(content-script/(?!sites/|netflix\\.ts|amazon\\.ts|max\\.ts|disney\\.ts)|playback/(?!sites/)|utils/)" },
+			to: { path: "^src/(playback/sites/(netflix|prime|hbo|disney)|content-script/sites/(netflix|prime|max|disney))\\.ts$" },
 		},
 		{
 			name: "entries-not-imported",
 			severity: "error",
 			from: {},
-			to: { path: "^src/(content-script/(netflix|amazon|max)|background/index)\\.ts$" },
+			to: { path: "^src/(content-script/(netflix|amazon|max|disney)|background/index)\\.ts$" },
 		},
 		{
 			name: "no-orphans",

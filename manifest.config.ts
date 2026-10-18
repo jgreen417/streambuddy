@@ -32,6 +32,7 @@ export default {
 			js: ["src/content-script/credits-marker-start.ts"],
 			matches: [
 				...SERVICES.HBO.matches,
+				...SERVICES.Disney.matches,
 				"*://*.primevideo.com/*",
 				...SERVICES.Amazon.matches
 					.filter((match) => match.includes("amazon."))

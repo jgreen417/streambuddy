@@ -26,7 +26,7 @@ export function creditsLength(duration: number) {
 	return Math.min(10 * 60, Math.max(3 * 60, duration * 0.07))
 }
 
-// The title in the player's tab title ("The Batman • HBO Max", "Prime Video: Dune"), without the service's name or the
+// The title in the player's tab title ("The Batman • HBO Max", "Prime Video: Dune", "Glee | Disney+"), without the service's name or the
 // invisible direction marks Max wraps it in; undefined when it's only the service's name
 export function playerTitle(raw: string | null | undefined) {
 	const title = raw
@@ -34,14 +34,17 @@ export function playerTitle(raw: string | null | undefined) {
 		.replace(/^Prime Video:\s*/i, "")
 		.split(/\s*[•·|]\s*/)[0]
 		?.trim()
-	return title && !/^(Netflix|Prime Video|HBO\s*Max)$/i.test(title) ? title : undefined
+	return title && !/^(Netflix|Prime Video|HBO\s*Max|Disney\+)$/i.test(title) ? title : undefined
 }
 
 // anything shorter is a trailer, an extra or an episode, not a film
 export const SHORTEST_FILM = 20 * 60
 
+// where a player is in what it's playing: its <video>, or the player's own clock where the <video>'s isn't the title's
+export type PlayerClock = Pick<HTMLVideoElement, "currentTime" | "duration" | "paused">
+
 // a film long enough to be one, playing its credits. `length` is how long the service says they run, if it does.
-export function inCredits(video: HTMLVideoElement, length?: number) {
+export function inCredits(video: PlayerClock, length?: number) {
 	return (
 		Number.isFinite(video.duration) &&
 		video.duration >= SHORTEST_FILM &&
@@ -128,7 +131,7 @@ export class CreditsRatingPrompt {
 	}
 
 	tick(
-		video: HTMLVideoElement | null,
+		video: PlayerClock | null,
 		data: FeatureRating | null,
 		enabled: boolean,
 		viewer: ReviewViewer = { username: "", friends: true },

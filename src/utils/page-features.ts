@@ -87,6 +87,20 @@ export function readDetailContext(site: FeatureSite, path = location.pathname): 
 			mediaType: series ? "tv" : "movie",
 		}
 	}
+	if (site === "disney") {
+		const target = document.querySelector<HTMLElement>('[data-testid="explore-details-view"]')
+		const masthead = text(document.querySelector('[data-testid="masthead-metadata"]'))
+		// the title is a logo; the tab title is "Glee | Disney+"
+		const title = clean(document.title.replace(/\s*\|\s*Disney\+$/, ""))
+		if (!target || !title || !location.pathname.startsWith("/browse/entity-")) return null
+		return {
+			root: document.body,
+			target,
+			title,
+			year: masthead.match(/^\d{4}/)?.[0] ?? null,
+			mediaType: /\b\d+\s+Seasons?\b/i.test(masthead) ? "tv" : "movie",
+		}
+	}
 	const target = document.querySelector<HTMLElement>('[data-testid="atf-component-next-gen"]')
 	const title = headingText(target?.querySelector("h1") ?? null).replace(/\s*-\s*Season\s+\d+.*$/i, "")
 	if (!target || !title) return null
@@ -122,6 +136,19 @@ export function readEpisodeCards(site: FeatureSite, root: HTMLElement) {
 					cards.push({
 						card,
 						target: card.querySelector<HTMLElement>('[data-testid$="_tileImage"]') ?? card,
+						season: Number(match[1]),
+						episode: Number(match[2]),
+					})
+			})
+	} else if (site === "disney") {
+		root
+			.querySelectorAll<HTMLElement>('[data-testid="tab-panel--active"] a[data-testid="set-item"]')
+			.forEach((card) => {
+				const match = card.getAttribute("aria-label")?.match(/^Season\s+(\d+)\s+Episode\s+(\d+)\b/)
+				if (match)
+					cards.push({
+						card,
+						target: card.querySelector<HTMLElement>('[data-testid="set-item-tile"]') ?? card,
 						season: Number(match[1]),
 						episode: Number(match[2]),
 					})

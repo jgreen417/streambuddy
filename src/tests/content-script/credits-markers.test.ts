@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 import { listenForCreditsMarkers, markedCreditsFromEnd } from "../../content-script/credits-marker"
-import { CREDITS_MESSAGE, maxCreditsMarker, primeCreditsMarker } from "../../utils/credits-markers"
+import {
+	CREDITS_MESSAGE,
+	disneyCreditsMarkers,
+	maxCreditsMarker,
+	primeCreditsMarker,
+} from "../../utils/credits-markers"
 
 // shapes and numbers from real playback responses, trimmed to the fields read
 describe("Max credits marker", () => {
@@ -66,6 +71,61 @@ describe("Prime Video credits marker", () => {
 				transitionTimecodes: { result: { events: [{ eventType: "END_CREDITS", startTimeMs: 1 }] } },
 			}),
 		).toBeUndefined()
+	})
+})
+
+describe("Disney+ credits marker", () => {
+	// Star Wars: A New Hope: the player experience for its availId, and the playback response for the same availId
+	const experience = {
+		data: {
+			playerExperience: {
+				timeline: { runtimeMs: 7536000 },
+				title: "Star Wars: A New Hope (Episode IV)",
+				analytics: { programType: "movie" },
+			},
+		},
+	}
+	const playback = {
+		stream: {
+			editorial: [
+				{ label: "FFEC", offsetMillis: 7221221 },
+				{ label: "up_next", offsetMillis: 7253000 },
+			],
+			playbackRights: { externalIds: { availId: "e9fa3181" } },
+		},
+	}
+	const url = "https://disney.api.edge.bamgrid.com/explore/v1.21/playerExperience/e9fa3181"
+
+	it("joins the runtime and the end credits' first frame, whichever response comes first", () => {
+		const film = { creditsFromEnd: 314.779, duration: 7536, title: "Star Wars: A New Hope (Episode IV)" }
+		const first = disneyCreditsMarkers()
+		expect(first.experience(experience, url)).toEqual({ duration: 7536, title: film.title })
+		expect(first.playback(playback)).toMatchObject({ ...film, creditsFromEnd: expect.closeTo(314.779) })
+		const second = disneyCreditsMarkers()
+		expect(second.playback(playback)).toBeUndefined()
+		expect(second.experience(experience, url)).toMatchObject({ ...film, creditsFromEnd: expect.closeTo(314.779) })
+	})
+	it("names an episode by its subtitle, and keeps titles apart by availId", () => {
+		const markers = disneyCreditsMarkers()
+		markers.playback(playback)
+		const episode = markers.experience(
+			{
+				data: {
+					playerExperience: {
+						timeline: { runtimeMs: 1441000 },
+						title: "The Simpsons",
+						subtitle: "S1:E1 Simpsons Roasting on an Open Fire",
+						analytics: { programType: "episode" },
+					},
+				},
+			},
+			url.replace("e9fa3181", "80c01b9e"),
+		)
+		expect(episode).toEqual({
+			duration: 1441,
+			title: "The Simpsons",
+			episode: "S1:E1 Simpsons Roasting on an Open Fire",
+		})
 	})
 })
 

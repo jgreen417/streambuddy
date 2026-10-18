@@ -36,7 +36,7 @@ These requests go straight from your browser to those services, under their own 
 
 - It doesn't sell data or share it for advertising. The service requests and browser sync described above support its features.
 - It doesn't use data for advertising, credit or anything unrelated to its ratings, playback, watchlist and local statistics features.
-- It runs only on Netflix, Prime Video (including Amazon's sites, where Prime Video is hosted) and HBO Max. On those pages it reads title names and the player's controls, to show ratings and to skip intros or ads.
+- It runs only on Netflix, Prime Video (including Amazon's sites, where Prime Video is hosted) HBO Max and Disney+. On those pages it reads title names and the player's controls, to show ratings and to skip intros or ads.
 - It doesn't collect your name, email, payment details or passwords.
 
 streamBuddy's use and transfer of information adheres to the Chrome Web Store User Data Policy, including its Limited Use requirements. The developer does not receive or read extension user data. Data is transferred only to the services described above to provide the features you use, and through your browser account's sync when enabled.

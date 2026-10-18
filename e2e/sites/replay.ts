@@ -13,6 +13,8 @@ export const FEEDS: Record<string, RegExp> = {
 	netflixMetadata: /netflix\.com\/nq\/website\/memberapi\/release\/metadata/,
 	primePlayback: /\/GetVodPlaybackResources/,
 	maxPlayback: /\/playback\/v1\/playbackInfo/,
+	disneyExperience: /\/explore\/v[\d.]+\/playerExperience\//,
+	disneyPlayback: /\/playback\/ctr-regular/,
 }
 // what differs between a live page and its copy by design, left out of both screenshots
 // (SVG images are the site's own drawing, saved with the copy, so they're compared)
