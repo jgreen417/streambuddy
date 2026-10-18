@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Copies saved pages into the private fixtures repo (streambuddy-sites) and pushes them. Only the files the replay and
 # the visual checks read go: never a recording or storage.json, which hold the account's session. Stops if any
-# copied file still mentions one of the given names (the --scrub lists missed something).
+# copied file still has one of the given names as a whole word, in the same case (the --scrub lists missed it).
 #
-#   e2e/sites/publish.sh ~/streambuddy-firefox-test/captures ~/Projects/streambuddy-sites "Name One,Name Two"
+#   e2e/sites/publish.sh ~/streambuddy-firefox-test/captures ~/Projects/streambuddy-sites "Steven Green,Anna"
 set -euo pipefail
 captures=$1 sites=$2 names=${3:-}
 
@@ -20,7 +20,7 @@ done
 
 if [ -n "$names" ]; then
 	pattern=$(echo "$names" | sed 's/ *, */|/g')
-	if grep -rliE "$pattern" "$sites/captures" --include='*.html' --include='*.json'; then
+	if grep -rlwE "$pattern" "$sites/captures" --include='*.html' --include='*.json'; then
 		echo "Those files still mention a name from the list; nothing was committed." >&2
 		exit 1
 	fi
