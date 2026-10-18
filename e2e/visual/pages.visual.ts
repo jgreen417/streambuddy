@@ -67,13 +67,13 @@ test("popup", async ({ open }) => {
 
 test("popup on a service streamBuddy doesn't cover", async ({ open }) => {
 	const page = await open("about:blank", { viewport: { width: 340, height: 600 }, local: LOCAL })
-	// the popup reads the tab it was opened on; here that's Disney+
+	// the popup reads the tab it was opened on; here that's Mubi
 	await page.addInitScript(() => {
-		const tab = { url: "https://www.disneyplus.com/home" } as chrome.tabs.Tab
+		const tab = { url: "https://mubi.com/en/showing" } as chrome.tabs.Tab
 		chrome.tabs.query = (() => Promise.resolve([tab])) as typeof chrome.tabs.query
 	})
 	await extensionPage(page, "src/ui/action-popup/index.html", ".sb-header")
-	await expect(page.getByText("streamBuddy doesn't work on Disney+ yet")).toBeVisible()
+	await expect(page.getByText("streamBuddy doesn't work on Mubi yet")).toBeVisible()
 	await expect.soft(page).toHaveScreenshot("popup-unsupported-site.png", {
 		mask: [page.locator(".sb-scope select").first()],
 	})
