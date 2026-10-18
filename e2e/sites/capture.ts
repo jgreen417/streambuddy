@@ -1,8 +1,9 @@
 // Saves one live page state as a fixture.
 //
 //   npx tsx e2e/sites/capture.ts --state netflix-browse --service Netflix --url https://www.netflix.com/browse \
-//     --cdp http://localhost:9333 --out ~/streambuddy-firefox-test/captures [--hover <selector>] [--click <selector>]
-//     [--seek-from-end <seconds>] [--scroll <px>] [--wait <ms>] [--front] [--record] [--viewport 1440x900] [--scrub "Josh,joshuagreen"]
+//     --cdp http://localhost:9333 --out ~/streambuddy-firefox-test/captures [--hover <selector>] [--click <selector>]...
+//     [--fill <selector> --text <text>] [--seek-from-end <seconds>] [--scroll <px>] [--wait <ms>] [--front]
+//     [--record] [--viewport 1440x900] [--scrub "Josh,joshuagreen"]
 //
 // --cdp attaches to a signed-in Chrome started with --remote-debugging-port (see README.md). Without it,
 // the page is opened in Playwright's Chromium with the visual harness answering every request, which is how the
@@ -33,7 +34,9 @@ const { values: args } = parseArgs({
 		cdp: { type: "string" },
 		out: { type: "string", default: "e2e/.captures" },
 		hover: { type: "string" },
-		click: { type: "string" },
+		click: { type: "string", multiple: true },
+		fill: { type: "string" },
+		text: { type: "string" },
 		"seek-from-end": { type: "string" },
 		scroll: { type: "string" },
 		wait: { type: "string", default: "3000" },
@@ -107,6 +110,7 @@ const steps: Steps = {
 	seekFromEnd: args["seek-from-end"] ? Number(args["seek-from-end"]) : null,
 	scroll: args.scroll ? Number(args.scroll) : null,
 	click: args.click ?? null,
+	fill: args.fill ? { selector: args.fill, text: args.text ?? "" } : null,
 	hover: args.hover ?? null,
 	wait: Number(args.wait),
 }

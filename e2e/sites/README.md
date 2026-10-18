@@ -27,9 +27,11 @@ sites, so new UI can be built against them without opening the live sites.
      --state netflix-browse --service Netflix --url https://www.netflix.com/browse --scrub "Josh"
    ```
 
-   `--hover` and `--click` take a selector to act on before saving (`>> nth=3` picks the fourth match), `--scroll
-   <px>` wheels the page down first, `--seek-from-end <seconds>` puts a player that many seconds before the end
-   (through Netflix's own player, which stops if its video is seeked directly), `--wait` is how long to let the page
+   `--hover` and `--click` take a selector to act on before saving (`>> nth=3` picks the fourth match); `--click`
+   can be given more than once, such as a season menu and then the season. `--fill <selector> --text <text>` types
+   into a field first, such as a search box. `--scroll <px>` wheels the page down first, `--seek-from-end <seconds>`
+   puts a player that many seconds before the end (through Netflix's own player, which stops if its video is seeked
+   directly, and through the player's timeline where the video has no length, as on Disney+), `--wait` is how long to let the page
    settle afterwards, and `--front` brings the tab forward (Dia holds a background tab's video at 0:00, so player
    states need it). `--scrub` replaces whole names, such as the profile names the site shows, with "Viewer" in every
    saved file, the probe's report included. Give each service its own list: a name that is also in a title is

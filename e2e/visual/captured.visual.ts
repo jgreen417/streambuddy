@@ -31,7 +31,7 @@ for (const { name } of states) {
 		})
 		await putInState(
 			page,
-			{ seekFromEnd: null, scroll: null, click: meta.click ?? null, hover: meta.hover ?? null, wait: 0 },
+			{ seekFromEnd: null, scroll: null, click: meta.click ?? null, fill: null, hover: meta.hover ?? null, wait: 0 },
 			true,
 		)
 		// some titles only resolve after a lookup, so the count is read once it stops changing

@@ -85,6 +85,9 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 			const style = getComputedStyle(para)
 			mark(para, "data-sb-p", `${style.marginTop} ${style.marginBottom}`)
 		}
+		// what was typed into a field (a search box) is in its value, which isn't written out as HTML
+		for (const field of Array.from(root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea")))
+			if (field.value !== field.defaultValue) mark(field, "data-sb-value", field.value)
 		for (const video of Array.from(root.querySelectorAll("video")))
 			mark(
 				video,
@@ -116,6 +119,7 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		el.removeAttribute("data-sb-css")
 		el.removeAttribute("data-sb-video")
 		el.removeAttribute("data-sb-adopted")
+		el.removeAttribute("data-sb-value")
 	}
 
 	// the rest works on a detached copy, so the live page is left as it was. DOMParser leaves the shadow roots as
@@ -157,6 +161,12 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 	for (const video of everywhere("video")) {
 		video.removeAttribute("src")
 		video.innerHTML = ""
+	}
+	for (const field of everywhere("[data-sb-value]")) {
+		const value = field.getAttribute("data-sb-value")!
+		if (field.localName === "textarea") field.textContent = value
+		else field.setAttribute("value", value)
+		field.removeAttribute("data-sb-value")
 	}
 	// constructed sheets come after a root's own stylesheets in the cascade, so they go last
 	for (const host of everywhere("[data-sb-adopted]")) {
