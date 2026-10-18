@@ -288,9 +288,13 @@ export async function loaded(page: Page) {
 	await page.evaluate(async () => {
 		await document.fonts.ready
 		await Promise.all(
-			Array.from(document.images).map((img) =>
-				img.complete ? null : new Promise((done) => (img.onload = img.onerror = done)),
-			),
+			Array.from(document.images).map((img) => {
+				// a lazy image off screen isn't fetched until it's scrolled to (saved site pages have them)
+				const box = img.getBoundingClientRect()
+				const offScreen = box.bottom < 0 || box.top > innerHeight || box.right < 0 || box.left > innerWidth
+				if (img.complete || (img.loading === "lazy" && offScreen)) return null
+				return new Promise((done) => (img.onload = img.onerror = done))
+			}),
 		)
 		await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))
 	})

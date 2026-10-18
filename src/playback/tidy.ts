@@ -17,8 +17,13 @@ function restore(reason: string) {
 export function tidyNetflix(hideGames: boolean) {
 	if (!hideGames) return restore("games")
 	for (const card of Array.from(document.querySelectorAll('a[data-uia="cloud-game-card"], [data-uia*="game-card"]')))
-		hide(card.closest("section, .lolomoRow"), "games")
-	for (const row of Array.from(document.querySelectorAll(".mobile-games-row"))) hide(row.closest("section, .lolomoRow") ?? row, "games")
+		// search results put games in the same grid as everything else, so there only the game's own cell goes
+		hide(
+			card.closest('[data-uia="search-page"] [data-uia="gallery"] > * > *') ?? card.closest("section, .lolomoRow"),
+			"games",
+		)
+	for (const row of Array.from(document.querySelectorAll(".mobile-games-row")))
+		hide(row.closest("section, .lolomoRow") ?? row, "games")
 }
 
 export function tidyPrime(hidePaid: boolean) {
