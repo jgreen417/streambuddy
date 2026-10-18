@@ -29,9 +29,11 @@ jobs:
       SITES_TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      # pages saved from the live sites (e2e/sites), kept private; without the token those checks are skipped
+      # pages saved from the live sites (e2e/sites), kept private; without the token (or before the repo has any)
+      # those checks are skipped
       - uses: actions/checkout@v4
         if: env.SITES_TOKEN != ''
+        continue-on-error: true
         with:
           repository: jgreen417/streambuddy-sites
           token: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
