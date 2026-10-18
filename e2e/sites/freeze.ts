@@ -99,6 +99,12 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		if (url && !url.startsWith("data:")) images[url] = [img.naturalWidth || img.width, img.naturalHeight || img.height]
 	}
 
+	// <html> itself isn't in getHTML's output, so its attributes (its scroll mark among them) are read here, before the
+	// marks come off
+	const htmlAttributes = Array.from(
+		document.documentElement.attributes,
+		(attr) => `${attr.name}="${attr.value.replaceAll('"', "&quot;")}"`,
+	)
 	const html = paragraphsAsDivs(document.documentElement.getHTML({ serializableShadowRoots: true, shadowRoots: roots }))
 	for (const el of marked) {
 		el.removeAttribute("data-sb-p")
@@ -109,10 +115,6 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 
 	// the rest works on a detached copy, so the live page is left as it was. DOMParser leaves the shadow roots as
 	// <template shadowrootmode> elements, which is how they're saved and how the copy attaches them again on load.
-	const htmlAttributes = Array.from(
-		document.documentElement.attributes,
-		(attr) => `${attr.name}="${attr.value.replaceAll('"', "&quot;")}"`,
-	)
 	const copy = new DOMParser().parseFromString(
 		`<!doctype html><html ${htmlAttributes.join(" ")}>${html}</html>`,
 		"text/html",
