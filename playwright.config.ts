@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test"
+import path from "node:path"
 
 // Lets the tests answer the extension's own requests (its service worker's TMDb lookups) like the pages'.
 process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1"
@@ -18,4 +19,13 @@ export default defineConfig({
 	expect: {
 		toHaveScreenshot: { animations: "disabled", caret: "hide", maxDiffPixels: 30 },
 	},
+	projects: [
+		{ name: "fixtures", testIgnore: "**/captured.visual.ts" },
+		// pages saved from the live sites keep their approved screenshots beside them, in the streambuddy-sites repo
+		{
+			name: "saved pages",
+			testMatch: "**/captured.visual.ts",
+			snapshotPathTemplate: `${path.resolve(process.env.SITES_DIR ?? "e2e/.sites-fixtures/captures", "../baselines")}/{arg}{ext}`,
+		},
+	],
 })

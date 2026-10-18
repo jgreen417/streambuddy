@@ -55,3 +55,12 @@ Save the state again once the adapter is fixed.
 changes. A frozen copy is one moment of the page with the site's scripts removed: the site's hover cards and
 transitions don't run in it. `--interactive` opens a state saved with `--record` instead: the site's own code runs from
 the recording, so hovering any tile, opening menus and the site's transitions work, without the live site.
+
+## In CI
+
+The saved pages (without recordings or storage) live in the private `jgreen417/streambuddy-sites` repo:
+`captures/<state>/` and, beside it, `baselines/` with each page's approved screenshot and badge count. The visual
+checks workflow checks it out into `e2e/.sites-fixtures` with the `STREAMBUDDY_SITES_TOKEN` secret, and
+`e2e/visual/captured.visual.ts` opens each page with the built extension: every badge fitted to artwork must sit to
+the placement spec, and the count and screenshot must match the approved ones. Without the token those checks are
+skipped. Locally: `SITES_DIR=<captures> npx playwright test --project "saved pages"`.

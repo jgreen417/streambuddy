@@ -26,8 +26,16 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
     env:
       HOME: /root
+      SITES_TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      # pages saved from the live sites (e2e/sites), kept private; without the token those checks are skipped
+      - uses: actions/checkout@v4
+        if: env.SITES_TOKEN != ''
+        with:
+          repository: jgreen417/streambuddy-sites
+          token: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
+          path: e2e/.sites-fixtures
       - run: npm ci
       - name: Typecheck the visual tests
         run: npx tsc -p e2e/tsconfig.json
@@ -36,17 +44,22 @@ jobs:
       - name: Collect changed screenshots
         if: failure()
         run: |
-          mkdir -p e2e/.new-baselines
-          find e2e/.results -name '*-actual.png' | while read -r file; do
-            cp "$file" "e2e/.new-baselines/$(basename "$file" | sed 's/-actual\.png$/.png/')"
+          mkdir -p e2e/.new-baselines/saved-pages
+          find e2e/.results -name '*-actual.*' | while read -r file; do
+            # saved pages' screenshots belong in streambuddy-sites/baselines, not this repo
+            case "$file" in *-saved-pages/*) into=e2e/.new-baselines/saved-pages ;; *) into=e2e/.new-baselines ;; esac
+            cp "$file" "$into/$(basename "$file" | sed 's/-actual\././')"
           done
           {
             echo "### Screenshots that changed"
             echo
             echo "Download **visual-report** (open \`index.html\`) to see each one as expected / actual / diff."
-            echo "If the new look is right, the files in **visual-new-baselines** replace those in \`e2e/visual/baselines\`."
+            echo "If the new look is right, the files in **visual-new-baselines** replace those in \`e2e/visual/baselines\`,"
+            echo "and those in its \`saved-pages\` folder replace those in streambuddy-sites' \`baselines\`."
             echo
-            for file in e2e/.new-baselines/*.png; do [ -e "$file" ] && echo "- \`$(basename "$file")\`"; done
+            for file in e2e/.new-baselines/*.* e2e/.new-baselines/saved-pages/*; do
+              [ -e "$file" ] && echo "- \`${file#e2e/.new-baselines/}\`"
+            done
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
