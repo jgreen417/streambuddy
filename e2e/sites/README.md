@@ -13,6 +13,7 @@ sites, so new UI can be built against them without opening the live sites.
 | `check.ts` | Checks every copy against the live page it came from, or, with `--live`, the live site against the copies |
 | `report.ts` | Runs the probe on every saved state; `--coverage` lists the site code no saved page reaches |
 | `open-browser.sh` | Opens the browser the capture attaches to |
+| `publish.sh` | Copies saved pages (never recordings or storage) into streambuddy-sites and pushes them |
 
 ## Capturing (on the Mac)
 
@@ -91,7 +92,8 @@ Everything below runs against saved pages, so the live site is only needed for s
    badges as a viewer would. Badges must sit to the placement spec there (`captured.visual.ts` checks the same).
 5. **Name it everywhere viewers read**: the copy that lists the services (`SUPPORTED_SERVICE_NAMES`, and the
    sentences in the popup's Experience settings, the Guide, Playback and install pages that name them by hand).
-6. **Into CI**: copy the new states into streambuddy-sites (fixtures only, never `recording/`, `recording.json` or
-   `storage.json`), push, and accept the first screenshots from the failed run's `visual-new-baselines/saved-pages`.
+6. **Into CI**: `e2e/sites/publish.sh <captures> <streambuddy-sites clone> "<names>"` copies the new states (never
+   a recording or `storage.json`) and pushes them, after checking no listed name is left in them. Then accept the
+   first screenshots from the failed run's `visual-new-baselines/saved-pages`.
 7. **Last, the live site**: `npm run sites:check -- <captures> --live http://127.0.0.1:9333` once, then load the build
    in a browser and watch one film through its credits.
