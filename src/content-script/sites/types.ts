@@ -2,6 +2,7 @@
 // about a streaming site. Everything site-specific lives in an adapter (sites/*.ts); shared-functions.ts is the same
 // on every service. The playback engine has its own adapters in playback/sites/.
 import type { StreamingService } from "@/constants/streamingServices"
+import type { PlayerClock } from "@/utils/credits-review"
 import type { NetflixCredits } from "@/utils/netflix-credits"
 import type { PlayingEpisode } from "@/utils/series-finale"
 
@@ -38,14 +39,16 @@ export type RatingsSite = {
 	isPlayerPage(): boolean
 	// the service's own metadata for what's playing, when it marks its credits
 	creditsMetadata?(): NetflixCredits | undefined
-	// seconds of end credits up to the end of the video, where the service's player marks them (Prime Video, Max)
-	creditsFromEnd?(video: HTMLVideoElement): number | undefined
+	// where the player is in the title, when its <video> doesn't say (Disney+'s restarts at every seek)
+	playerClock?(): PlayerClock | null
+	// seconds of end credits up to the end of the video, where the service's player marks them (Prime Video, Max, Disney+)
+	creditsFromEnd?(video: PlayerClock): number | undefined
 	// the raw title of what's playing, before the shared clean-up
 	playingTitle(metadata: NetflixCredits | undefined): string | null | undefined
 	// undefined for a film, null for an episode that isn't a limited series' finale (or can't be placed in its show)
 	playingEpisode(metadata: NetflixCredits | undefined): PlayingEpisode | null | undefined
 	// the service's end screen is up, which it shows when the credits start
-	endScreenShowing(video: HTMLVideoElement): boolean
+	endScreenShowing(video: PlayerClock): boolean
 	// moves the review pill clear of the service's own end-of-film controls
 	placeReview(review: HTMLElement): void
 }

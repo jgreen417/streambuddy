@@ -24,7 +24,7 @@ async function remove(show: string, kind: SkipKind) {
 	<h1>Playback</h1>
 	<p class="description">
 		streamBuddy skips intros, recaps and credits, passes ads, keeps your speed and can pause long autoplay runs on
-		Netflix, Prime Video and HBO Max. Switch each one on or off in
+		Netflix, Prime Video, HBO Max and Disney+. Switch each one on or off in
 		<RouterLink to="/options-page/Experience">Viewing preferences</RouterLink>
 		.
 	</p>

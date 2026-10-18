@@ -2,9 +2,36 @@ import { describe, it, expect, vi } from "vitest"
 import { sendMessage } from "webext-bridge/content-script"
 import { isCacheCurrent, lookupMovieInfo } from "../../content-script/cache"
 import { settings } from "../../stores/settings"
+import { titleFromLabel as Disney_titleFromLabel } from "../../content-script/sites/disney"
 import { fixTitle as HBO_fixTitle } from "../../content-script/sites/max"
 import { titleLink as Amazon_titleLink } from "../../content-script/sites/prime"
 import { CheckedCards, isSeasonOnlyTitle, pickBestMatch } from "../../utils/tmdb"
+
+describe("Disney_titleFromLabel", () => {
+	// labels from Disney+'s home, title and brand pages
+	it("strips badges, the network and everything after the title", () => {
+		expect(
+			Disney_titleFromLabel(
+				"Hulu Original Series New Badge Rivals Rated TV-MA Released 2024. Drama Select for details on this title.",
+			),
+		).toBe("Rivals")
+		expect(
+			Disney_titleFromLabel(
+				"New Movie Badge Oasis: Don't Look Back In Anger Hulu Original Series Select for details on this title.",
+			),
+		).toBe("Oasis: Don't Look Back In Anger")
+		expect(
+			Disney_titleFromLabel(
+				"Season Finale Badge It's Always Sunny in Philadelphia FX Select for details on this title.",
+			),
+		).toBe("It's Always Sunny in Philadelphia")
+		expect(Disney_titleFromLabel("Turning Red Disney+ Original Select for details on this title.")).toBe("Turning Red")
+	})
+	it("keeps the title of a part-watched film or episode", () => {
+		expect(Disney_titleFromLabel("The Incredibles 1 hour 54 minutes remaining")).toBe("The Incredibles")
+		expect(Disney_titleFromLabel("Glee Season 2 Episode 5 The Rocky Horror Glee Show Watch Next Episode")).toBe("Glee")
+	})
+})
 
 describe("HBO_fixTitle", () => {
 	it("strips bidi marks, the position and badges", () => {

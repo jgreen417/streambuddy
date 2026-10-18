@@ -1,9 +1,11 @@
-// Where Max and Prime Video mark the end credits in their players' playback responses, as read by
+// Where Max, Prime Video and Disney+ mark the end credits in their players' playback responses, as read by
 // content-script/page/credits-marker.ts. Anything unexpected counts as "no marker".
 // the message the page script posts each marker in
 export const CREDITS_MESSAGE = "streambuddy:credits-marker"
 // the content script asking the page script for the markers it found before the content script was listening
 export const CREDITS_REQUEST = "streambuddy:credits-marker-request"
+// where Disney+'s player is in the title, posted by the page script every second while it plays
+export const PLAYHEAD_MESSAGE = "streambuddy:playhead"
 
 // a title the player loaded, with its credits when the service marks them
 export type CreditsMarker = {
@@ -11,6 +13,9 @@ export type CreditsMarker = {
 	creditsFromEnd?: number
 	// the title's own length in seconds, without ads
 	duration: number
+	// what's playing, where the response says (Disney+): its title, and an episode's "S1:E1 Simpsons Roasting…"
+	title?: string
+	episode?: string
 }
 
 type MaxPlayback = {
@@ -48,4 +53,57 @@ export function primeCreditsMarker(json: PrimePlayback) {
 	return found.creditsFromEnd === undefined
 		? { duration: found.duration / 1000 }
 		: { creditsFromEnd: found.creditsFromEnd / 1000, duration: found.duration / 1000 }
+}
+
+type DisneyExperience = {
+	data?: {
+		playerExperience?: {
+			timeline?: { runtimeMs?: unknown }
+			title?: unknown
+			subtitle?: unknown
+			analytics?: { programType?: unknown }
+		}
+	}
+}
+type DisneyPlayback = {
+	stream?: {
+		editorial?: { label?: unknown; offsetMillis?: unknown }[]
+		playbackRights?: { externalIds?: { availId?: unknown } }
+	}
+}
+// Disney+ splits it over two responses for the same title (its availId): the player experience has the runtime and
+// what's playing, the playback response the editorial markers, FFEC being the first frame of the end credits. Each
+// reader gives the title's marker once its player experience is in, with the credits once both are.
+export function disneyCreditsMarkers() {
+	const titles = new Map<string, CreditsMarker>()
+	const credits = new Map<string, number>()
+	const markerFor = (id: string) => {
+		const title = titles.get(id)
+		if (!title) return undefined
+		const found = marker(credits.get(id), title.duration)
+		return found && { ...title, ...found }
+	}
+	return {
+		experience(json: DisneyExperience, url: string) {
+			const id = /\/playerExperience\/([^/?#]+)/.exec(url)?.[1]
+			const experience = json.data?.playerExperience
+			const runtime = experience?.timeline?.runtimeMs
+			if (!id || typeof runtime !== "number" || !(runtime > 0)) return undefined
+			const { title, subtitle } = experience ?? {}
+			titles.set(id, {
+				duration: runtime / 1000,
+				title: typeof title === "string" ? title : undefined,
+				episode:
+					experience?.analytics?.programType === "episode" ? (typeof subtitle === "string" ? subtitle : "") : undefined,
+			})
+			return markerFor(id)
+		},
+		playback(json: DisneyPlayback) {
+			const id = json.stream?.playbackRights?.externalIds?.availId
+			const start = json.stream?.editorial?.find((mark) => mark.label === "FFEC")?.offsetMillis
+			if (typeof id !== "string" || typeof start !== "number") return undefined
+			credits.set(id, start / 1000)
+			return markerFor(id)
+		},
+	}
 }

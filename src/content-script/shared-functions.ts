@@ -34,6 +34,7 @@ function watchSettings() {
 			settings.value.Netflix?.showRating,
 			settings.value.Amazon?.showRating,
 			settings.value.HBO?.showRating,
+			settings.value.Disney?.showRating,
 		],
 		() => refreshRowPresentation(),
 	)

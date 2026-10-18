@@ -1,0 +1,62 @@
+import { markerFor, pagePlayhead } from "@/content-script/credits-marker"
+import { parseEpisodeLabel } from "@/utils/series-finale"
+import type { SiteAdapter, SkipKind } from "../types"
+import { $, mainVideo } from "./dom"
+
+// Disney+'s player is built of web components, each drawing its controls in its own (open) shadow root
+export function playerQuery<T extends Element = HTMLElement>(selector: string, root: ParentNode = document): T | null {
+	const found = root.querySelector<T>(selector)
+	if (found) return found
+	for (const el of Array.from(root.querySelectorAll("*"))) {
+		const inner = el.shadowRoot && playerQuery<T>(selector, el.shadowRoot)
+		if (inner) return inner
+	}
+	return null
+}
+
+const player = () => $('[data-testid="disney-web-player-container"]') ?? $("disney-web-player")
+
+// what's playing, as the player's own response names it (see utils/credits-markers.ts); the title overlay says the
+// same, but only while the controls are up
+export function playing() {
+	const playhead = pagePlayhead()
+	return playhead ? markerFor(playhead) : undefined
+}
+// "S1:E1 Simpsons Roasting on an Open Fire" for an episode, undefined for a film
+export function episodeLabel() {
+	const found = playing()
+	return found ? found.episode : (playerQuery('[data-qa="title-bug.subtitle"]')?.textContent?.trim() ?? undefined)
+}
+
+function skipButton(kind: SkipKind): HTMLElement | null {
+	switch (kind) {
+		// one skip button, labelled "Skip Intro" or "Skip Recap"
+		case "intro":
+		case "recap": {
+			const button = playerQuery('[data-qa="skip-overlay.skipButton"]')?.shadowRoot?.querySelector("button")
+			const label = button?.textContent ?? ""
+			return button && (kind === "intro" ? /intro/i : /recap/i).test(label) ? button : null
+		}
+		// an episode's end card plays the next one
+		case "credits":
+			return playerQuery('[data-qa="end-card-overlay.contentTile"]')
+		case "stillWatching":
+			return null
+	}
+}
+
+export const disney: SiteAdapter = {
+	service: "Disney",
+	video: () => (location.pathname.startsWith("/play/") ? mainVideo(player() ?? document) : null),
+	playerRoot: player,
+	skipButton,
+	// a seek on the <video> only moves within the stretch the player has loaded, so skips press its own buttons
+	seekBlocked: true,
+	episodeKey: () => /^\/play\/([^/?#]+)/.exec(location.pathname)?.[1] ?? null,
+	episodeNumber: () => parseEpisodeLabel(episodeLabel())?.episode ?? null,
+	showTitle: () =>
+		playing()?.title ||
+		playerQuery('[data-qa="title-bug.title"]')?.textContent?.trim() ||
+		document.title.replace(/\s*\|\s*Disney\+$/, "").trim() ||
+		null,
+}

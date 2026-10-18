@@ -32,6 +32,14 @@ export const SERVICES = {
 		matches: ["*://*.max.com/*", "*://*.hbomax.com/*"],
 		host: /(^|\.)(hbo)?max\.com$/i,
 	},
+	Disney: {
+		name: "Disney+",
+		statsKey: "disney",
+		feature: "disney",
+		script: "src/content-script/disney.ts",
+		matches: ["*://*.disneyplus.com/*"],
+		host: /(^|\.)disneyplus\.com$/i,
+	},
 } as const
 
 export type StreamingService = keyof typeof SERVICES
@@ -50,7 +58,6 @@ export const SUPPORTED_SERVICE_NAMES = `${names.slice(0, -1).join(", ")} and ${n
 
 // Services streamBuddy doesn't cover yet. The popup names one when it's opened on its site and offers a request.
 export const OTHER_SERVICES = [
-	{ name: "Disney+", host: /(^|\.)disneyplus\.com$/i },
 	{ name: "Apple TV+", host: /^tv\.apple\.com$/i },
 	{ name: "Paramount+", host: /(^|\.)paramountplus\.com$/i },
 	{ name: "Hulu", host: /(^|\.)hulu\.com$/i },

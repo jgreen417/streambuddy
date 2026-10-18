@@ -3,10 +3,12 @@
 // chip. Bundled into a page script by bundle.ts, so it works the same on a saved fixture and on the live site, and
 // two reports can be diffed to see exactly where a site has changed under us.
 import { SERVICES, type StreamingService } from "@/constants/streamingServices"
+import { disneySite } from "@/content-script/sites/disney"
 import { maxSite } from "@/content-script/sites/max"
 import { netflixSite } from "@/content-script/sites/netflix"
 import { primeSite } from "@/content-script/sites/prime"
 import type { RatingsSite } from "@/content-script/sites/types"
+import { disney } from "@/playback/sites/disney"
 import { hbo } from "@/playback/sites/hbo"
 import { netflix } from "@/playback/sites/netflix"
 import { prime } from "@/playback/sites/prime"
@@ -18,6 +20,7 @@ const SITES: Record<StreamingService, { ratings: RatingsSite; playback: SiteAdap
 	Netflix: { ratings: netflixSite, playback: netflix },
 	Amazon: { ratings: primeSite, playback: prime },
 	HBO: { ratings: maxSite, playback: hbo },
+	Disney: { ratings: disneySite, playback: disney },
 }
 const SKIPS: SkipKind[] = ["intro", "recap", "credits", "stillWatching"]
 
