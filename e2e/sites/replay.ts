@@ -93,7 +93,11 @@ function stableHue(url: string) {
 }
 
 export async function routeCapture(context: BrowserContext, capture: Capture) {
-	const page = (await readFile(path.join(capture.dir, "page.html"), "utf8")).replace(/<\/body>/i, `${RUNTIME}</body>`)
+	// A site font marked optional is dropped for the fallback when it isn't there by first paint, which a busy machine
+	// decides differently each run; the copy waits for it, as a live page with the font cached does
+	const page = (await readFile(path.join(capture.dir, "page.html"), "utf8"))
+		.replace(/font-display:\s*optional/g, "font-display: block")
+		.replace(/<\/body>/i, `${RUNTIME}</body>`)
 	const answer = async (route: Route) => {
 		const request = route.request()
 		const url = request.url()
