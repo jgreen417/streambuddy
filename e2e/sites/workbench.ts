@@ -29,9 +29,10 @@ const { values: args, positionals } = parseArgs({
 })
 if (!positionals[0]) throw new Error("name the saved state folder to open")
 const capture = await loadCapture(path.resolve(positionals[0].replace(/^~/, process.env.HOME ?? "~")))
-const probe: ProbeReport = JSON.parse(await readFile(path.join(capture.dir, "probe.json"), "utf8"))
+// null for a service streamBuddy doesn't cover yet
+const probe: ProbeReport | null = JSON.parse(await readFile(path.join(capture.dir, "probe.json"), "utf8"))
 const seeds = seedsFor(
-	probe.cards.flatMap((card) => (card.title ? [{ title: card.title, mediaType: card.mediaType }] : [])),
+	(probe?.cards ?? []).flatMap((card) => (card.title ? [{ title: card.title, mediaType: card.mediaType }] : [])),
 )
 
 let options: OpenOptions = {

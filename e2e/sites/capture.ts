@@ -4,7 +4,7 @@
 //     --cdp http://localhost:9333 --out ~/streambuddy-firefox-test/captures [--hover <selector>] [--click <selector>]
 //     [--seek-from-end <seconds>] [--scroll <px>] [--wait <ms>] [--front] [--record] [--viewport 1440x900] [--scrub "Josh,joshuagreen"]
 //
-// --cdp attaches to a signed-in Chrome started with --remote-debugging-port (see docs/site-fixtures.md). Without it,
+// --cdp attaches to a signed-in Chrome started with --remote-debugging-port (see README.md). Without it,
 // the page is opened in Playwright's Chromium with the visual harness answering every request, which is how the
 // capture → replay round trip is checked against the hand-made fixtures.
 //
@@ -17,7 +17,7 @@ import { createHash } from "node:crypto"
 import { mkdir, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { parseArgs } from "node:util"
-import type { StreamingService } from "@/constants/streamingServices"
+import { SERVICES, type StreamingService } from "@/constants/streamingServices"
 import { handle } from "../visual/harness"
 import { bundleProbe, runProbe } from "./bundle"
 import type { freeze } from "./freeze"
@@ -123,7 +123,11 @@ if (marked)
 		"streamBuddy is running in this browser and has drawn into the page. Capture from a browser started with " +
 			"--disable-extensions (open-browser.sh does this) so the copy is the site alone.",
 	)
-const probe = await runProbe(page, service, await bundleProbe())
+// The bundle also brings the freeze step. A service streamBuddy doesn't cover yet has no site code to run; its page
+// is saved to write that code against.
+const script = await bundleProbe()
+await page.evaluate(script)
+const probe = service in SERVICES ? await runProbe(page, service, script) : null
 await mkdir(dir, { recursive: true })
 await writeFile(path.join(dir, "shot.png"), await screenshotWithoutArt(page))
 await Promise.all(pending)
@@ -172,7 +176,7 @@ const recorded = finishRecording ? await finishRecording() : 0
 for (const [name, value] of Object.entries({ images: frozen.images, resources, feeds, probe, meta }))
 	await writeFile(path.join(dir, `${name}.json`), scrub(JSON.stringify(value, null, "\t")))
 console.log(
-	`${args.state}: ${probe.cards.length} cards, ${probe.episodes.length} episodes${probe.player ? ", player" : ""}; ` +
+	`${args.state}: ${probe ? `${probe.cards.length} cards, ${probe.episodes.length} episodes${probe.player ? ", player" : ""}` : "no site code yet"}; ` +
 		`${Object.keys(frozen.images).length} images, ${Object.keys(resources).length} files, ` +
 		`${Object.values(feeds).flat().length} feed responses${frozen.missingSheets.length ? `, ${frozen.missingSheets.length} stylesheets missing` : ""}${recorded ? `, ${recorded} responses recorded` : ""} → ${dir}`,
 )

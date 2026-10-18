@@ -64,3 +64,34 @@ checks workflow checks it out into `e2e/.sites-fixtures` with the `STREAMBUDDY_S
 `e2e/visual/captured.visual.ts` opens each page with the built extension: every badge fitted to artwork must sit to
 the placement spec, and the count and screenshot must match the approved ones. Without the token those checks are
 skipped. Locally: `SITES_DIR=<captures> npx playwright test --project "saved pages"`.
+
+## Adding a service
+
+Everything below runs against saved pages, so the live site is only needed for step 1 and the last check.
+
+1. **Save its pages** on the Mac, one `sites:capture` per state, with the service's own name as `--service` (any name
+   streamBuddy doesn't know yet saves the page without running site code on it) and `--record` on each. The states
+   that matter are the ones streamBuddy draws on: home with every kind of card (scroll down until each row type has
+   shown), a hovered card, search results, a film and a series title page with its episode list, and the player at
+   the start, with controls up, at the credits and at the end screen. `npm run sites:check` must pass on all of them.
+2. **Read the pages**, not the live site: `npm run sites:workbench -- <state> --interactive` gives the site's own page,
+   with devtools, as often as needed. Note for each card kind its title, its artwork's box, and what marks a series.
+3. **Write the two adapters**, starting from the closest existing pair:
+   - `src/content-script/sites/<service>.ts`, a `RatingsSite` (`types.ts` says what each part answers), and
+   - `src/playback/sites/<service>.ts`, a `SiteAdapter` for the player (video, skip buttons, episode, show title).
+
+   Then register it: an entry in `SERVICES` (`src/constants/streamingServices.ts`, which also feeds both manifests;
+   take it out of `OTHER_SERVICES`), an entry script in `src/content-script/` like `max.ts`, its playback defaults in
+   `src/stores/storeTypes.ts`, its colour in `serviceColors` (`src/design/tokens.ts`), the title page and episode
+   readers in `src/utils/page-features.ts` if it has them, its tab-title suffix in `src/utils/credits-review.ts`, and
+   the adapters in `e2e/sites/probe.ts`'s `SITES`. If streamBuddy reads any of the site's own data responses, add
+   them to `FEEDS` in `replay.ts` and save the pages again so the copies carry them.
+4. **Check against the copies**: save the states again (now with the probe), then `npm run sites:report -- --coverage`
+   shows what the adapters found on each page and which of their lines no page reaches; `sites:workbench` shows the
+   badges as a viewer would. Badges must sit to the placement spec there (`captured.visual.ts` checks the same).
+5. **Name it everywhere viewers read**: the copy that lists the services (`SUPPORTED_SERVICE_NAMES`, and the
+   sentences in the popup's Experience settings, the Guide, Playback and install pages that name them by hand).
+6. **Into CI**: copy the new states into streambuddy-sites (fixtures only, never `recording/`, `recording.json` or
+   `storage.json`), push, and accept the first screenshots from the failed run's `visual-new-baselines/saved-pages`.
+7. **Last, the live site**: `npm run sites:check -- <captures> --live http://127.0.0.1:9333` once, then load the build
+   in a browser and watch one film through its credits.

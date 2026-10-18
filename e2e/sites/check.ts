@@ -8,7 +8,8 @@
 // state, and compares the shape of what streamBuddy's site code finds there with what it found in the capture: which
 // kinds of cards, where their badges go, which player controls it can see. Titles and counts change every day, so
 // they aren't compared; a selector that stops matching is.
-import { chromium } from "@playwright/test"
+import { chromium, type Page } from "@playwright/test"
+import { SERVICES } from "@/constants/streamingServices"
 import { readdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { parseArgs } from "node:util"
@@ -106,7 +107,7 @@ let failed = 0
 for (const { name } of states) {
 	const capture = await loadCapture(path.join(root, name))
 	const meta = capture.meta as Meta
-	const captured: ProbeReport = JSON.parse(await readFile(path.join(capture.dir, "probe.json"), "utf8"))
+	const captured: ProbeReport | null = JSON.parse(await readFile(path.join(capture.dir, "probe.json"), "utf8"))
 	const problems: string[] = []
 	try {
 		await checkState(capture, meta, captured, problems)
@@ -120,15 +121,20 @@ for (const { name } of states) {
 if (!args.live) await browser.close()
 process.exit(failed ? 1 : 0)
 
-async function checkState(capture: Capture, meta: Meta, captured: ProbeReport, problems: string[]) {
+// a page of a service streamBuddy doesn't cover yet has no probe report; only its screenshot is compared
+function probeOf(page: Page, meta: Meta) {
+	return meta.service in SERVICES ? runProbe(page, meta.service as ProbeReport["service"], script) : null
+}
+
+async function checkState(capture: Capture, meta: Meta, captured: ProbeReport | null, problems: string[]) {
 	if (args.live) {
 		const page = await browser.contexts()[0].newPage()
 		await page.setViewportSize(meta.viewport)
 		await page.goto(meta.url, { waitUntil: "load" })
 		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
 		await putInState(page, { ...meta, wait: meta.wait ?? 3000, scroll: meta.scroll ?? null }, false)
-		const live = await runProbe(page, meta.service as ProbeReport["service"], script)
-		problems.push(...differences(shape(captured), shape(live)))
+		const live = await probeOf(page, meta)
+		if (captured && live) problems.push(...differences(shape(captured), shape(live)))
 		await page.close()
 	} else {
 		const context = await browser.newContext({ viewport: meta.viewport })
@@ -137,8 +143,7 @@ async function checkState(capture: Capture, meta: Meta, captured: ProbeReport, p
 		await page.goto(meta.url, { waitUntil: "load" })
 		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
 		await putInState(page, { ...meta, wait: 0, scroll: null }, true)
-		const copy = await runProbe(page, meta.service as ProbeReport["service"], script)
-		problems.push(...differences(captured, copy))
+		problems.push(...differences(captured, await probeOf(page, meta)))
 		const shot = await screenshotWithoutArt(page)
 		const { share, diff } = compareShots(await readFile(path.join(capture.dir, "shot.png")), shot)
 		if (share > Number(args.threshold)) {
