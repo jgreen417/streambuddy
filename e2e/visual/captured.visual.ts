@@ -43,7 +43,8 @@ for (const { name } of states) {
 				},
 				{ timeout: 15_000, intervals: [1_000] },
 			)
-			.toBe(titled.length > 0)
+			// a page the site's code says not to rate (Prime's extras) gets none
+			.toBe(probe.ratesCards && titled.length > 0)
 		await loaded(page)
 		await page.waitForTimeout(300)
 		expect.soft(String(badges), "badges drawn").toMatchSnapshot(`${name}-badges.txt`)
