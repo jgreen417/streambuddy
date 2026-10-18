@@ -65,6 +65,10 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 			if (el.scrollTop || el.scrollLeft) mark(el, "data-sb-scroll", `${el.scrollLeft},${el.scrollTop}`)
 			if (el.shadowRoot) {
 				roots.push(el.shadowRoot)
+				// web components often style their shadow root only with constructed sheets (Disney+'s player)
+				const adopted = el.shadowRoot.adoptedStyleSheets
+				if (adopted.length)
+					mark(el, "data-sb-adopted", adopted.map((sheet) => rebase(sheetText(sheet), location.href)).join("\n"))
 				walk(el.shadowRoot)
 			}
 		}
@@ -111,6 +115,7 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		el.removeAttribute("data-sb-scroll")
 		el.removeAttribute("data-sb-css")
 		el.removeAttribute("data-sb-video")
+		el.removeAttribute("data-sb-adopted")
 	}
 
 	// the rest works on a detached copy, so the live page is left as it was. DOMParser leaves the shadow roots as
@@ -152,6 +157,15 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 	for (const video of everywhere("video")) {
 		video.removeAttribute("src")
 		video.innerHTML = ""
+	}
+	// constructed sheets come after a root's own stylesheets in the cascade, so they go last
+	for (const host of everywhere("[data-sb-adopted]")) {
+		const template = host.querySelector<HTMLTemplateElement>(":scope > template[shadowrootmode]")
+		const style = copy.createElement("style")
+		style.dataset.sbFrom = "adoptedStyleSheets"
+		style.textContent = host.getAttribute("data-sb-adopted")
+		template?.content.append(style)
+		host.removeAttribute("data-sb-adopted")
 	}
 	if (adopted.length) {
 		const style = copy.createElement("style")
