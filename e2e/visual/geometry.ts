@@ -24,6 +24,12 @@ export type Measurement = {
 export async function measure(page: Page) {
 	const raw = await page.evaluate(() => {
 		const rows: Element[] = []
+		const biggestSrc = (el: Element) => {
+			const img = Array.from(el.querySelectorAll("img")).sort(
+				(a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width,
+			)[0]
+			return decodeURIComponent(img?.currentSrc ?? "")
+		}
 		return Array.from(document.querySelectorAll<HTMLElement>("[data-sb-art]")).map((art) => {
 			let host: HTMLElement | null = art
 			while (host && !host.querySelector(":scope > .sb-card-rating")) host = host.parentElement
@@ -33,11 +39,10 @@ export async function measure(page: Page) {
 			// the carousel row the card sits in (Prime's li cards)
 			const row = art.closest("li")?.parentElement
 			if (row && !rows.includes(row)) rows.push(row)
+			// the artwork of every card in that row, badged or not yet: the tallest logo among them sets the line
+			const rowSrcs = Array.from(row?.querySelectorAll(":scope > li") ?? [], (li) => biggestSrc(li))
 			const rect = (el: Element) => el.getBoundingClientRect().toJSON() as DOMRect
 			const radius = (el: Element) => Number.parseFloat(getComputedStyle(el).borderTopRightRadius) || 0
-			const img = Array.from(art.querySelectorAll("img")).sort(
-				(a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width,
-			)[0]
 			return {
 				card: label.replaceAll(/[⁦-⁩]/g, ""),
 				corner: (art.dataset.sbCorner ?? "bottom") as "top" | "bottom",
@@ -45,7 +50,8 @@ export async function measure(page: Page) {
 				artRadius: radius(art),
 				badge: badge ? rect(badge) : null,
 				badgeRadius: badge ? radius(badge) : 0,
-				src: decodeURIComponent(img?.currentSrc ?? ""),
+				src: biggestSrc(art),
+				rowSrcs,
 				row: row ? rows.indexOf(row) : -1,
 			}
 		})
@@ -56,8 +62,7 @@ export async function measure(page: Page) {
 		return logo ? 1 - logo.y / logo.height : 0
 	}
 	const rowReach = new Map<number, number>()
-	for (const item of raw)
-		if (item.row >= 0) rowReach.set(item.row, Math.max(rowReach.get(item.row) ?? 0, logoReach(item.src)))
+	for (const item of raw) if (item.row >= 0) rowReach.set(item.row, Math.max(...item.rowSrcs.map(logoReach)))
 	return raw.map((item): Measurement & { missing: boolean } => {
 		const { art, badge } = item
 		if (!badge) return { ...item, missing: true, gapRight: NaN, gapEdge: NaN, inside: false }

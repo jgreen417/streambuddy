@@ -56,6 +56,12 @@ for (const { name } of states) {
 			for (const badge of Array.from(document.querySelectorAll<HTMLElement>(".sb-card-rating"))) {
 				const host = badge.parentElement!
 				if (unfitted.some((selector) => selector && host.matches(selector))) continue
+				// Prime grows a hovered card into a trailer player; its badge keeps the place it had on the card, which
+				// the trailer's frame isn't measured against
+				if (host.closest("li, article")?.querySelector(".draper-player-container")) continue
+				// off screen, a card's artwork may not have loaded (lazy), as on the live page; what's on screen is checked
+				const box = badge.getBoundingClientRect()
+				if (box.bottom < 0 || box.top > innerHeight || box.right < 0 || box.left > innerWidth) continue
 				const area = (el: Element) => el.getBoundingClientRect().width * el.getBoundingClientRect().height
 				// a title logo over a background (Prime's hero) is no artwork; the card itself is
 				const img = Array.from(host.querySelectorAll("img"))
@@ -67,9 +73,9 @@ for (const { name } of states) {
 					if (style.overflow !== "visible" && Number.parseFloat(style.borderTopRightRadius) > 0) art = el
 					if (el === host) break
 				}
-				const top = badge.getBoundingClientRect().top - art.getBoundingClientRect().top
 				art.dataset.sbArt = ""
-				art.dataset.sbCorner = top < art.getBoundingClientRect().height / 2 ? "top" : "bottom"
+				// the corner the site's code chose, which the badge is placed from (a raised bottom badge can sit high)
+				art.dataset.sbCorner = badge.style.bottom ? "bottom" : "top"
 			}
 		}, unfitted)
 		expect.soft(specProblems(await measure(page)), "badge placement").toEqual([])
