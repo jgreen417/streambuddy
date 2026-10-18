@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import path from "node:path"
+import { SERVICES } from "@/constants/streamingServices"
 import type { ProbeReport } from "../sites/probe"
 import { loadCapture, routeCapture } from "../sites/replay"
 import { putInState, type Steps } from "../sites/steps"
@@ -20,9 +21,9 @@ for (const { name } of states) {
 	test(`saved page: ${name}`, async ({ open }) => {
 		const capture = await loadCapture(path.join(SITES_DIR, name))
 		const meta = capture.meta as typeof capture.meta & Partial<Steps>
-		const probe: ProbeReport | null = JSON.parse(readFileSync(path.join(capture.dir, "probe.json"), "utf8"))
-		// a page saved before streamBuddy supports its service has nothing to draw yet
-		if (!probe) return test.skip(true, `no site code yet for ${meta.service}`)
+		// a page saved for a service this branch doesn't support yet has nothing drawn on it
+		if (!(meta.service in SERVICES)) return test.skip(true, `no site code for ${meta.service} on this branch`)
+		const probe: ProbeReport = JSON.parse(readFileSync(path.join(capture.dir, "probe.json"), "utf8"))
 		const titled = probe.cards.flatMap((card) => (card.title ? [{ title: card.title, mediaType: card.mediaType }] : []))
 		const page = await open(meta.url, {
 			seeds: seedsFor(titled),
@@ -61,9 +62,11 @@ for (const { name } of states) {
 				// Prime grows a hovered card into a trailer player; its badge keeps the place it had on the card, which
 				// the trailer's frame isn't measured against
 				if (host.closest("li, article")?.querySelector(".draper-player-container")) continue
-				// off screen, a card's artwork may not have loaded (lazy), as on the live page; what's on screen is checked
+				// off screen, a card's artwork may not have loaded (lazy), as on the live page; what's on screen is checked.
+				// A card in a hidden tab (Disney+'s Suggested, behind Episodes) isn't drawn at all.
 				const box = badge.getBoundingClientRect()
 				if (box.bottom < 0 || box.top > innerHeight || box.right < 0 || box.left > innerWidth) continue
+				if (!box.width) continue
 				const area = (el: Element) => el.getBoundingClientRect().width * el.getBoundingClientRect().height
 				// a title logo over a background (Prime's hero) is no artwork; the card itself is
 				const img = Array.from(host.querySelectorAll("img"))

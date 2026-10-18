@@ -1,6 +1,7 @@
 // The steps that put a loaded page into a captured state: capture.ts takes them on the live site and saves them in
 // meta.json, and sites:check takes them again on the live site (--live) or on the copy.
 import type { Page } from "@playwright/test"
+import { timelineSeconds } from "./freeze"
 
 export type Steps = {
 	seekFromEnd: number | null
@@ -80,7 +81,6 @@ async function seekTimeline(page: Page, seconds: number) {
 		["aria-valuemin", "aria-valuemax"].map(async (name) => Number((await slider.getAttribute(name)) ?? 0)),
 	)
 	if (!box || !(max > min)) throw new Error("The player has no timeline to seek, so --seek-from-end can't be used here")
-	// the slider's values are in seconds or milliseconds depending on the site; a length over a day is milliseconds
-	const end = max - (max - min > 86_400 ? seconds * 1000 : seconds)
+	const end = max - (seconds * (max - min)) / timelineSeconds(min, max)
 	await page.mouse.click(box.x + (box.width * (end - min)) / (max - min), box.y + box.height / 2)
 }
