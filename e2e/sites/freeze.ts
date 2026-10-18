@@ -16,12 +16,27 @@ export type FrozenPage = {
 
 export function freeze({ sheets }: FreezeInput): FrozenPage {
 	const missingSheets: string[] = []
+	const BLOCKS =
+		"address, article, aside, blockquote, details, dl, div, fieldset, figure, footer, form, h1, h2, h3, h4, h5, h6, " +
+		"header, hr, main, nav, ol, p, pre, section, table, ul"
 	const absolute = (url: string, base: string) => {
 		try {
 			return new URL(url, base).href
 		} catch {
 			return url
 		}
+	}
+	// Each <p> marked data-sb-p written as a <div> keeping its margins (a div has none of a paragraph's own), so it
+	// parses back as one box holding its blocks. Its </p> is the one that closes it, found by counting the <p>s
+	// opened and closed inside it.
+	const paragraphsAsDivs = (html: string) => {
+		const open: boolean[] = []
+		return html.replace(/<(\/?)p(?=[\s>])([^>]*)>/g, (tag, closing: string, attrs: string) => {
+			if (closing) return open.pop() ? "</div>" : tag
+			const margins = /\sdata-sb-p="([^"]*)"/.exec(attrs)
+			open.push(!!margins)
+			return margins ? `<div${attrs.replace(margins[0], "")} data-sb-margins="${margins[1]}">` : tag
+		})
 	}
 	// url(...) in a stylesheet is relative to the sheet, which won't be where the copy is served from
 	const rebase = (css: string, base: string) =>
@@ -59,6 +74,13 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 			const sheet = style.sheet
 			if (sheet) mark(style, "data-sb-css", rebase(sheetText(sheet), sheet.href ?? location.href))
 		}
+		// a <p> the site's script filled with blocks (Netflix's synopses hold a <div>) can't be written as HTML:
+		// parsing it again closes the <p> before the block, and the text falls out of it
+		for (const para of Array.from(root.querySelectorAll("p"))) {
+			if (!para.querySelector(BLOCKS)) continue
+			const style = getComputedStyle(para)
+			mark(para, "data-sb-p", `${style.marginTop} ${style.marginBottom}`)
+		}
 		for (const video of Array.from(root.querySelectorAll("video")))
 			mark(
 				video,
@@ -77,8 +99,9 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		if (url && !url.startsWith("data:")) images[url] = [img.naturalWidth || img.width, img.naturalHeight || img.height]
 	}
 
-	const html = document.documentElement.getHTML({ serializableShadowRoots: true, shadowRoots: roots })
+	const html = paragraphsAsDivs(document.documentElement.getHTML({ serializableShadowRoots: true, shadowRoots: roots }))
 	for (const el of marked) {
+		el.removeAttribute("data-sb-p")
 		el.removeAttribute("data-sb-scroll")
 		el.removeAttribute("data-sb-css")
 		el.removeAttribute("data-sb-video")
@@ -118,6 +141,12 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		// links and sources keep their own spelling (site code matches on it, e.g. href^="/video/watch/"); the copy is
 		// served at the page's own URL, so relative ones still resolve
 		for (const attr of Array.from(el.attributes)) if (attr.name.startsWith("on")) el.removeAttribute(attr.name)
+	for (const el of everywhere("[data-sb-margins]") as HTMLElement[]) {
+		const [top, bottom] = el.dataset.sbMargins!.split(" ")
+		el.style.marginTop = top
+		el.style.marginBottom = bottom
+		delete el.dataset.sbMargins
+	}
 	for (const video of everywhere("video")) {
 		video.removeAttribute("src")
 		video.innerHTML = ""

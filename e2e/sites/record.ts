@@ -33,9 +33,13 @@ export function startRecording(page: Page, dir: string) {
 		const request = response.request()
 		// a redirect has no body of its own; the request it leads to is recorded instead
 		if (response.status() >= 300 && response.status() < 400) return
+		// the video itself can't be replayed (DRM), and a stream that stays open would hold the recording forever
+		if (request.resourceType() === "media") return
 		pending.push(
-			response
-				.body()
+			Promise.race([
+				response.body(),
+				new Promise<never>((_, reject) => setTimeout(() => reject(new Error("still open")), 10_000)),
+			])
 				.then(async (body) => {
 					const file = key(request)
 					await mkdir(path.join(dir, "recording"), { recursive: true })
