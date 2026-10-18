@@ -14,6 +14,11 @@ export type FrozenPage = {
 	missingSheets: string[]
 }
 
+// A player's timeline slider counts seconds or milliseconds depending on the site; a length over a day is milliseconds
+export function timelineSeconds(min: number, max: number) {
+	return max - min > 86_400 ? (max - min) / 1000 : max - min
+}
+
 export function freeze({ sheets }: FreezeInput): FrozenPage {
 	const missingSheets: string[] = []
 	const BLOCKS =
@@ -60,6 +65,8 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		marked.push(el)
 	}
 	const roots: ShadowRoot[] = []
+	const videos: HTMLVideoElement[] = []
+	let timeline: Element | null = null
 	const walk = (root: Document | ShadowRoot) => {
 		for (const el of Array.from(root.querySelectorAll("*"))) {
 			if (el.scrollTop || el.scrollLeft) mark(el, "data-sb-scroll", `${el.scrollLeft},${el.scrollTop}`)
@@ -88,14 +95,21 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		// what was typed into a field (a search box) is in its value, which isn't written out as HTML
 		for (const field of Array.from(root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea")))
 			if (field.value !== field.defaultValue) mark(field, "data-sb-value", field.value)
-		for (const video of Array.from(root.querySelectorAll("video")))
-			mark(
-				video,
-				"data-sb-video",
-				JSON.stringify({ duration: video.duration || 0, at: video.currentTime, paused: video.paused }),
-			)
+		videos.push(...Array.from(root.querySelectorAll("video")))
+		timeline ??= root.querySelector('[role="slider"][aria-valuemax]')
 	}
 	walk(document)
+	// a stream fed in pieces (Disney+) has no length on its <video>; the player's timeline has its length and position
+	const [min, max, now] = ["aria-valuemin", "aria-valuemax", "aria-valuenow"].map((name) =>
+		Number(timeline?.getAttribute(name) ?? 0),
+	)
+	const length = timeline ? timelineSeconds(min, max) : 0
+	for (const video of videos) {
+		const piecewise = !Number.isFinite(video.duration)
+		const duration = piecewise ? length : video.duration
+		const at = piecewise && length ? ((now - min) * length) / (max - min) : video.currentTime
+		mark(video, "data-sb-video", JSON.stringify({ duration: duration || 0, at, paused: video.paused }))
+	}
 	const adopted = Array.from(document.adoptedStyleSheets, (sheet) => rebase(sheetText(sheet), location.href))
 	mark(document.documentElement, "data-sb-scroll", `${scrollX},${scrollY}`)
 

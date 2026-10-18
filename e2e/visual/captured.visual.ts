@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import path from "node:path"
+import { SERVICES } from "@/constants/streamingServices"
 import type { ProbeReport } from "../sites/probe"
 import { loadCapture, routeCapture } from "../sites/replay"
 import { putInState, type Steps } from "../sites/steps"
@@ -20,9 +21,9 @@ for (const { name } of states) {
 	test(`saved page: ${name}`, async ({ open }) => {
 		const capture = await loadCapture(path.join(SITES_DIR, name))
 		const meta = capture.meta as typeof capture.meta & Partial<Steps>
-		const probe: ProbeReport | null = JSON.parse(readFileSync(path.join(capture.dir, "probe.json"), "utf8"))
-		// a page saved before streamBuddy supports its service has nothing to draw yet
-		if (!probe) return test.skip(true, `no site code yet for ${meta.service}`)
+		// a page saved for a service this branch doesn't support yet has nothing drawn on it
+		if (!(meta.service in SERVICES)) return test.skip(true, `no site code for ${meta.service} on this branch`)
+		const probe: ProbeReport = JSON.parse(readFileSync(path.join(capture.dir, "probe.json"), "utf8"))
 		const titled = probe.cards.flatMap((card) => (card.title ? [{ title: card.title, mediaType: card.mediaType }] : []))
 		const page = await open(meta.url, {
 			seeds: seedsFor(titled),
