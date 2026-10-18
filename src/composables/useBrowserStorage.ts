@@ -14,9 +14,9 @@ function mergeDeep(defaults: PlainObject, source: PlainObject): PlainObject {
 		} else if (checkType(defaultValue, sourceValue)) {
 			output[key] = sourceValue
 		} else {
-			// If the type is different, use the default value
+			// Not stored yet (a setting added since), or stored as another type: use the default value
 			output[key] = defaultValue
-			console.log("Type mismatch", key, sourceValue, defaultValue)
+			if (sourceValue !== undefined) console.log("Type mismatch", key, sourceValue, defaultValue)
 		}
 	})
 
