@@ -61,9 +61,11 @@ for (const { name } of states) {
 				// Prime grows a hovered card into a trailer player; its badge keeps the place it had on the card, which
 				// the trailer's frame isn't measured against
 				if (host.closest("li, article")?.querySelector(".draper-player-container")) continue
-				// off screen, a card's artwork may not have loaded (lazy), as on the live page; what's on screen is checked
+				// off screen, a card's artwork may not have loaded (lazy), as on the live page; what's on screen is checked.
+				// A card in a hidden tab (Disney+'s Suggested, behind Episodes) isn't drawn at all.
 				const box = badge.getBoundingClientRect()
 				if (box.bottom < 0 || box.top > innerHeight || box.right < 0 || box.left > innerWidth) continue
+				if (!box.width) continue
 				const area = (el: Element) => el.getBoundingClientRect().width * el.getBoundingClientRect().height
 				// a title logo over a background (Prime's hero) is no artwork; the card itself is
 				const img = Array.from(host.querySelectorAll("img"))

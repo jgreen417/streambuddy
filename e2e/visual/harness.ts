@@ -79,20 +79,28 @@ export const PLAYER_FILMS: Record<string, string> = {
 }
 // Letterboxd pages for the player's films only (card badges come from the seeded cache): the film page with its
 // average and TMDb id, /tmdb/{id}/ redirecting to it, and which of PROFILE's friends rated it
-const LETTERBOXD_FILMS: Record<string, { tmdb: number; rating: number; friends: { name: string; rating: number }[] }> = {
-	"past-lives": { tmdb: 666277, rating: 3.94, friends: [{ name: "sam", rating: 4.5 }, { name: "alex", rating: 4 }] },
-	aftersun: {
-		tmdb: 965150,
-		rating: 4.12,
-		friends: [
-			{ name: "sam", rating: 4.5 },
-			{ name: "alex", rating: 4 },
-			{ name: "priya", rating: 4 },
-			{ name: "jo", rating: 3.5 },
-		],
-	},
-	godland: { tmdb: 900667, rating: 3.8, friends: [] },
-}
+const LETTERBOXD_FILMS: Record<string, { tmdb: number; rating: number; friends: { name: string; rating: number }[] }> =
+	{
+		"past-lives": {
+			tmdb: 666277,
+			rating: 3.94,
+			friends: [
+				{ name: "sam", rating: 4.5 },
+				{ name: "alex", rating: 4 },
+			],
+		},
+		aftersun: {
+			tmdb: 965150,
+			rating: 4.12,
+			friends: [
+				{ name: "sam", rating: 4.5 },
+				{ name: "alex", rating: 4 },
+				{ name: "priya", rating: 4 },
+				{ name: "jo", rating: 3.5 },
+			],
+		},
+		godland: { tmdb: 900667, rating: 3.8, friends: [] },
+	}
 function letterboxdPage(url: URL) {
 	const tmdb = /^\/tmdb\/(\d+)\/$/.exec(url.pathname)?.[1]
 	if (tmdb) {
@@ -289,10 +297,11 @@ export async function loaded(page: Page) {
 		await document.fonts.ready
 		await Promise.all(
 			Array.from(document.images).map((img) => {
-				// a lazy image off screen isn't fetched until it's scrolled to (saved site pages have them)
+				// a lazy image off screen, or drawn at no size (Disney+'s hidden hero slides), isn't fetched until it shows
 				const box = img.getBoundingClientRect()
 				const offScreen = box.bottom < 0 || box.top > innerHeight || box.right < 0 || box.left > innerWidth
-				if (img.complete || (img.loading === "lazy" && offScreen)) return null
+				const unseen = offScreen || !box.width || !box.height
+				if (img.complete || (img.loading === "lazy" && unseen)) return null
 				return new Promise((done) => (img.onload = img.onerror = done))
 			}),
 		)
