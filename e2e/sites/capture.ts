@@ -2,7 +2,7 @@
 //
 //   npx tsx e2e/sites/capture.ts --state netflix-browse --service Netflix --url https://www.netflix.com/browse \
 //     --cdp http://localhost:9333 --out ~/streambuddy-firefox-test/captures [--hover <selector>] [--click <selector>]
-//     [--seek-from-end <seconds>] [--wait <ms>] [--front] [--record] [--viewport 1440x900] [--scrub "Josh,joshuagreen"]
+//     [--seek-from-end <seconds>] [--scroll <px>] [--wait <ms>] [--front] [--record] [--viewport 1440x900] [--scrub "Josh,joshuagreen"]
 //
 // --cdp attaches to a signed-in Chrome started with --remote-debugging-port (see docs/site-fixtures.md). Without it,
 // the page is opened in Playwright's Chromium with the visual harness answering every request, which is how the
@@ -35,6 +35,7 @@ const { values: args } = parseArgs({
 		hover: { type: "string" },
 		click: { type: "string" },
 		"seek-from-end": { type: "string" },
+		scroll: { type: "string" },
 		wait: { type: "string", default: "3000" },
 		viewport: { type: "string", default: "1440x900" },
 		scrub: { type: "string", default: "" },
@@ -104,6 +105,7 @@ if (cssWidth !== width)
 await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
 const steps: Steps = {
 	seekFromEnd: args["seek-from-end"] ? Number(args["seek-from-end"]) : null,
+	scroll: args.scroll ? Number(args.scroll) : null,
 	click: args.click ?? null,
 	hover: args.hover ?? null,
 	wait: Number(args.wait),

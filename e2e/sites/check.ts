@@ -27,8 +27,8 @@ const root = path.resolve((positionals[0] ?? "e2e/.captures").replace(/^~/, proc
 const states = (await readdir(root, { withFileTypes: true })).filter((entry) => entry.isDirectory())
 const script = await bundleProbe()
 
-// captures from before the wait was saved settled for capture.ts's default
-type Meta = Capture["meta"] & Omit<Steps, "wait"> & { wait?: number }
+// captures from before the wait and scroll were saved settled for capture.ts's default and didn't scroll
+type Meta = Capture["meta"] & Omit<Steps, "wait" | "scroll"> & { wait?: number; scroll?: number | null }
 
 // every path where two JSON values differ, as "path: before → after"
 function differences(a: unknown, b: unknown, at = ""): string[] {
@@ -126,7 +126,7 @@ async function checkState(capture: Capture, meta: Meta, captured: ProbeReport, p
 		await page.setViewportSize(meta.viewport)
 		await page.goto(meta.url, { waitUntil: "load" })
 		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
-		await putInState(page, { ...meta, wait: meta.wait ?? 3000 }, false)
+		await putInState(page, { ...meta, wait: meta.wait ?? 3000, scroll: meta.scroll ?? null }, false)
 		const live = await runProbe(page, meta.service as ProbeReport["service"], script)
 		problems.push(...differences(shape(captured), shape(live)))
 		await page.close()
@@ -136,7 +136,7 @@ async function checkState(capture: Capture, meta: Meta, captured: ProbeReport, p
 		const page = await context.newPage()
 		await page.goto(meta.url, { waitUntil: "load" })
 		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
-		await putInState(page, { ...meta, wait: 0 }, true)
+		await putInState(page, { ...meta, wait: 0, scroll: null }, true)
 		const copy = await runProbe(page, meta.service as ProbeReport["service"], script)
 		problems.push(...differences(captured, copy))
 		const shot = await screenshotWithoutArt(page)
