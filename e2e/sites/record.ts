@@ -9,6 +9,7 @@ import type { BrowserContext, Page, Request, Response, Route } from "@playwright
 import { createHash } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
+import { Script } from "node:vm"
 
 type Storage = {
 	cookies: Awaited<ReturnType<BrowserContext["cookies"]>>
@@ -163,17 +164,24 @@ export async function routeRecording(context: BrowserContext, dir: string, fallb
 		if (url !== request.url() && request.resourceType() === "stylesheet")
 			return route.fulfill({ ...head, body: absoluteLinks(body.toString(), url) })
 		// a module is answered with one that re-exports it from where it ends up, so it loads there and its own imports
-		// (and import.meta.url) resolve from that address. Only a module has import or export statements or import.meta.
+		// (and import.meta.url) resolve from that address.
 		const text = body.toString()
-		if (
-			url !== request.url() &&
-			request.resourceType() === "script" &&
-			(/^\s*(?:import\s*[\w{*'"]|export\s)/m.test(text) || /\bimport\s*\.\s*meta\b/.test(text))
-		)
+		if (url !== request.url() && request.resourceType() === "script" && isModule(text))
 			return route.fulfill({ ...head, body: reexport(url, text) })
 		return route.fulfill({ ...head, body })
 	}
 	await context.route(/^https?:\/\//, answer)
+}
+
+// Import and export statements, import.meta and a top-level await only parse in a module, so a script that doesn't
+// compile as a classic one is one. Compiling doesn't run it.
+function isModule(source: string) {
+	try {
+		new Script(source)
+		return false
+	} catch {
+		return true
+	}
 }
 
 function absoluteLinks(css: string, base: string) {
