@@ -150,6 +150,15 @@ export async function routeRecording(context: BrowserContext, dir: string, fallb
 		const head = { status: entry.status, contentType: entry.type, headers: entry.headers }
 		if (url !== request.url() && request.resourceType() === "stylesheet")
 			return route.fulfill({ ...head, body: absoluteLinks(body.toString(), url) })
+		// a module is answered with one that re-exports it from where it ends up, so it loads there and its own imports
+		// (and import.meta.url) resolve from that address. Only a module has import or export statements.
+		const text = body.toString()
+		if (
+			url !== request.url() &&
+			request.resourceType() === "script" &&
+			/^\s*(?:import\s*[\w{*'"]|export\s)/m.test(text)
+		)
+			return route.fulfill({ ...head, body: reexport(url, text) })
 		return route.fulfill({ ...head, body })
 	}
 	await context.route(/^https?:\/\//, answer)
@@ -161,4 +170,11 @@ function absoluteLinks(css: string, base: string) {
 			url.startsWith("data:") ? whole : `url("${new URL(url, base).href}")`,
 		)
 		.replace(/@import\s+(['"])([^'"]+)\1/g, (_, quote, url: string) => `@import "${new URL(url, base).href}"`)
+}
+
+function reexport(url: string, source: string) {
+	const from = JSON.stringify(url)
+	// re-exporting a default the module doesn't have is a syntax error
+	const exportsDefault = /\bexport\s+default\b|\bas\s+default\b/.test(source)
+	return `export * from ${from}\n${exportsDefault ? `export { default } from ${from}\n` : ""}`
 }
