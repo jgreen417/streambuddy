@@ -5,7 +5,7 @@ import type { BrowserContext, Page, Route } from "@playwright/test"
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { artSvg, silentWav } from "../visual/art"
-import { CREDITS_MESSAGE, maxCreditsMarker, primeCreditsMarker } from "@/utils/credits-markers"
+import { CREDITS_MESSAGE, disneyCreditsMarkers, maxCreditsMarker, primeCreditsMarker } from "@/utils/credits-markers"
 import { fulfillRange, handle } from "../visual/harness"
 import type { Steps } from "./steps"
 
@@ -136,10 +136,14 @@ function stableHue(url: string) {
 // The credits a player's playback answers mark, oldest first, as streamBuddy's page script reads them. The probe is
 // handed these, as it runs without the extension that would read them in the page.
 export function creditsMarkersIn(feeds: Capture["feeds"]) {
-	const answers = (feed: string) => (feeds[feed] ?? []).flatMap(({ body }) => (body ? [body] : []))
+	const answers = (feed: string) => (feeds[feed] ?? []).flatMap(({ body, url }) => (body ? [{ body, url }] : []))
+	// Disney+'s marker needs its title's player experience before the playback answer can complete it
+	const disney = disneyCreditsMarkers()
+	answers("disneyExperience").forEach(({ body, url }) => disney.experience(body, url))
 	return [
-		...answers("primePlayback").map((body) => primeCreditsMarker(body)),
-		...answers("maxPlayback").map((body) => maxCreditsMarker(body)),
+		...answers("primePlayback").map(({ body }) => primeCreditsMarker(body)),
+		...answers("maxPlayback").map(({ body }) => maxCreditsMarker(body)),
+		...answers("disneyPlayback").map(({ body }) => disney.playback(body)),
 	].filter((marker) => marker !== undefined)
 }
 
