@@ -220,8 +220,12 @@ try {
 	const recorded = finishRecording ? await finishRecording() : 0
 	for (const [name, value] of Object.entries({ images: frozen.images, resources, feeds, probe, meta }))
 		await writeFile(path.join(dir, `${name}.json`), scrub(JSON.stringify(value, null, "\t")))
-	await rm(saved, { recursive: true, force: true })
+	// the earlier capture is moved aside rather than deleted until the new one is in its place
+	const previous = `${saved}.previous.partial`
+	await rm(previous, { recursive: true, force: true })
+	await rename(saved, previous).catch(() => {})
 	await rename(dir, saved)
+	await rm(previous, { recursive: true, force: true })
 	console.log(
 		`${args.state}: ${probe ? `${probe.cards.length} cards, ${probe.episodes.length} episodes${probe.player ? ", player" : ""}` : "no site code yet"}; ` +
 			`${Object.keys(frozen.images).length} images, ${Object.keys(resources).length} files, ` +

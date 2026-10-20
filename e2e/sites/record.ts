@@ -143,7 +143,12 @@ export async function routeRecording(context: BrowserContext, dir: string, fallb
 		// A routed request's redirect isn't routed again, so a redirect is answered with where it ends up. A page is sent
 		// on there itself, so it loads at its own address; a stylesheet's relative links are made absolute from it.
 		let url = request.url()
-		for (let steps = 0; entry?.location && steps < 10; steps++) entry = find("GET", (url = entry.location), null)
+		let [method, sent] = [request.method(), request.postData()]
+		for (let steps = 0; entry?.location && steps < 10; steps++) {
+			// 307 and 308 send the request on as it was; 303, and 301 or 302 after a POST, send it on as a GET
+			if (entry.status === 303 || (entry.status < 303 && method === "POST")) [method, sent] = ["GET", null]
+			entry = find(method, (url = entry.location), sent)
+		}
 		if (!entry || entry.location) return fallback(route)
 		if (url !== request.url() && request.isNavigationRequest())
 			return route.fulfill({

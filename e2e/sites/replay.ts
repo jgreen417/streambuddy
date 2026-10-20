@@ -134,6 +134,8 @@ export async function routeCapture(context: BrowserContext, capture: Capture) {
 		if (resource)
 			return route.fulfill({
 				contentType: resource.type,
+				// a font from another host is only used with this, as on the live site's CDN
+				headers: { "access-control-allow-origin": "*" },
 				body: await readFile(path.join(capture.dir, "resources", resource.file)),
 			})
 		const size = capture.images[url]

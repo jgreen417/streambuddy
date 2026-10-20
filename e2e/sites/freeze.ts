@@ -104,7 +104,9 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 			root.querySelectorAll<HTMLStyleElement | HTMLLinkElement>("style, link[rel~=stylesheet]"),
 		)) {
 			const sheet = style.sheet
-			if (sheet) mark(style, "data-sb-css", rebase(sheetText(sheet), sheet.href ?? location.href))
+			// a sheet switched off (an alternate theme, one the site disabled) stays off: the copy leaves it out
+			if (sheet?.disabled) mark(style, "data-sb-off", "")
+			else if (sheet) mark(style, "data-sb-css", rebase(sheetText(sheet), sheet.href ?? location.href))
 		}
 		// a <p> the site's script filled with blocks (Netflix's synopses hold a <div>) can't be written as HTML:
 		// parsing it again closes the <p> before the block, and the text falls out of it
@@ -116,6 +118,11 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		// what was typed into a field (a search box) is in its value, which isn't written out as HTML
 		for (const field of Array.from(root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea")))
 			if (field.value !== field.defaultValue) mark(field, "data-sb-value", field.value)
+		// and a ticked box or a chosen option is in its checked or selected, which isn't either
+		for (const box of Array.from(root.querySelectorAll<HTMLInputElement>("input[type=checkbox], input[type=radio]")))
+			if (box.checked !== box.defaultChecked) mark(box, "data-sb-checked", String(box.checked))
+		for (const option of Array.from(root.querySelectorAll("option")))
+			if (option.selected !== option.defaultSelected) mark(option, "data-sb-checked", String(option.selected))
 		videos.push(...Array.from(root.querySelectorAll("video")))
 		timeline ??= root.querySelector('[role="slider"][aria-valuemax]')
 	}
@@ -155,6 +162,8 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		el.removeAttribute("data-sb-video")
 		el.removeAttribute("data-sb-adopted")
 		el.removeAttribute("data-sb-value")
+		el.removeAttribute("data-sb-checked")
+		el.removeAttribute("data-sb-off")
 	}
 
 	// the rest works on a detached copy, so the live page is left as it was. DOMParser leaves the shadow roots as
@@ -199,6 +208,14 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 	for (const video of everywhere("video")) {
 		video.removeAttribute("src")
 		video.innerHTML = ""
+	}
+	for (const el of everywhere("[data-sb-off]")) el.remove()
+	for (const el of everywhere("[data-sb-checked]")) {
+		el.toggleAttribute(
+			el.localName === "option" ? "selected" : "checked",
+			el.getAttribute("data-sb-checked") === "true",
+		)
+		el.removeAttribute("data-sb-checked")
 	}
 	for (const field of everywhere("[data-sb-value]")) {
 		const value = field.getAttribute("data-sb-value")!

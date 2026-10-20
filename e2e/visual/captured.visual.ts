@@ -38,14 +38,14 @@ for (const { name } of states) {
 			{ seekFromEnd: null, scroll: null, click: meta.click ?? null, fill: null, hover: meta.hover ?? null, wait: 0 },
 			true,
 		)
-		// some titles only resolve after a lookup, so the count is read once it stops changing
+		// some titles only resolve after a lookup, so the count is read once it stops changing, none included
 		let badges = -1
 		await expect
 			.poll(
 				async () => {
 					const before = badges
 					badges = await page.locator(".sb-card-rating").count()
-					return badges > 0 && badges === before
+					return badges === before ? badges > 0 : "settling"
 				},
 				{ timeout: 15_000, intervals: [1_000] },
 			)
