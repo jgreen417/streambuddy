@@ -1,6 +1,5 @@
-import { clock, disney, episodeLabel, playerQuery } from "@/playback/sites/disney"
+import { clock, disney, disneyPath, episodeLabel, playerQuery, playing } from "@/playback/sites/disney"
 import { parseEpisodeLabel } from "@/utils/series-finale"
-import { markedCreditsFromEnd } from "../credits-marker"
 import { gridsAround } from "./dom"
 import type { MediaType, RatingsSite } from "./types"
 
@@ -27,7 +26,7 @@ export function titleFromLabel(label: string | null | undefined): string | undef
 // and the brand tiles (Pixar, Marvel) that link to a brand's page
 const notATitle = (card: HTMLElement, label: string) =>
 	/^(?:Select to watch|Season \d+ Episode \d+|LIVE|Replay|Upcoming)\b/.test(label) ||
-	!/^\/(?:browse\/entity-|play\/)/.test(card.getAttribute("href") ?? "")
+	!/^\/(?:browse\/entity-|play\/)/.test(disneyPath(card.getAttribute("href") ?? ""))
 
 // a part-watched title links to the player, and names what it is in the line under it
 const continueWatching = (card: HTMLElement) =>
@@ -68,12 +67,12 @@ export const disneySite: RatingsSite = {
 	rowItem: (card) =>
 		card.closest<HTMLElement>('[data-testid="set-shelf-item"], [data-testid="cw-set-item-wrapper"]') ?? card,
 	searchGrids: () =>
-		location.pathname.startsWith("/browse/search")
+		disneyPath().startsWith("/browse/search")
 			? gridsAround('a[data-testid="set-item"]', 'a[data-testid="set-item"]')
 			: [],
-	isPlayerPage: () => location.pathname.startsWith("/play/"),
+	isPlayerPage: () => disneyPath().startsWith("/play/"),
 	playerClock: clock,
-	creditsFromEnd: markedCreditsFromEnd,
+	creditsFromEnd: () => playing()?.creditsFromEnd,
 	playingTitle: () => disney.showTitle(),
 	// films, and the last episode of a limited series; TMDb's episode counts say which is the last
 	playingEpisode() {

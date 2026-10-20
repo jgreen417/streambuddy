@@ -15,13 +15,18 @@ export function playerQuery<T extends Element = HTMLElement>(selector: string, r
 	return null
 }
 
+// the page's path without a region prefix ("/en-gb/play/…" → "/play/…")
+export const disneyPath = (path = location.pathname) => path.replace(/^\/[a-z]{2}(?:-[a-z]{2})?(?=\/)/i, "")
+
 const player = () => $('[data-testid="disney-web-player-container"]') ?? $("disney-web-player")
 
 // what's playing, as the player's own response names it (see utils/credits-markers.ts); the title overlay says the
 // same, but only while the controls are up
 export function playing() {
 	const playhead = pagePlayhead()
-	return playhead ? markerFor(playhead) : undefined
+	const found = playhead && markerFor(playhead)
+	// the player's runtime is the title's own, so another title's marker is never a near match
+	return found && Math.abs(found.duration - playhead.duration) < 2 ? found : undefined
 }
 // "S1:E1 Simpsons Roasting on an Open Fire" for an episode, undefined for a film
 export function episodeLabel() {
@@ -56,13 +61,13 @@ function skipButton(kind: SkipKind): HTMLElement | null {
 
 export const disney: SiteAdapter = {
 	service: "Disney",
-	video: () => (location.pathname.startsWith("/play/") ? mainVideo(player() ?? document) : null),
+	video: () => (disneyPath().startsWith("/play/") ? mainVideo(player() ?? document) : null),
 	clock,
 	playerRoot: player,
 	skipButton,
 	// a seek on the <video> only moves within the stretch the player has loaded, so skips press its own buttons
 	seekBlocked: true,
-	episodeKey: () => /^\/play\/([^/?#]+)/.exec(location.pathname)?.[1] ?? null,
+	episodeKey: () => /^\/play\/([^/?#]+)/.exec(disneyPath())?.[1] ?? null,
 	episodeNumber: () => parseEpisodeLabel(episodeLabel())?.episode ?? null,
 	showTitle: () =>
 		playing()?.title ||
