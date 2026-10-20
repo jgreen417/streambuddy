@@ -43,14 +43,16 @@ export function clock(): PlayerClock | null {
 	return { currentTime: playhead.position, duration: playhead.duration, paused: video.paused }
 }
 
+const RECAP = /recap|rückblick|résumé|récap|resumen|riassunto|riepilogo|samenvatting|resumo/i
+
 function skipButton(kind: SkipKind): HTMLElement | null {
 	switch (kind) {
-		// one skip button, labelled "Skip Intro" or "Skip Recap"
+		// one skip button, labelled "Skip Intro" or "Skip Recap" in the profile's language: anything not a recap is the intro
 		case "intro":
 		case "recap": {
 			const button = playerQuery('[data-qa="skip-overlay.skipButton"]')?.shadowRoot?.querySelector("button")
-			const label = button?.textContent ?? ""
-			return button && (kind === "intro" ? /intro/i : /recap/i).test(label) ? button : null
+			if (!button) return null
+			return RECAP.test(button.textContent ?? "") === (kind === "recap") ? button : null
 		}
 		// an episode's end card plays the next one
 		case "credits":
