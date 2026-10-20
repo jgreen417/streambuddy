@@ -95,6 +95,23 @@ jobs:
             git push "https://x-access-token:$SITES_TOKEN@github.com/jgreen417/streambuddy-sites.git" "HEAD:refs/heads/$BRANCH"
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+      # the two jobs here can't both run for a pull request, but a close can still get in first, before these
+      # screenshots were pushed; then they're settled here
+      - name: Settle them, if the pull request has closed
+        if: steps.saved.outputs.changed == 'true'
+        env:
+          TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
+          BRANCH: ${{ steps.sites.outputs.branch }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          read -r state MERGED BASE < <(curl -sSf -H "Authorization: Bearer ${{ github.token }}" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/pulls/$NUMBER" |
+            node -e 'let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
+              const pr = JSON.parse(s); console.log(pr.state, pr.merged, pr.base.ref) })')
+          [ "$state" = closed ] || exit 0
+          export MERGED BASE
+          .github/scripts/settle-saved-screenshots.sh
       # a push made with the workflow token, or to streambuddy-sites, starts no workflows here, so the pull request's
       # checks are started once both are in
       - name: Re-run the checks
@@ -123,33 +140,26 @@ jobs:
       group: saved-screenshots-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     steps:
-      - env:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          sparse-checkout: .github/scripts
+      - id: settle
+        env:
           TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
           BRANCH: streambuddy/${{ github.event.pull_request.head.ref }}
           MERGED: ${{ github.event.pull_request.merged }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+          NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          [ -n "$TOKEN" ] || exit 0
-          remote="https://x-access-token:$TOKEN@github.com/jgreen417/streambuddy-sites.git"
-          git ls-remote --exit-code --heads "$remote" "$BRANCH" > /dev/null || exit 0
-          if [ "$MERGED" = true ]; then
-            git clone -q "$remote" sites
-            cd sites
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            # where two pull requests changed the same screenshot, the one merging now is the newer look. Another
-            # pull request closing at the same time can push first, so a refused push starts again from its main.
-            for attempt in 1 2 3 4 5; do
-              git fetch -q origin main
-              git reset -q --hard origin/main
-              git merge -q -X theirs "origin/$BRANCH" -m "Accept saved-page screenshots from streambuddy#${{ github.event.pull_request.number }}"
-              git push -q origin HEAD:main && break
-              [ "$attempt" = 5 ] && exit 1
-              sleep $((attempt * 5))
-            done
-            cd ..
-            # main's own checks ran before these screenshots reached streambuddy-sites' main, so they run again
-            curl -sSf -X POST -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
-              "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/visual.yml/dispatches" \
-              -d '{"ref":"${{ github.event.pull_request.base.ref }}"}'
-          fi
-          git push -q "$remote" --delete "$BRANCH"
+          target=$(.github/scripts/settle-saved-screenshots.sh)
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+      # the base branch's own checks ran before these screenshots reached its streambuddy-sites branch, so they run again
+      - if: steps.settle.outputs.target != ''
+        env:
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          curl -sSf -X POST -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/visual.yml/dispatches" \
+            -d "$(node -e 'console.log(JSON.stringify({ ref: process.env.BASE }))')"

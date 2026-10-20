@@ -53,15 +53,25 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (whole, quote, url) =>
 			url.startsWith("data:") ? whole : `url("${absolute(url, base)}")`,
 		)
+	// an inlined @import keeps what it was conditional on and the cascade layer it put its rules in
+	const imported = (text: string, layer: string | null, supports: string | null, media: string) => {
+		if (layer !== null) text = `@layer ${layer} {\n${text}\n}`
+		if (supports) text = `@supports (${supports}) {\n${text}\n}`
+		return media ? `@media ${media} {\n${text}\n}` : text
+	}
 	// a sheet the page can't read (another origin) is taken from its saved response, its @imports from theirs
 	const inlineImports = (css: string, base: string, depth = 0): string =>
 		css.replace(
 			/@import\s+(?:url\(\s*)?(['"]?)([^'")\s;]+)\1\s*\)?([^;]*);/g,
-			(rule, quote, url: string, media: string) => {
+			(rule, quote, url: string, rest: string) => {
 				const href = absolute(url, base)
 				if (depth > 5 || sheets[href] === undefined) return rule
 				const text = rebase(inlineImports(sheets[href], href, depth + 1), href)
-				return media.trim() ? `@media ${media.trim()} {\n${text}\n}` : text
+				const layer = /^\s*layer(?:\(([^)]*)\))?/.exec(rest)
+				if (layer) rest = rest.slice(layer[0].length)
+				const supports = /^\s*supports\(((?:[^()]|\([^()]*\))*)\)/.exec(rest)
+				if (supports) rest = rest.slice(supports[0].length)
+				return imported(text, layer ? (layer[1] ?? "") : null, supports?.[1] ?? null, rest.trim())
 			},
 		)
 	const sheetText = (sheet: CSSStyleSheet): string => {
@@ -70,7 +80,7 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 			return Array.from(sheet.cssRules, (rule) => {
 				if (!(rule instanceof CSSImportRule) || !rule.styleSheet) return rule.cssText
 				const text = rebase(sheetText(rule.styleSheet), rule.styleSheet.href ?? location.href)
-				return rule.media.mediaText ? `@media ${rule.media.mediaText} {\n${text}\n}` : text
+				return imported(text, rule.layerName, rule.supportsText, rule.media.mediaText)
 			}).join("\n")
 		} catch {
 			if (sheet.href && sheets[sheet.href] !== undefined) return inlineImports(sheets[sheet.href], sheet.href)

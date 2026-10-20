@@ -64,6 +64,8 @@ export function startRecording(page: Page, dir: string) {
 		}
 		// the video itself can't be replayed (DRM), and a stream that stays open would hold the recording forever
 		if (request.resourceType() === "media") return
+		// a redirect is recorded above, once the request it leads to is answered
+		if (response.status() >= 300 && response.status() < 400 && response.headers().location) return
 		// its place is taken now, so a poll's answers keep the order they came in even when a later one is read first
 		const entry: Entry = {
 			method: request.method(),
@@ -156,7 +158,8 @@ export async function routeRecording(context: BrowserContext, dir: string, fallb
 			entry = find(method, (url = entry.location), sent)
 		}
 		if (!entry || entry.location) return fallback(route)
-		if (url !== request.url() && request.isNavigationRequest())
+		// (a page sent on as a POST, by a 307 or 308, is answered in place: location.replace can only GET)
+		if (url !== request.url() && request.isNavigationRequest() && method === "GET")
 			return route.fulfill({
 				contentType: "text/html",
 				body: `<script>location.replace(${JSON.stringify(url)})</script>`,
