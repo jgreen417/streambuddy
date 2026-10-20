@@ -7,18 +7,39 @@ function hide(element: Element | null | undefined, reason: string) {
 	element.setAttribute(HIDDEN_ATTR, reason)
 	;(element as HTMLElement).style.display = "none"
 }
-function restore(reason: string) {
-	for (const element of Array.from(document.querySelectorAll<HTMLElement>(`[${HIDDEN_ATTR}="${reason}"]`))) {
-		element.removeAttribute(HIDDEN_ATTR)
-		element.style.display = ""
-	}
+function hidden(reason: string) {
+	return Array.from(document.querySelectorAll<HTMLElement>(`[${HIDDEN_ATTR}="${reason}"]`))
 }
+function show(element: HTMLElement) {
+	element.removeAttribute(HIDDEN_ATTR)
+	element.style.display = ""
+}
+function restore(reason: string) {
+	hidden(reason).forEach(show)
+}
+
+const GAME_CARDS = 'a[data-uia="cloud-game-card"], [data-uia*="game-card"]'
 
 export function tidyNetflix(hideGames: boolean) {
 	if (!hideGames) return restore("games")
-	for (const card of Array.from(document.querySelectorAll('a[data-uia="cloud-game-card"], [data-uia*="game-card"]')))
-		hide(card.closest("section, .lolomoRow"), "games")
-	for (const row of Array.from(document.querySelectorAll(".mobile-games-row"))) hide(row.closest("section, .lolomoRow") ?? row, "games")
+	// Netflix reuses a search cell for another result, so one that no longer holds a game comes back
+	for (const element of hidden("games"))
+		if (
+			!element.matches(`${GAME_CARDS}, .mobile-games-row`) &&
+			!element.querySelector(`${GAME_CARDS}, .mobile-games-row`)
+		)
+			show(element)
+	for (const card of Array.from(document.querySelectorAll(GAME_CARDS)))
+		// search results put games in the same grid as everything else, so there only the game's own cell goes (or
+		// the card, should Netflix lay the grid out differently), never the section holding every result
+		hide(
+			card.closest('[data-uia="search-page"]')
+				? (card.closest('[data-uia="gallery"] > * > *') ?? card)
+				: card.closest("section, .lolomoRow"),
+			"games",
+		)
+	for (const row of Array.from(document.querySelectorAll(".mobile-games-row")))
+		hide(row.closest("section, .lolomoRow") ?? row, "games")
 }
 
 export function tidyPrime(hidePaid: boolean) {

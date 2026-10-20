@@ -4,7 +4,7 @@
 // and the low and high ends of the colour scale.
 
 type Friend = { name: string; rating: number }
-type Seed = {
+export type Seed = {
 	source: "letterboxd" | "imdb" | "tmdb"
 	rating?: number
 	score?: number
@@ -96,9 +96,13 @@ export const slug = (title: string) =>
 		.replaceAll(/^-|-$/g, "")
 
 // sources: the "Ratings from" setting; with IMDb only, the Letterboxd-rated films carry their IMDb score instead
-export function dbCache(today: string, sources: "both" | "letterboxd" | "imdb" | "tmdb" = "both") {
+export function dbCache(
+	today: string,
+	sources: "both" | "letterboxd" | "imdb" | "tmdb" = "both",
+	more: Record<string, Seed> = {},
+) {
 	return Object.fromEntries(
-		Object.entries(SEEDS).map(([title, given], i) => {
+		Object.entries({ ...SEEDS, ...more }).map(([title, given], i) => {
 			const seed: Seed =
 				sources === "imdb" && given.source === "letterboxd"
 					? { source: "imdb", rating: Math.round((given.rating ?? 0) * 20) / 10, media: given.media }
@@ -134,6 +138,22 @@ export function dbCache(today: string, sources: "both" | "letterboxd" | "imdb" |
 					sources,
 				},
 			]
+		}),
+	)
+}
+
+// Ratings for a saved page's real titles, which SEEDS can't know: the same rating for a title every run, IMDb for
+// shows and Letterboxd for films, with every few films rated by friends, so a saved page shows each kind of badge.
+export function seedsFor(titles: { title: string; mediaType: "tv" | "movie" | null }[]): Record<string, Seed> {
+	return Object.fromEntries(
+		titles.map(({ title, mediaType }) => {
+			let hash = 0
+			for (const char of title) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
+			const seed: Seed =
+				mediaType === "tv"
+					? { source: "imdb", rating: 5.5 + (hash % 40) / 10, media: "tv" }
+					: { source: "letterboxd", rating: 2 + (hash % 220) / 100, ...(hash % 3 ? {} : friends(1 + (hash % 6), 3.5)) }
+			return [title, seed]
 		}),
 	)
 }

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { artSvg, silentWav } from "./art"
-import { dbCache, PROFILE } from "./ratings"
+import { dbCache, PROFILE, type Seed } from "./ratings"
 
 // Runs the real, built extension (see global-setup.ts) in Chromium against saved copies of the streaming sites.
 // Every request is answered here: the fixture pages, their artwork, the few site and TMDb calls streamBuddy makes,
@@ -24,6 +24,13 @@ export type OpenOptions = {
 	viewport?: { width: number; height: number }
 	// more of the extension's local storage, such as the popup's viewing history
 	local?: Record<string, unknown>
+	// ratings for titles beyond the fixtures' own (a saved live page's real titles)
+	seeds?: Record<string, Seed>
+	// answers the web instead of handle (a saved live page, see e2e/sites/replay.ts)
+	route?: (context: BrowserContext) => Promise<void>
+	headless?: boolean
+	// the browser a recording was made in, so the site's own code takes the same path (see e2e/sites/record.ts)
+	browser?: { locale?: string; timezoneId?: string; userAgent?: string }
 }
 
 const PAGES: { host: RegExp; path: RegExp; file: string }[] = [
@@ -133,7 +140,7 @@ function imdbEpisodes(query: string) {
 
 const WAV = silentWav(22 * 60)
 
-async function handle(route: Route) {
+export async function handle(route: Route) {
 	const request = route.request()
 	const url = new URL(request.url())
 	if (url.pathname.startsWith("/art/"))
@@ -180,7 +187,7 @@ async function handle(route: Route) {
 }
 
 // media elements seek with range requests
-function fulfillRange(route: Route, body: Buffer, contentType: string) {
+export function fulfillRange(route: Route, body: Buffer, contentType: string) {
 	const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range ?? "")
 	if (!range) return route.fulfill({ body, contentType, headers: { "accept-ranges": "bytes" } })
 	const start = Number(range[1])
@@ -193,23 +200,26 @@ function fulfillRange(route: Route, body: Buffer, contentType: string) {
 	})
 }
 
-async function launch(options: OpenOptions) {
+export async function launch(options: OpenOptions) {
 	const profileDir = await mkdtemp(path.join(tmpdir(), "sb-visual-"))
 	const context = await chromium.launchPersistentContext(profileDir, {
 		channel: "chromium",
-		headless: true,
+		headless: options.headless ?? true,
 		viewport: options.viewport ?? { width: 1440, height: 900 },
 		deviceScaleFactor: 1,
 		reducedMotion: "reduce",
 		locale: "en-US",
 		timezoneId: "UTC",
+		...options.browser,
 		args: [`--disable-extensions-except=${EXTENSION_DIR}`, `--load-extension=${EXTENSION_DIR}`],
 	})
 	// only the web; the extension's own files load as usual
-	await context.route(/^https?:\/\//, handle)
+	if (options.route) await options.route(context)
+	else await context.route(/^https?:\/\//, handle)
 	// polled rather than awaited as an event: the worker can register between launch returning and a listener
 	// being added, and then the event never comes and the test hangs until it times out
-	await expect.poll(() => context.serviceWorkers().length, { timeout: 15_000 }).toBeGreaterThan(0)
+	// (a runner busy with other browsers can take well over 15s to start it)
+	await expect.poll(() => context.serviceWorkers().length, { timeout: 30_000 }).toBeGreaterThan(0)
 	const worker = context.serviceWorkers()[0]
 	// on first install the extension clears its local storage and then opens its welcome page; seed after that,
 	// or the clear can wipe the seeded ratings
@@ -226,7 +236,11 @@ async function launch(options: OpenOptions) {
 		},
 		{
 			local: {
-				DBCache: dbCache(today, options.settings?.General?.ratingSources as Parameters<typeof dbCache>[1]),
+				DBCache: dbCache(
+					today,
+					options.settings?.General?.ratingSources as Parameters<typeof dbCache>[1],
+					options.seeds,
+				),
 				...(letterboxd ? { letterboxdProfile: { ...PROFILE, fetchedAt: Date.now() } } : {}),
 				...options.local,
 			},
@@ -278,9 +292,14 @@ export async function loaded(page: Page) {
 	await page.evaluate(async () => {
 		await document.fonts.ready
 		await Promise.all(
-			Array.from(document.images).map((img) =>
-				img.complete ? null : new Promise((done) => (img.onload = img.onerror = done)),
-			),
+			Array.from(document.images).map((img) => {
+				// a lazy image off screen, or drawn at no size (Disney+'s hidden hero slides), isn't fetched until it shows
+				const box = img.getBoundingClientRect()
+				const offScreen = box.bottom < 0 || box.top > innerHeight || box.right < 0 || box.left > innerWidth
+				const unseen = offScreen || !box.width || !box.height
+				if (img.complete || (img.loading === "lazy" && unseen)) return null
+				return new Promise((done) => (img.onload = img.onerror = done))
+			}),
 		)
 		await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))
 	})

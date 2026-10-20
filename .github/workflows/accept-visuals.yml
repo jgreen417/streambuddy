@@ -2,11 +2,14 @@ name: Accept new screenshots
 
 # Adding the "accept-visuals" label to a pull request re-runs the visual checks in the same Playwright image,
 # writes any new or changed screenshots into e2e/visual/baselines, commits them to the pull request's branch and
-# removes the label. Placement checks still have to pass: a badge off spec is never accepted.
+# removes the label. Placement checks still have to pass: a badge off spec is never accepted. The saved site pages'
+# screenshots go to streambuddy-sites/baselines on a branch named for the pull request's, which is merged into
+# streambuddy-sites' main when the pull request merges and deleted when it closes. That needs
+# STREAMBUDDY_SITES_TOKEN to be allowed to write that repo's contents.
 
 on:
   pull_request:
-    types: [labeled]
+    types: [labeled, closed]
 
 permissions:
   actions: write
@@ -18,6 +21,10 @@ jobs:
     if: github.event.label.name == 'accept-visuals' && github.event.pull_request.head.repo.full_name == github.repository
     name: Accept new screenshots
     runs-on: ubuntu-latest
+    # a pull request closed while its screenshots are being accepted settles once they're in
+    concurrency:
+      group: saved-screenshots-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     container:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
     env:
@@ -26,13 +33,40 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
+      - id: sites
+        env:
+          TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
+          # a pull request's accepted saved-page screenshots wait on a branch of their own in streambuddy-sites until
+          # it merges (accept-visuals.yml), so main and other pull requests keep comparing against main's
+          BRANCH: streambuddy/${{ github.head_ref || github.ref_name }}
+          # a pull request stacked on another's starts from the screenshots that one has accepted
+          BASE: ${{ github.base_ref && format('streambuddy/{0}', github.base_ref) || '' }}
+        run: |
+          echo "token=$([ -n "$TOKEN" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          ref=main
+          for branch in "$BRANCH" "$BASE"; do
+            if [ -n "$TOKEN" ] && [ -n "$branch" ] && git ls-remote --exit-code --heads \
+              "https://x-access-token:$TOKEN@github.com/jgreen417/streambuddy-sites.git" "$branch" > /dev/null; then
+              ref=$branch
+              break
+            fi
+          done
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+      # the token isn't left in the checkout while the pull request's code runs; only the push below uses it
+      - uses: actions/checkout@v4
+        if: steps.sites.outputs.token == 'true'
+        with:
+          repository: jgreen417/streambuddy-sites
+          ref: ${{ steps.sites.outputs.ref }}
+          token: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
+          path: e2e/.sites-fixtures
+          persist-credentials: false
       - run: npm ci
       - name: Write new screenshots
         run: npx playwright test --update-snapshots=changed
       - name: Commit them
-        env:
-          # branch names can hold quotes, so the ref goes through the environment and a JSON encoder
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        id: own
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
@@ -44,15 +78,95 @@ jobs:
             git diff --cached --name-only | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
             git commit -m "Accept new visual baselines"
             git push
-            # a push made with the workflow token starts no workflows, so start the pull request's checks here
-            for workflow in ci.yml visual.yml; do
-              curl -sSf -X POST -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
-                "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/$workflow/dispatches" \
-                -d "$(node -e 'console.log(JSON.stringify({ ref: process.env.HEAD_REF }))')"
-            done
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Commit the saved pages' screenshots to streambuddy-sites
+        id: saved
+        if: hashFiles('e2e/.sites-fixtures/captures/**') != ''
+        working-directory: e2e/.sites-fixtures
+        env:
+          SITES_TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
+          BRANCH: ${{ steps.sites.outputs.branch }}
+        run: |
+          git config --global --add safe.directory "$PWD"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add baselines
+          if git diff --cached --quiet; then
+            echo "No saved-page screenshots changed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            git diff --cached --name-only | sed 's/^/- streambuddy-sites: /' >> "$GITHUB_STEP_SUMMARY"
+            git commit -m "Accept new saved-page screenshots (streambuddy#${{ github.event.pull_request.number }})"
+            git push "https://x-access-token:$SITES_TOKEN@github.com/jgreen417/streambuddy-sites.git" "HEAD:refs/heads/$BRANCH"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      # the two jobs here can't both run for a pull request, but a close can still get in first, before these
+      # screenshots were pushed; then they're settled here
+      - name: Settle them, if the pull request has closed
+        if: steps.saved.outputs.changed == 'true'
+        env:
+          TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
+          BRANCH: ${{ steps.sites.outputs.branch }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          read -r state MERGED MERGED_AT BASE < <(curl -sSf -H "Authorization: Bearer ${{ github.token }}" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/pulls/$NUMBER" |
+            node -e 'let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
+              const pr = JSON.parse(s); console.log(pr.state, pr.merged, pr.merged_at ?? "-", pr.base.ref) })')
+          [ "$state" = closed ] || exit 0
+          export MERGED MERGED_AT BASE
+          .github/scripts/settle-saved-screenshots.sh
+      # a push made with the workflow token, or to streambuddy-sites, starts no workflows here, so the pull request's
+      # checks are started once both are in
+      - name: Re-run the checks
+        if: steps.own.outputs.changed == 'true' || steps.saved.outputs.changed == 'true'
+        env:
+          # branch names can hold quotes, so the ref goes through the environment and a JSON encoder
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          for workflow in ci.yml visual.yml; do
+            curl -sSf -X POST -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
+              "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/$workflow/dispatches" \
+              -d "$(node -e 'console.log(JSON.stringify({ ref: process.env.HEAD_REF }))')"
+          done
       - name: Remove the label
         if: always()
         run: |
           curl -sS -X DELETE -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
             "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels/accept-visuals"
+
+  # the pull request's saved-page screenshots become main's once it merges; either way its branch goes
+  settle:
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    name: Settle saved-page screenshots
+    runs-on: ubuntu-latest
+    concurrency:
+      group: saved-screenshots-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      # the script that holds the token comes from the default branch, not from the pull request being closed
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
+      - id: settle
+        env:
+          TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
+          BRANCH: streambuddy/${{ github.event.pull_request.head.ref }}
+          MERGED: ${{ github.event.pull_request.merged }}
+          MERGED_AT: ${{ github.event.pull_request.merged_at }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          target=$(.github/scripts/settle-saved-screenshots.sh)
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+      # the base branch's own checks ran before these screenshots reached its streambuddy-sites branch, so they run again
+      - if: steps.settle.outputs.target != ''
+        env:
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          curl -sSf -X POST -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/visual.yml/dispatches" \
+            -d "$(node -e 'console.log(JSON.stringify({ ref: process.env.BASE }))')"
