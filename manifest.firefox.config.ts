@@ -42,5 +42,6 @@ export default defineManifest((env) => ({
 		"*://*.amazon.co.uk/*",
 		"*://*.max.com/*",
 		"*://*.hbomax.com/*",
+		"*://*.disneyplus.com/*",
 	],
 }))
