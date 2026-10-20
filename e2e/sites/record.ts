@@ -114,14 +114,28 @@ export async function routeRecording(context: BrowserContext, dir: string, fallb
 	const answer = async (route: Route) => {
 		const request = route.request()
 		let entry = find(request.method(), request.url(), request.postData())
-		// a routed request's redirect isn't routed again, so a redirect is answered with where it ends up
-		for (let steps = 0; entry?.location && steps < 10; steps++) entry = find("GET", entry.location, null)
+		// A routed request's redirect isn't routed again, so a redirect is answered with where it ends up. A page is sent
+		// on there itself, so it loads at its own address; a stylesheet's relative links are made absolute from it.
+		let url = request.url()
+		for (let steps = 0; entry?.location && steps < 10; steps++) entry = find("GET", (url = entry.location), null)
 		if (!entry || entry.location) return fallback(route)
-		return route.fulfill({
-			status: entry.status,
-			contentType: entry.type,
-			body: await readFile(path.join(dir, "recording", entry.file)),
-		})
+		if (url !== request.url() && request.isNavigationRequest())
+			return route.fulfill({
+				contentType: "text/html",
+				body: `<script>location.replace(${JSON.stringify(url)})</script>`,
+			})
+		const body = await readFile(path.join(dir, "recording", entry.file))
+		if (url !== request.url() && request.resourceType() === "stylesheet")
+			return route.fulfill({ status: entry.status, contentType: entry.type, body: absoluteLinks(body.toString(), url) })
+		return route.fulfill({ status: entry.status, contentType: entry.type, body })
 	}
 	await context.route(/^https?:\/\//, answer)
+}
+
+function absoluteLinks(css: string, base: string) {
+	return css
+		.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (whole, quote, url: string) =>
+			url.startsWith("data:") ? whole : `url("${new URL(url, base).href}")`,
+		)
+		.replace(/@import\s+(['"])([^'"]+)\1/g, (_, quote, url: string) => `@import "${new URL(url, base).href}"`)
 }
