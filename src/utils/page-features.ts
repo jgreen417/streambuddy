@@ -95,7 +95,7 @@ export function readDetailContext(site: FeatureSite, path = location.pathname): 
 		const masthead = text(document.querySelector('[data-testid="masthead-metadata"]'))
 		// the title is a logo; the tab title is "Glee | Disney+"
 		const title = clean(document.title.replace(/\s*\|\s*Disney\+$/, ""))
-		if (!target || !title || !/^(?:\/[a-z]{2}(?:-[a-z]{2})?)?\/browse\/entity-/i.test(location.pathname)) return null
+		if (!target || !title || !/^(?:\/[a-z]{2}(?:-(?:[a-z]{2}|\d{3}))?)?\/browse\/entity-/i.test(location.pathname)) return null
 		return {
 			root: document.body,
 			target,
