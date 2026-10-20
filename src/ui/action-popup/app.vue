@@ -2,7 +2,7 @@
 import { computed, ref } from "vue"
 import PopupSettings from "@/components/popup/PopupSettings.vue"
 import PopupStats from "@/components/popup/PopupStats.vue"
-import { OTHER_SERVICES, SERVICES, SUPPORTED_SERVICE_NAMES, streamingServices } from "@/constants/streamingServices"
+import { OTHER_SERVICES, SERVICES, SUPPORTED_SERVICE_NAMES, serviceForHost, streamingServices } from "@/constants/streamingServices"
 import { useAccount } from "@/components/popup/useAccount"
 import { SERVICE_REQUEST_URL } from "@/constants/links"
 import { serviceColors } from "@/design/tokens"
@@ -11,7 +11,6 @@ import { releaseSummary } from "@/utils/changelog"
 const SITES = streamingServices.map((service) => ({
 	service,
 	name: SERVICES[service].name,
-	pattern: SERVICES[service].host,
 }))
 
 const tab = ref<"settings" | "stats">("settings")
@@ -21,7 +20,7 @@ const unsupported = ref<(typeof OTHER_SERVICES)[number] | null>(null)
 // the activeTab permission lets us read the URL of the tab the popup was opened on
 browser.tabs.query({ active: true, currentWindow: true }).then(([activeTab]) => {
 	const hostname = activeTab?.url ? new URL(activeTab.url).hostname : ""
-	current.value = SITES.find(({ pattern }) => pattern.test(hostname)) ?? null
+	current.value = SITES.find(({ service }) => service === serviceForHost(hostname)) ?? null
 	unsupported.value = OTHER_SERVICES.find(({ host }) => host.test(hostname)) ?? null
 })
 const context = computed(() => {
