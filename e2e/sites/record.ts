@@ -23,6 +23,8 @@ type Entry = {
 	status: number
 	type: string
 	file: string
+	// the ones a page needs to accept the answer (CORS, caching), without cookies or framing
+	headers?: Record<string, string>
 	// where a redirect leads; the request it leads to has its own entry
 	location?: string
 }
@@ -61,25 +63,31 @@ export function startRecording(page: Page, dir: string) {
 		}
 		// the video itself can't be replayed (DRM), and a stream that stays open would hold the recording forever
 		if (request.resourceType() === "media") return
+		// its place is taken now, so a poll's answers keep the order they came in even when a later one is read first
+		const entry: Entry = {
+			method: request.method(),
+			url: request.url(),
+			body: request.postData(),
+			status: response.status(),
+			type: response.headers()["content-type"] ?? "",
+			file: `${key(request)}-${answers++}`,
+			headers: Object.fromEntries(
+				Object.entries(response.headers()).filter(([name]) => /^access-control-|^cache-control$|^vary$/.test(name)),
+			),
+		}
+		entries.push(entry)
 		pending.push(
 			Promise.race([
 				response.body(),
 				new Promise<never>((_, reject) => setTimeout(() => reject(new Error("still open")), 10_000)),
 			])
 				.then(async (body) => {
-					const file = `${key(request)}-${answers++}`
 					await mkdir(path.join(dir, "recording"), { recursive: true })
-					await writeFile(path.join(dir, "recording", file), body)
-					entries.push({
-						method: request.method(),
-						url: request.url(),
-						body: request.postData(),
-						status: response.status(),
-						type: response.headers()["content-type"] ?? "",
-						file,
-					})
+					await writeFile(path.join(dir, "recording", entry.file), body)
 				})
-				.catch(() => {}),
+				.catch(() => {
+					entries.splice(entries.indexOf(entry), 1)
+				}),
 		)
 	})
 	return async () => {
@@ -139,9 +147,10 @@ export async function routeRecording(context: BrowserContext, dir: string, fallb
 				body: `<script>location.replace(${JSON.stringify(url)})</script>`,
 			})
 		const body = await readFile(path.join(dir, "recording", entry.file))
+		const head = { status: entry.status, contentType: entry.type, headers: entry.headers }
 		if (url !== request.url() && request.resourceType() === "stylesheet")
-			return route.fulfill({ status: entry.status, contentType: entry.type, body: absoluteLinks(body.toString(), url) })
-		return route.fulfill({ status: entry.status, contentType: entry.type, body })
+			return route.fulfill({ ...head, body: absoluteLinks(body.toString(), url) })
+		return route.fulfill({ ...head, body })
 	}
 	await context.route(/^https?:\/\//, answer)
 }

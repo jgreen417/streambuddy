@@ -54,15 +54,26 @@ export async function putInState(page: Page, steps: Steps, copy: boolean) {
 }
 
 async function seekFromEnd(page: Page, seconds: number) {
-	await page.waitForFunction(() => Array.from(document.querySelectorAll("video")).some((video) => video.duration > 0))
+	// a web-component player keeps its <video> and timeline in open shadow roots
+	await page.waitForFunction(() => {
+		const roots: (Document | ShadowRoot)[] = [document]
+		for (let i = 0; i < roots.length; i++)
+			for (const el of Array.from(roots[i].querySelectorAll("*"))) {
+				if (el.shadowRoot) roots.push(el.shadowRoot)
+				if ((el instanceof HTMLVideoElement && el.duration > 0) || el.matches('[role="slider"][aria-valuemax]'))
+					return true
+			}
+		return false
+	})
 	// Netflix stops the player if its <video> is seeked directly; it has to go through Netflix's own player
 	const live = await page.evaluate((seconds) => {
 		// a stream with no end (Infinity) counts as the longest
 		const video = Array.from(document.querySelectorAll("video"))
 			.map((video) => ({ video, length: Number.isFinite(video.duration) ? video.duration : Number.MAX_VALUE }))
-			.sort((a, b) => b.length - a.length)[0].video
-		// a stream fed in pieces (Disney+) has no length on its <video>; its player's timeline is seeked instead
-		if (!Number.isFinite(video.duration)) return true
+			.sort((a, b) => b.length - a.length)[0]?.video
+		// a stream fed in pieces (Disney+) has no length on its <video>, and a web-component player's isn't in the
+		// document; the player's timeline is seeked instead
+		if (!video || !Number.isFinite(video.duration)) return true
 		const target = video.duration - seconds
 		type Players = {
 			getAllPlayerSessionIds(): string[]

@@ -96,7 +96,8 @@ function shape(report: ProbeReport) {
 			report.player &&
 			Object.fromEntries(
 				Object.entries(report.player).map(([key, value]) =>
-					key === "skip" || key === "review" || key === "endScreen" ? [key, value] : [key, value != null],
+					// the first episode keeps its intro, so the number read is compared as it is
+					["skip", "review", "endScreen", "episodeNumber"].includes(key) ? [key, value] : [key, value != null],
 				),
 			),
 	}

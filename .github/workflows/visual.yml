@@ -60,7 +60,7 @@ jobs:
       # The saved pages show a signed-in account's rows, and this repo's run output is public, so their screenshots and
       # diffs stay out of the uploaded report; the accept-visuals label is how a changed one is accepted.
       - name: Run visual checks on the saved pages
-        if: success() || failure()
+        if: steps.sites.outputs.token == 'true' && (success() || failure())
         env:
           SB_VISUAL_SKIP_BUILD: "1"
         run: npx playwright test --project="saved pages" --reporter=list --output=e2e/.saved-results
