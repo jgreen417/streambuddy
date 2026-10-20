@@ -173,7 +173,14 @@ if (named)
 				const texts = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
 				for (let node = texts.nextNode(); node; node = texts.nextNode())
 					if (node.nodeValue) node.nodeValue = node.nodeValue.replace(pattern, "Viewer")
-				for (const el of Array.from(root.querySelectorAll("*"))) if (el.shadowRoot) roots.push(el.shadowRoot)
+				for (const el of Array.from(root.querySelectorAll("*"))) {
+					if (el.shadowRoot) roots.push(el.shadowRoot)
+					// a name can also be drawn from a field's value or a placeholder, or read out from a label
+					if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)
+						el.value = el.value.replace(pattern, "Viewer")
+					for (const attr of ["value", "placeholder", "alt", "title", "aria-label"])
+						if (el.hasAttribute(attr)) el.setAttribute(attr, el.getAttribute(attr)!.replace(pattern, "Viewer"))
+				}
 			}
 		},
 		{ source: named.source, flags: named.flags },

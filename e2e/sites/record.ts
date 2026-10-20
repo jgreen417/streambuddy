@@ -37,6 +37,8 @@ const withoutQuery = (url: string) => url.split("?")[0]
 
 export function startRecording(page: Page, dir: string) {
 	const entries: Entry[] = []
+	// a request made more than once gets a file per answer, as a poll's answers can differ
+	let answers = 0
 	const pending: Promise<void>[] = []
 	page.on("response", (response) => {
 		const request = response.request()
@@ -65,7 +67,7 @@ export function startRecording(page: Page, dir: string) {
 				new Promise<never>((_, reject) => setTimeout(() => reject(new Error("still open")), 10_000)),
 			])
 				.then(async (body) => {
-					const file = key(request)
+					const file = `${key(request)}-${answers++}`
 					await mkdir(path.join(dir, "recording"), { recursive: true })
 					await writeFile(path.join(dir, "recording", file), body)
 					entries.push({

@@ -74,8 +74,10 @@ async function main() {
 	const withCoverage = process.argv.includes("--coverage")
 	const given = process.argv.slice(2).find((arg) => !arg.startsWith("--"))
 	const dir = path.resolve(given ?? path.join(ROOT, "e2e/.sites-fixtures/captures"))
-	const targets: Target[] = existsSync(dir)
-		? await savedPages(dir)
+	// the hand-made fixtures stand in when there are no saved pages to run
+	const saved = existsSync(dir) ? await savedPages(dir) : []
+	const targets: Target[] = saved.length
+		? saved
 		: STATES.map((state) => ({ ...state, route: (context) => context.route(/^https?:\/\//, handle) }))
 	const script = await bundleProbe()
 	const browser = await chromium.launch()

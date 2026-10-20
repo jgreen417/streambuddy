@@ -13,7 +13,10 @@ import { seedsFor } from "./ratings"
 // Without the saved pages (a fork, or no token for the repo) there is nothing to run.
 export const SITES_DIR = path.resolve(process.env.SITES_DIR ?? "e2e/.sites-fixtures/captures")
 const states = existsSync(SITES_DIR)
-	? readdirSync(SITES_DIR, { withFileTypes: true }).filter((entry) => entry.isDirectory())
+	? readdirSync(SITES_DIR, { withFileTypes: true }).filter(
+			// a .partial folder is a capture that hasn't finished (capture.ts)
+			(entry) => entry.isDirectory() && !entry.name.endsWith(".partial"),
+		)
 	: []
 test.skip(!states.length, `no saved pages in ${SITES_DIR}`)
 
