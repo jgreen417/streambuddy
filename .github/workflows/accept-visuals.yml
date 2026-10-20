@@ -3,12 +3,13 @@ name: Accept new screenshots
 # Adding the "accept-visuals" label to a pull request re-runs the visual checks in the same Playwright image,
 # writes any new or changed screenshots into e2e/visual/baselines, commits them to the pull request's branch and
 # removes the label. Placement checks still have to pass: a badge off spec is never accepted. The saved site pages'
-# screenshots go to streambuddy-sites/baselines the same way, which needs STREAMBUDDY_SITES_TOKEN to be allowed to
-# write that repo's contents.
+# screenshots go to streambuddy-sites/baselines on a branch named for the pull request's, which is merged into
+# streambuddy-sites' main when the pull request merges and deleted when it closes. That needs
+# STREAMBUDDY_SITES_TOKEN to be allowed to write that repo's contents.
 
 on:
   pull_request:
-    types: [labeled]
+    types: [labeled, closed]
 
 permissions:
   actions: write
@@ -29,12 +30,26 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - id: sites
-        run: echo "token=${{ secrets.STREAMBUDDY_SITES_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+        env:
+          TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
+          # a pull request's accepted saved-page screenshots wait on a branch of their own in streambuddy-sites until
+          # it merges (accept-visuals.yml), so main and other pull requests keep comparing against main's
+          BRANCH: streambuddy/${{ github.head_ref || github.ref_name }}
+        run: |
+          echo "token=$([ -n "$TOKEN" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          ref=main
+          if [ -n "$TOKEN" ] && git ls-remote --exit-code --heads \
+            "https://x-access-token:$TOKEN@github.com/jgreen417/streambuddy-sites.git" "$BRANCH" > /dev/null; then
+            ref=$BRANCH
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
       # the token isn't left in the checkout while the pull request's code runs; only the push below uses it
       - uses: actions/checkout@v4
         if: steps.sites.outputs.token == 'true'
         with:
           repository: jgreen417/streambuddy-sites
+          ref: ${{ steps.sites.outputs.ref }}
           token: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
           path: e2e/.sites-fixtures
           persist-credentials: false
@@ -68,6 +83,7 @@ jobs:
         working-directory: e2e/.sites-fixtures
         env:
           SITES_TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
+          BRANCH: ${{ steps.sites.outputs.branch }}
         run: |
           git config --global --add safe.directory "$PWD"
           git config user.name "github-actions[bot]"
@@ -78,13 +94,40 @@ jobs:
           else
             git diff --cached --name-only | sed 's/^/- streambuddy-sites: /' >> "$GITHUB_STEP_SUMMARY"
             git commit -m "Accept new saved-page screenshots (streambuddy#${{ github.event.pull_request.number }})"
-            # another pull request's accept may have pushed since the checkout
-            remote="https://x-access-token:$SITES_TOKEN@github.com/jgreen417/streambuddy-sites.git"
-            git pull --rebase "$remote" main
-            git push "$remote" HEAD:main
+            git push "https://x-access-token:$SITES_TOKEN@github.com/jgreen417/streambuddy-sites.git" "HEAD:refs/heads/$BRANCH"
           fi
       - name: Remove the label
         if: always()
         run: |
           curl -sS -X DELETE -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
             "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels/accept-visuals"
+
+  # the pull request's saved-page screenshots become main's once it merges; either way its branch goes
+  settle:
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    name: Settle saved-page screenshots
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
+          BRANCH: streambuddy/${{ github.event.pull_request.head.ref }}
+          MERGED: ${{ github.event.pull_request.merged }}
+        run: |
+          [ -n "$TOKEN" ] || exit 0
+          remote="https://x-access-token:$TOKEN@github.com/jgreen417/streambuddy-sites.git"
+          git ls-remote --exit-code --heads "$remote" "$BRANCH" > /dev/null || exit 0
+          if [ "$MERGED" = true ]; then
+            git clone -q "$remote" sites
+            cd sites
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            # where two pull requests changed the same screenshot, the one merging now is the newer look
+            git merge -q -X theirs "origin/$BRANCH" -m "Accept saved-page screenshots from streambuddy#${{ github.event.pull_request.number }}"
+            git push -q origin HEAD:main
+            cd ..
+            # main's own checks ran before these screenshots reached streambuddy-sites' main, so they run again
+            curl -sSf -X POST -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
+              "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/visual.yml/dispatches" \
+              -d '{"ref":"${{ github.event.pull_request.base.ref }}"}'
+          fi
+          git push -q "$remote" --delete "$BRANCH"

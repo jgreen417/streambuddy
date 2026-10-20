@@ -53,9 +53,14 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (whole, quote, url) =>
 			url.startsWith("data:") ? whole : `url("${absolute(url, base)}")`,
 		)
-	const sheetText = (sheet: CSSStyleSheet) => {
+	const sheetText = (sheet: CSSStyleSheet): string => {
 		try {
-			return Array.from(sheet.cssRules, (rule) => rule.cssText).join("\n")
+			// an @import's sheet is written out in its place, as the copy can't fetch it
+			return Array.from(sheet.cssRules, (rule) => {
+				if (!(rule instanceof CSSImportRule) || !rule.styleSheet) return rule.cssText
+				const text = rebase(sheetText(rule.styleSheet), rule.styleSheet.href ?? location.href)
+				return rule.media.mediaText ? `@media ${rule.media.mediaText} {\n${text}\n}` : text
+			}).join("\n")
 		} catch {
 			if (sheet.href && sheets[sheet.href] !== undefined) return sheets[sheet.href]
 			if (sheet.href) missingSheets.push(sheet.href)

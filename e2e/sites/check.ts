@@ -81,7 +81,11 @@ function shape(report: ProbeReport) {
 		),
 		searchGrids: report.searchGrids.length > 0,
 		detail:
-			report.detail && Object.fromEntries(Object.entries(report.detail).map(([key, value]) => [key, value != null])),
+			report.detail &&
+			Object.fromEntries(
+				// whether a page reads as a film or a series decides the lookup, so that one is compared as it is
+				Object.entries(report.detail).map(([key, value]) => [key, key === "mediaType" ? value : value != null]),
+			),
 		episodes: set(report.episodes.map((episode) => [episode.card, episode.target])),
 		player:
 			report.player &&

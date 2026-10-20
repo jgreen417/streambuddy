@@ -30,11 +30,25 @@ jobs:
       - uses: actions/checkout@v4
       # pages saved from the live sites (e2e/sites), kept private; without the token (a fork) those checks are skipped
       - id: sites
-        run: echo "token=${{ secrets.STREAMBUDDY_SITES_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+        env:
+          TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
+          # a pull request's accepted saved-page screenshots wait on a branch of their own in streambuddy-sites until
+          # it merges (accept-visuals.yml), so main and other pull requests keep comparing against main's
+          BRANCH: streambuddy/${{ github.head_ref || github.ref_name }}
+        run: |
+          echo "token=$([ -n "$TOKEN" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          ref=main
+          if [ -n "$TOKEN" ] && git ls-remote --exit-code --heads \
+            "https://x-access-token:$TOKEN@github.com/jgreen417/streambuddy-sites.git" "$BRANCH" > /dev/null; then
+            ref=$BRANCH
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         if: steps.sites.outputs.token == 'true'
         with:
           repository: jgreen417/streambuddy-sites
+          ref: ${{ steps.sites.outputs.ref }}
           token: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
           path: e2e/.sites-fixtures
           persist-credentials: false
