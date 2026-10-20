@@ -15,7 +15,7 @@
 import { chromium, type Browser, type Page } from "@playwright/test"
 import { execSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { mkdir, writeFile } from "node:fs/promises"
+import { mkdir, rename, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { parseArgs } from "node:util"
 import { SERVICES, type StreamingService } from "@/constants/streamingServices"
@@ -49,7 +49,11 @@ const { values: args } = parseArgs({
 if (!args.state || !args.service || !args.url) throw new Error("--state, --service and --url are required")
 const service = args.service as StreamingService
 const [width, height] = args.viewport!.split("x").map(Number)
-const dir = path.resolve(args.out!.replace(/^~/, process.env.HOME ?? "~"), args.state)
+const saved = path.resolve(args.out!.replace(/^~/, process.env.HOME ?? "~"), args.state)
+// written beside the saved state and swapped in only once every file is there, so a capture that stops part way
+// leaves the earlier one whole
+const dir = `${saved}.partial`
+await rm(dir, { recursive: true, force: true })
 
 let browser: Browser
 let page: Page
@@ -107,6 +111,8 @@ if (cssWidth !== width)
 			"(Cmd+0 on one of its tabs) and capture again.",
 	)
 await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
+// a click can take the page elsewhere; the live check starts from here and takes the same steps
+const startUrl = page.url()
 const steps: Steps = {
 	seekFromEnd: args["seek-from-end"] ? Number(args["seek-from-end"]) : null,
 	scroll: args.scroll ? Number(args.scroll) : null,
@@ -182,6 +188,7 @@ const meta = {
 	state: args.state,
 	service,
 	url: page.url(),
+	startUrl,
 	capturedAt: new Date().toISOString(),
 	viewport: { width, height },
 	userAgent: await page.evaluate(() => navigator.userAgent),
@@ -196,10 +203,12 @@ await writeFile(path.join(dir, "page.html"), scrub(frozen.html))
 const recorded = finishRecording ? await finishRecording() : 0
 for (const [name, value] of Object.entries({ images: frozen.images, resources, feeds, probe, meta }))
 	await writeFile(path.join(dir, `${name}.json`), scrub(JSON.stringify(value, null, "\t")))
+await rm(saved, { recursive: true, force: true })
+await rename(dir, saved)
 console.log(
 	`${args.state}: ${probe ? `${probe.cards.length} cards, ${probe.episodes.length} episodes${probe.player ? ", player" : ""}` : "no site code yet"}; ` +
 		`${Object.keys(frozen.images).length} images, ${Object.keys(resources).length} files, ` +
-		`${Object.values(feeds).flat().length} feed responses${frozen.missingSheets.length ? `, ${frozen.missingSheets.length} stylesheets missing` : ""}${recorded ? `, ${recorded} responses recorded` : ""} → ${dir}`,
+		`${Object.values(feeds).flat().length} feed responses${frozen.missingSheets.length ? `, ${frozen.missingSheets.length} stylesheets missing` : ""}${recorded ? `, ${recorded} responses recorded` : ""} → ${saved}`,
 )
 // an attached browser keeps running (its connection would hold the process open); a launched one is closed
 if (args.cdp) {

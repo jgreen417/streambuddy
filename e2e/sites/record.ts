@@ -106,9 +106,18 @@ export async function routeRecording(context: BrowserContext, dir: string, fallb
 		for (const [key, value] of storage.local) localStorage.setItem(key, value)
 		for (const [key, value] of storage.session) sessionStorage.setItem(key, value)
 	}, storage)
-	const exact = new Map(entries.map((entry) => [`${entry.method} ${entry.url} ${entry.body ?? ""}`, entry]))
+	// a request made more than once (a poll) gets its recorded answers in order, then keeps the last
+	const exact = new Map<string, Entry[]>()
+	for (const entry of entries) {
+		const key = `${entry.method} ${entry.url} ${entry.body ?? ""}`
+		exact.set(key, [...(exact.get(key) ?? []), entry])
+	}
+	const next = (key: string) => {
+		const answers = exact.get(key)
+		return answers && answers.length > 1 ? answers.shift() : answers?.[0]
+	}
 	const find = (method: string, url: string, body: string | null) =>
-		exact.get(`${method} ${url} ${body ?? ""}`) ??
+		next(`${method} ${url} ${body ?? ""}`) ??
 		entries.find((entry) => entry.method === method && entry.url === url) ??
 		entries.find((entry) => entry.method === method && withoutQuery(entry.url) === withoutQuery(url))
 	const answer = async (route: Route) => {

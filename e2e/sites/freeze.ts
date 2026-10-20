@@ -53,6 +53,17 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (whole, quote, url) =>
 			url.startsWith("data:") ? whole : `url("${absolute(url, base)}")`,
 		)
+	// a sheet the page can't read (another origin) is taken from its saved response, its @imports from theirs
+	const inlineImports = (css: string, base: string, depth = 0): string =>
+		css.replace(
+			/@import\s+(?:url\(\s*)?(['"]?)([^'")\s;]+)\1\s*\)?([^;]*);/g,
+			(rule, quote, url: string, media: string) => {
+				const href = absolute(url, base)
+				if (depth > 5 || sheets[href] === undefined) return rule
+				const text = rebase(inlineImports(sheets[href], href, depth + 1), href)
+				return media.trim() ? `@media ${media.trim()} {\n${text}\n}` : text
+			},
+		)
 	const sheetText = (sheet: CSSStyleSheet): string => {
 		try {
 			// an @import's sheet is written out in its place, as the copy can't fetch it
@@ -62,7 +73,7 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 				return rule.media.mediaText ? `@media ${rule.media.mediaText} {\n${text}\n}` : text
 			}).join("\n")
 		} catch {
-			if (sheet.href && sheets[sheet.href] !== undefined) return sheets[sheet.href]
+			if (sheet.href && sheets[sheet.href] !== undefined) return inlineImports(sheets[sheet.href], sheet.href)
 			if (sheet.href) missingSheets.push(sheet.href)
 			return ""
 		}

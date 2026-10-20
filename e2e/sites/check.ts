@@ -29,7 +29,8 @@ const states = (await readdir(root, { withFileTypes: true })).filter((entry) => 
 const script = await bundleProbe()
 
 // captures from before the wait and scroll were saved settled for capture.ts's default and didn't scroll
-type Meta = Capture["meta"] & Omit<Steps, "wait" | "scroll"> & { wait?: number; scroll?: number | null }
+type Meta = Capture["meta"] &
+	Omit<Steps, "wait" | "scroll"> & { wait?: number; scroll?: number | null; startUrl?: string }
 
 // every path where two JSON values differ, as "path: before → after"
 function differences(a: unknown, b: unknown, at = ""): string[] {
@@ -86,7 +87,8 @@ function shape(report: ProbeReport) {
 				// whether a page reads as a film or a series decides the lookup, so that one is compared as it is
 				Object.entries(report.detail).map(([key, value]) => [key, key === "mediaType" ? value : value != null]),
 			),
-		episodes: set(report.episodes.map((episode) => [episode.card, episode.target])),
+		// the season and episode read from each card pick the rating shown on it
+		episodes: set(report.episodes.map((episode) => [episode.card, episode.target, episode.season, episode.episode])),
 		player:
 			report.player &&
 			Object.fromEntries(
@@ -135,7 +137,8 @@ async function checkState(capture: Capture, meta: Meta, captured: ProbeReport | 
 		const page = await browser.contexts()[0].newPage()
 		try {
 			await page.setViewportSize(meta.viewport)
-			await page.goto(meta.url, { waitUntil: "load" })
+			// the page the steps were taken on, which a click may have left
+			await page.goto(meta.startUrl ?? meta.url, { waitUntil: "load" })
 			await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
 			await putInState(page, { ...meta, wait: meta.wait ?? 3000, scroll: meta.scroll ?? null }, false)
 			const live = await probeOf(page, meta)

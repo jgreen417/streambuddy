@@ -19,6 +19,9 @@ import type { ProbeReport } from "./probe"
 import { routeRecording } from "./record"
 import { loadCapture, routeCapture } from "./replay"
 
+// lets the routes answer the extension's own requests (its service worker's TMDb lookups), as playwright.config.ts does
+process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1"
+
 const { values: args, positionals } = parseArgs({
 	allowPositionals: true,
 	options: {
