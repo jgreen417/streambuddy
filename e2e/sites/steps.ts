@@ -46,7 +46,9 @@ export async function putInState(page: Page, steps: Steps, copy: boolean) {
 		await page.locator(click).first().click({ force: copy })
 		if (!copy) await page.waitForTimeout(800)
 	}
-	if (steps.hover) await page.locator(steps.hover).first().hover({ force: copy })
+	// on a copy the hovered element may have given way to what hovering opened
+	if (steps.hover && (!copy || (await page.locator(steps.hover).count())))
+		await page.locator(steps.hover).first().hover({ force: copy })
 	if (copy) return
 	await page.waitForTimeout(steps.wait)
 	// a player hides its controls a few seconds after the pointer stops, so the pointer moves again just before the

@@ -5,7 +5,9 @@ import type { BrowserContext, Page, Route } from "@playwright/test"
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { artSvg, silentWav } from "../visual/art"
+import { CREDITS_MESSAGE } from "@/utils/credits-markers"
 import { fulfillRange, handle } from "../visual/harness"
+import type { Steps } from "./steps"
 
 // the responses streamBuddy reads from each site, as recorded during capture and answered again on replay
 export const FEEDS: Record<string, RegExp> = {
@@ -67,7 +69,7 @@ export type Capture = {
 		userAgent?: string
 		language?: string
 		timeZone?: string
-	}
+	} & Partial<Pick<Steps, "click" | "fill" | "hover">>
 	images: Record<string, [number, number]>
 	resources: Record<string, { file: string; type: string }>
 	feeds: Record<string, { url: string; request?: string | null; body: unknown }[]>
@@ -119,12 +121,29 @@ function stableHue(url: string) {
 	return hash
 }
 
+// A player's copy has none of the site's scripts, so nothing asks for the playback answer streamBuddy reads the
+// credits from. Once streamBuddy is listening in the page, the copy asks for it again as it was recorded.
+function playbackRequests(capture: Capture) {
+	const requests = ["primePlayback", "maxPlayback"].flatMap((feed) =>
+		(capture.feeds[feed] ?? []).map(({ url, request }) => ({ url, request: request ?? null })),
+	)
+	if (!requests.length) return ""
+	return `<script>{
+	const requests = ${JSON.stringify(requests).replaceAll("<", "\\u003c")}
+	const listening = setInterval(() => {
+		if (!(Symbol.for(${JSON.stringify(CREDITS_MESSAGE)}) in window)) return
+		clearInterval(listening)
+		for (const { url, request } of requests) fetch(url, request === null ? undefined : { method: "POST", body: request })
+	}, 100)
+}</script>`
+}
+
 export async function routeCapture(context: BrowserContext, capture: Capture) {
 	// A site font marked optional is dropped for the fallback when it isn't there by first paint, which a busy machine
 	// decides differently each run; the copy waits for it, as a live page with the font cached does
 	const page = (await readFile(path.join(capture.dir, "page.html"), "utf8"))
 		.replace(/font-display:\s*optional/g, "font-display: block")
-		.replace(/<\/body>/i, `${RUNTIME}</body>`)
+		.replace(/<\/body>/i, `${RUNTIME}${playbackRequests(capture)}</body>`)
 	const answer = async (route: Route) => {
 		const request = route.request()
 		const url = request.url()
@@ -154,9 +173,10 @@ export async function routeCapture(context: BrowserContext, capture: Capture) {
 			// else the last one of its kind
 			const body = request.postData()
 			const match =
-				recorded.find((entry) => entry.url === url && (entry.request === undefined || entry.request === body)) ??
+				recorded.findLast((entry) => entry.url === url && (entry.request === undefined || entry.request === body)) ??
 				recorded[recorded.length - 1]
-			return route.fulfill({ json: match.body })
+			// the copy's own page asks for the player's (playbackRequests), from the site's address rather than its API's
+			return route.fulfill({ json: match.body, headers: { "access-control-allow-origin": "*" } })
 		}
 		return handle(route)
 	}

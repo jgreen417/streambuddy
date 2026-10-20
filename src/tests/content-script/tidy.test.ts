@@ -21,4 +21,13 @@ describe("Netflix's games", () => {
 		expect(document.getElementById("film")!.style.display).toBe("")
 		expect(document.getElementById("game")!.style.display).toBe("none")
 	})
+	it("brings back a search cell Netflix reuses for a title that isn't a game", () => {
+		document.body.innerHTML = `<div data-uia="search-page"><section data-uia="gallery"><div>
+			<div id="cell"><div><a data-uia="cloud-game-card"></a></div></div>
+		</div></section></div>`
+		tidyNetflix(true)
+		document.querySelector("#cell > div")!.innerHTML = `<a data-uia="standard-card"></a>`
+		tidyNetflix(true)
+		expect(document.getElementById("cell")!.style.display).toBe("")
+	})
 })

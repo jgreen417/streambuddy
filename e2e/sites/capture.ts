@@ -12,7 +12,7 @@
 // Writes <out>/<state>/: page.html (the frozen page), images.json, resources.json + resources/ (fonts and other
 // files the stylesheets point at), feeds.json (the site's own data streamBuddy reads), probe.json (what streamBuddy's
 // site code made of the live page), shot.png (screenshot with artwork and video masked) and meta.json.
-import { chromium, type Browser, type Page } from "@playwright/test"
+import { chromium, type Browser, type Page, type Response } from "@playwright/test"
 import { execSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { mkdir, rename, rm, writeFile } from "node:fs/promises"
@@ -83,9 +83,12 @@ try {
 	const resources: Record<string, { file: string; type: string }> = {}
 	const feeds: Record<string, unknown[]> = {}
 	const pending: Promise<void>[] = []
-	page.on("response", (response) => {
+	const onResponse = (response: Response) => {
 		const type = response.request().resourceType()
 		const url = response.url()
+		// the page and its stylesheets may still ask for the address a CDN redirected, so the answer goes under that too
+		const asked = [url]
+		for (let from = response.request().redirectedFrom(); from; from = from.redirectedFrom()) asked.push(from.url())
 		const feed = Object.entries(FEEDS).find(([, pattern]) => pattern.test(url))?.[0]
 		// SVG images are the site's own drawing (icons, backgrounds), not artwork, so they're kept like fonts
 		const svg = type === "image" && (response.headers()["content-type"] ?? "").includes("svg")
@@ -100,17 +103,18 @@ try {
 							request: response.request().postData(),
 							body: JSON.parse(body.toString()),
 						})
-					else if (type === "stylesheet") sheets[url] = body.toString()
+					else if (type === "stylesheet") for (const at of asked) sheets[at] = body.toString()
 					else {
 						const file = createHash("sha1").update(url).digest("hex").slice(0, 16) + path.extname(new URL(url).pathname)
 						await mkdir(path.join(dir, "resources"), { recursive: true })
 						await writeFile(path.join(dir, "resources", file), body)
-						resources[url] = { file, type: response.headers()["content-type"] ?? "" }
+						for (const at of asked) resources[at] = { file, type: response.headers()["content-type"] ?? "" }
 					}
 				})
 				.catch(() => {}),
 		)
-	})
+	}
+	page.on("response", onResponse)
 
 	const finishRecording = args.record ? startRecording(page, dir) : null
 	await page.goto(args.url, { waitUntil: "load" })
@@ -198,6 +202,8 @@ try {
 		)
 	await mkdir(dir, { recursive: true })
 	await writeFile(path.join(dir, "shot.png"), await screenshotWithoutArt(page))
+	// what comes in from here would land after the files are written
+	page.off("response", onResponse)
 	await Promise.all(pending)
 	const frozen = await page.evaluate(
 		(input) => (globalThis as unknown as { sbFreeze: typeof freeze }).sbFreeze(input),
