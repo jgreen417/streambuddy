@@ -93,16 +93,14 @@ try {
 		// SVG images are the site's own drawing (icons, backgrounds), not artwork, so they're kept like fonts
 		const svg = type === "image" && (response.headers()["content-type"] ?? "").includes("svg")
 		if (!feed && !svg && !["stylesheet", "font"].includes(type)) return
+		// a feed's answers keep the order they came in, which the replay's latest-first pick relies on
+		const entry = feed ? { url, request: response.request().postData(), body: null as unknown } : null
+		if (feed) (feeds[feed] ??= []).push(entry)
 		pending.push(
 			response
 				.body()
 				.then(async (body) => {
-					if (feed)
-						(feeds[feed] ??= []).push({
-							url,
-							request: response.request().postData(),
-							body: JSON.parse(body.toString()),
-						})
+					if (entry) entry.body = JSON.parse(body.toString())
 					else if (type === "stylesheet") for (const at of asked) sheets[at] = body.toString()
 					else {
 						const file = createHash("sha1").update(url).digest("hex").slice(0, 16) + path.extname(new URL(url).pathname)
@@ -111,7 +109,9 @@ try {
 						for (const at of asked) resources[at] = { file, type: response.headers()["content-type"] ?? "" }
 					}
 				})
-				.catch(() => {}),
+				.catch(() => {
+					if (feed) feeds[feed].splice(feeds[feed].indexOf(entry), 1)
+				}),
 		)
 	}
 	page.on("response", onResponse)
@@ -230,6 +230,10 @@ try {
 	const recorded = finishRecording ? await finishRecording() : 0
 	for (const [name, value] of Object.entries({ images: frozen.images, resources, feeds, probe, meta }))
 		await writeFile(path.join(dir, `${name}.json`), scrub(JSON.stringify(value, null, "\t")))
+	// a name in an address or a selector is still needed to reach the live page again, so those are kept unscrubbed
+	// beside the rest, like the recording, and aren't published
+	const live = { url: meta.url, startUrl, click: steps.click, fill: steps.fill, hover: steps.hover }
+	await writeFile(path.join(dir, "live.json"), JSON.stringify(live, null, "\t"))
 	// the earlier capture is moved aside rather than deleted until the new one is in its place
 	const previous = `${saved}.previous.partial`
 	await rm(previous, { recursive: true, force: true })

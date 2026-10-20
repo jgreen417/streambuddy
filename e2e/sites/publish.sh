@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Copies saved pages into the private fixtures repo (streambuddy-sites) and pushes them. Only the files the replay and
-# the visual checks read go: never a recording or storage.json, which hold the account's session. Stops if any
+# the visual checks read go: never a recording or storage.json, which hold the account's session, or live.json, which
+# keeps the names --scrub took out. Stops if any
 # copied text file still has one of the given names as a whole word, in any case (the --scrub lists missed it).
 # The list is required; --none says there's nothing to look for.
 #

@@ -97,7 +97,12 @@ function shape(report: ProbeReport) {
 			Object.fromEntries(
 				Object.entries(report.player).map(([key, value]) =>
 					// the first episode keeps its intro, so the number read is compared as it is
-					["skip", "review", "endScreen", "episodeNumber"].includes(key) ? [key, value] : [key, value != null],
+					["skip", "review", "endScreen", "episodeNumber"].includes(key)
+						? [key, value]
+						: // where the credits start decides when the review prompt comes, so the seconds are compared
+							key === "creditsFromEnd" && typeof value === "number"
+							? [key, Math.round(value)]
+							: [key, value != null],
 				),
 			),
 	}
@@ -139,12 +144,14 @@ function probeOf(page: Page, meta: Meta) {
 async function checkState(capture: Capture, meta: Meta, captured: ProbeReport | null, problems: string[]) {
 	if (args.live) {
 		const page = await browser.contexts()[0].newPage()
+		// the live site has the names --scrub took out of the saved addresses and steps
+		const steps = { ...meta, ...capture.live }
 		try {
 			await page.setViewportSize(meta.viewport)
 			// the page the steps were taken on, which a click may have left
-			await page.goto(meta.startUrl ?? meta.url, { waitUntil: "load" })
+			await page.goto(steps.startUrl ?? steps.url, { waitUntil: "load" })
 			await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
-			await putInState(page, { ...meta, wait: meta.wait ?? 3000, scroll: meta.scroll ?? null }, false)
+			await putInState(page, { ...steps, wait: meta.wait ?? 3000, scroll: meta.scroll ?? null }, false)
 			const live = await probeOf(page, meta)
 			if (captured && live) problems.push(...differences(shape(captured), shape(live)))
 		} finally {

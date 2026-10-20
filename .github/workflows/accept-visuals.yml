@@ -21,6 +21,10 @@ jobs:
     if: github.event.label.name == 'accept-visuals' && github.event.pull_request.head.repo.full_name == github.repository
     name: Accept new screenshots
     runs-on: ubuntu-latest
+    # a pull request closed while its screenshots are being accepted settles once they're in
+    concurrency:
+      group: saved-screenshots-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     container:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
     env:
@@ -115,6 +119,9 @@ jobs:
     if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     name: Settle saved-page screenshots
     runs-on: ubuntu-latest
+    concurrency:
+      group: saved-screenshots-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     steps:
       - env:
           TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}

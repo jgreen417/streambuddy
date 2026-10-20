@@ -57,7 +57,8 @@ async function open(): Promise<Run> {
 	const { context, profileDir } = await launch(options)
 	const page = await context.newPage()
 	if (!args.shot) await addPanel(page)
-	await page.goto(capture.meta.url)
+	// the recording holds the addresses as the live site gave them, before --scrub
+	await page.goto(args.interactive ? (capture.live?.url ?? capture.meta.url) : capture.meta.url)
 	await loaded(page)
 	// a frozen copy gets the focus and hover it was saved with back, as the checks give it
 	if (!args.interactive)

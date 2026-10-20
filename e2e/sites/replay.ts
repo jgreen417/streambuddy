@@ -73,6 +73,8 @@ export type Capture = {
 	images: Record<string, [number, number]>
 	resources: Record<string, { file: string; type: string }>
 	feeds: Record<string, { url: string; request?: string | null; body: unknown }[]>
+	// the addresses and steps as the live site has them, before --scrub; never published (publish.sh)
+	live?: { url: string; startUrl: string } & Pick<Steps, "click" | "fill" | "hover">
 }
 
 export async function loadCapture(dir: string): Promise<Capture> {
@@ -83,6 +85,7 @@ export async function loadCapture(dir: string): Promise<Capture> {
 		images: await json("images"),
 		resources: await json("resources"),
 		feeds: await json("feeds"),
+		live: await json("live").catch(() => undefined),
 	}
 }
 

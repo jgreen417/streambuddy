@@ -114,7 +114,9 @@ export function startRecording(page: Page, dir: string) {
 export async function routeRecording(context: BrowserContext, dir: string, fallback: (route: Route) => unknown) {
 	const entries: Entry[] = JSON.parse(await readFile(path.join(dir, "recording.json"), "utf8"))
 	const storage: Storage = JSON.parse(await readFile(path.join(dir, "storage.json"), "utf8"))
-	await context.addCookies(storage.cookies)
+	// a cookie that has expired since is still the session the recording was made in, so it's kept for the browsing
+	// session instead of being dropped
+	await context.addCookies(storage.cookies.map((cookie) => ({ ...cookie, expires: -1 })))
 	await context.addInitScript((storage) => {
 		if (location.origin !== storage.origin) return
 		for (const [key, value] of storage.local) localStorage.setItem(key, value)
