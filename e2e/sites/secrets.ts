@@ -7,8 +7,9 @@ const SECRET_KEY =
 	/token|authori[sz]|authurl|session|cookie|secret|password|credential|signature|email|guid|device_?id|user_?id|account_?id|customer_?id|profile_?id/i
 // a signed link's other parts (CloudFront, Akamai)
 const SIGNED = /^(sig|policy|key-pair-id|hdnt[sl])$/i
-// a JSON web token, on its own or inside a longer string
-export const JWT = /eyJ[\w-]{20,}\.[\w-]+(\.[\w-]*)*/g
+// a JSON web token, on its own or inside a longer string: its "{" header, then at least two more parts (an image
+// address can hold "eyJ" with a single "." after it, which isn't one)
+export const JWT = /(?<![\w-])eyJ[\w-]{10,}\.[\w-]*\.[\w-]*(\.[\w-]*)*/g
 
 function withoutSignature(text: string) {
 	if (!/^https?:\/\/[^?]+\?/.test(text) || !URL.canParse(text)) return text
