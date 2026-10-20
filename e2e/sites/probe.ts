@@ -3,6 +3,7 @@
 // chip. Bundled into a page script by bundle.ts, so it works the same on a saved fixture and on the live site, and
 // two reports can be diffed to see exactly where a site has changed under us.
 import { SERVICES, type StreamingService } from "@/constants/streamingServices"
+import { addCreditsMarker } from "@/content-script/credits-marker"
 import { maxSite } from "@/content-script/sites/max"
 import { netflixSite } from "@/content-script/sites/netflix"
 import { primeSite } from "@/content-script/sites/prime"
@@ -11,6 +12,7 @@ import { hbo } from "@/playback/sites/hbo"
 import { netflix } from "@/playback/sites/netflix"
 import { prime } from "@/playback/sites/prime"
 import type { SiteAdapter, SkipKind } from "@/playback/types"
+import type { CreditsMarker } from "@/utils/credits-markers"
 import { readDetailContext, readEpisodeCards } from "@/utils/page-features"
 import { freeze } from "./freeze"
 
@@ -119,5 +121,8 @@ function read(service: StreamingService) {
 export type ProbeReport = ReturnType<typeof probe>
 
 ;(globalThis as { sbProbe?: typeof probe }).sbProbe = probe
+// the credits the player's playback answers mark, which streamBuddy's page script would have passed on
+;(globalThis as { sbCredits?: (markers: CreditsMarker[]) => void }).sbCredits = (markers) =>
+	markers.forEach(addCreditsMarker)
 // capture.ts freezes the page with this copy, as functions handed to page.evaluate from tsx don't survive the trip
 ;(globalThis as { sbFreeze?: typeof freeze }).sbFreeze = freeze

@@ -24,12 +24,18 @@ export function tidyNetflix(hideGames: boolean) {
 	if (!hideGames) return restore("games")
 	// Netflix reuses a search cell for another result, so one that no longer holds a game comes back
 	for (const element of hidden("games"))
-		if (!element.querySelector(`${GAME_CARDS}, .mobile-games-row`) && !element.matches(".mobile-games-row"))
+		if (
+			!element.matches(`${GAME_CARDS}, .mobile-games-row`) &&
+			!element.querySelector(`${GAME_CARDS}, .mobile-games-row`)
+		)
 			show(element)
 	for (const card of Array.from(document.querySelectorAll(GAME_CARDS)))
-		// search results put games in the same grid as everything else, so there only the game's own cell goes
+		// search results put games in the same grid as everything else, so there only the game's own cell goes (or
+		// the card, should Netflix lay the grid out differently), never the section holding every result
 		hide(
-			card.closest('[data-uia="search-page"] [data-uia="gallery"] > * > *') ?? card.closest("section, .lolomoRow"),
+			card.closest('[data-uia="search-page"]')
+				? (card.closest('[data-uia="gallery"] > * > *') ?? card)
+				: card.closest("section, .lolomoRow"),
 			"games",
 		)
 	for (const row of Array.from(document.querySelectorAll(".mobile-games-row")))

@@ -7,13 +7,14 @@ sites, so new UI can be built against them without opening the live sites.
 |---|---|
 | `probe.ts` | Runs streamBuddy's own site code (the adapters, the episode reader) on a page and reports what it finds |
 | `capture.ts` | Saves a live page state: the frozen page, its fonts, the data feeds streamBuddy reads, a screenshot, the probe's report |
+| `secrets.ts`, `clean.ts` | Take the account's tokens, signed links and ids out of the saved feeds (the capture does it; `clean.ts` does it to pages saved before) |
 | `steps.ts` | Puts a loaded page into a saved state again: the seek, click or hover the capture took |
 | `record.ts` | Records every response a page loads (`capture.ts --record`) and answers them again, so a copy can run the site's own code |
 | `replay.ts` | Serves a saved state as the live site, with same-size stand-ins for artwork and video |
 | `check.ts` | Checks every copy against the live page it came from, or, with `--live`, the live site against the copies |
 | `report.ts` | Runs the probe on every saved state; `--coverage` lists the site code no saved page reaches |
 | `open-browser.sh` | Opens the browser the capture attaches to |
-| `publish.sh` | Copies saved pages (never recordings or storage) into streambuddy-sites and pushes them |
+| `publish.sh` | Copies saved pages (never recordings or storage) into streambuddy-sites, cleans and checks them, and pushes them |
 
 ## Capturing (on the Mac)
 
@@ -38,7 +39,8 @@ sites, so new UI can be built against them without opening the live sites.
    replaced there too.
 
    `--record` also saves every response the page loaded, its scripts included, for the interactive copy below. A
-   recording holds whatever the site sent the account, session tokens included, so it stays on the Mac.
+   recording holds whatever the site sent the account, session tokens included, so it stays on the Mac. The data feeds
+   carry the same (playback tokens, device and user ids, signed links); the capture saves them without those.
 3. Check the copies against the pages they came from: `npm run sites:check -- ~/streambuddy-firefox-test/captures`.
 
 The browser runs without extensions: a page streamBuddy has drawn into (badges, cards it has marked as picked up)
@@ -95,7 +97,8 @@ Everything below runs against saved pages, so the live site is only needed for s
 5. **Name it everywhere viewers read**: the copy that lists the services (`SUPPORTED_SERVICE_NAMES`, and the
    sentences in the popup's Experience settings, the Guide, Playback and install pages that name them by hand).
 6. **Into CI**: `e2e/sites/publish.sh <captures> <streambuddy-sites clone> "<names>"` copies the new states (never
-   a recording, `storage.json` or the unscrubbed `live.json`) and pushes them, after checking no listed name is left in them (`--none` when
+   a recording, `storage.json` or the unscrubbed `live.json`) and pushes them. It cleans every saved page's feeds
+   again first, then stops if any account token or a key that holds one is left, or any listed name (`--none` when
    there are none). Then add the `accept-visuals` label to a pull request to write their first screenshots;
    saved pages' screenshots are never uploaded from CI, as the repo's run output is public.
 7. **Last, the live site**: `npm run sites:check -- <captures> --live http://127.0.0.1:9333` once, then load the build

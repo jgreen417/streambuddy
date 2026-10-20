@@ -5,7 +5,7 @@ import type { BrowserContext, Page, Route } from "@playwright/test"
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { artSvg, silentWav } from "../visual/art"
-import { CREDITS_MESSAGE } from "@/utils/credits-markers"
+import { CREDITS_MESSAGE, maxCreditsMarker, primeCreditsMarker } from "@/utils/credits-markers"
 import { fulfillRange, handle } from "../visual/harness"
 import type { Steps } from "./steps"
 
@@ -97,6 +97,13 @@ const roots = [document]
 for (let i = 0; i < roots.length; i++)
 	for (const el of roots[i].querySelectorAll("*")) if (el.shadowRoot) roots.push(el.shadowRoot)
 const marked = (selector) => roots.flatMap((root) => Array.from(root.querySelectorAll(selector)))
+// a paragraph holding blocks was saved as a <div> to come through parsing whole; it's a paragraph again
+for (const div of marked("div[data-sb-p]")) {
+	const para = document.createElement("p")
+	for (const { name, value } of div.attributes) if (name !== "data-sb-p") para.setAttribute(name, value)
+	para.append(...div.childNodes)
+	div.replaceWith(para)
+}
 for (const el of marked("[data-sb-scroll]")) {
 	const [left, top] = el.dataset.sbScroll.split(",").map(Number)
 	if (el === document.documentElement) addEventListener("load", () => scrollTo(left, top))
@@ -122,6 +129,16 @@ function stableHue(url: string) {
 	let hash = 0
 	for (const char of url) hash = (hash * 31 + char.charCodeAt(0)) % 360
 	return hash
+}
+
+// The credits a player's playback answers mark, oldest first, as streamBuddy's page script reads them. The probe is
+// handed these, as it runs without the extension that would read them in the page.
+export function creditsMarkersIn(feeds: Capture["feeds"]) {
+	const answers = (feed: string) => (feeds[feed] ?? []).flatMap(({ body }) => (body ? [body] : []))
+	return [
+		...answers("primePlayback").map((body) => primeCreditsMarker(body)),
+		...answers("maxPlayback").map((body) => maxCreditsMarker(body)),
+	].filter((marker) => marker !== undefined)
 }
 
 // A player's copy has none of the site's scripts, so nothing asks for the playback answer streamBuddy reads the

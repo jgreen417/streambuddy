@@ -35,13 +35,18 @@ jobs:
           # a pull request's accepted saved-page screenshots wait on a branch of their own in streambuddy-sites until
           # it merges (accept-visuals.yml), so main and other pull requests keep comparing against main's
           BRANCH: streambuddy/${{ github.head_ref || github.ref_name }}
+          # a pull request stacked on another's starts from the screenshots that one has accepted
+          BASE: ${{ github.base_ref && format('streambuddy/{0}', github.base_ref) || '' }}
         run: |
           echo "token=$([ -n "$TOKEN" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           ref=main
-          if [ -n "$TOKEN" ] && git ls-remote --exit-code --heads \
-            "https://x-access-token:$TOKEN@github.com/jgreen417/streambuddy-sites.git" "$BRANCH" > /dev/null; then
-            ref=$BRANCH
-          fi
+          for branch in "$BRANCH" "$BASE"; do
+            if [ -n "$TOKEN" ] && [ -n "$branch" ] && git ls-remote --exit-code --heads \
+              "https://x-access-token:$TOKEN@github.com/jgreen417/streambuddy-sites.git" "$branch" > /dev/null; then
+              ref=$branch
+              break
+            fi
+          done
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4

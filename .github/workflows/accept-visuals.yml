@@ -39,13 +39,18 @@ jobs:
           # a pull request's accepted saved-page screenshots wait on a branch of their own in streambuddy-sites until
           # it merges (accept-visuals.yml), so main and other pull requests keep comparing against main's
           BRANCH: streambuddy/${{ github.head_ref || github.ref_name }}
+          # a pull request stacked on another's starts from the screenshots that one has accepted
+          BASE: ${{ github.base_ref && format('streambuddy/{0}', github.base_ref) || '' }}
         run: |
           echo "token=$([ -n "$TOKEN" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           ref=main
-          if [ -n "$TOKEN" ] && git ls-remote --exit-code --heads \
-            "https://x-access-token:$TOKEN@github.com/jgreen417/streambuddy-sites.git" "$BRANCH" > /dev/null; then
-            ref=$BRANCH
-          fi
+          for branch in "$BRANCH" "$BASE"; do
+            if [ -n "$TOKEN" ] && [ -n "$branch" ] && git ls-remote --exit-code --heads \
+              "https://x-access-token:$TOKEN@github.com/jgreen417/streambuddy-sites.git" "$branch" > /dev/null; then
+              ref=$branch
+              break
+            fi
+          done
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
       # the token isn't left in the checkout while the pull request's code runs; only the push below uses it
@@ -105,12 +110,12 @@ jobs:
           DEFAULT: ${{ github.event.repository.default_branch }}
           NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          read -r state MERGED BASE < <(curl -sSf -H "Authorization: Bearer ${{ github.token }}" \
+          read -r state MERGED MERGED_AT BASE < <(curl -sSf -H "Authorization: Bearer ${{ github.token }}" \
             "${{ github.api_url }}/repos/${{ github.repository }}/pulls/$NUMBER" |
             node -e 'let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
-              const pr = JSON.parse(s); console.log(pr.state, pr.merged, pr.base.ref) })')
+              const pr = JSON.parse(s); console.log(pr.state, pr.merged, pr.merged_at ?? "-", pr.base.ref) })')
           [ "$state" = closed ] || exit 0
-          export MERGED BASE
+          export MERGED MERGED_AT BASE
           .github/scripts/settle-saved-screenshots.sh
       # a push made with the workflow token, or to streambuddy-sites, starts no workflows here, so the pull request's
       # checks are started once both are in
@@ -150,6 +155,7 @@ jobs:
           TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
           BRANCH: streambuddy/${{ github.event.pull_request.head.ref }}
           MERGED: ${{ github.event.pull_request.merged }}
+          MERGED_AT: ${{ github.event.pull_request.merged_at }}
           BASE: ${{ github.event.pull_request.base.ref }}
           DEFAULT: ${{ github.event.repository.default_branch }}
           NUMBER: ${{ github.event.pull_request.number }}

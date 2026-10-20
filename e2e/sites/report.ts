@@ -10,9 +10,10 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { SourceMapConsumer, type RawSourceMap } from "source-map-js"
 import { SERVICES, type StreamingService } from "@/constants/streamingServices"
+import type { CreditsMarker } from "@/utils/credits-markers"
 import { handle } from "../visual/harness"
 import { bundleProbe, PROBE_URL, runProbe } from "./bundle"
-import { loadCapture, routeCapture } from "./replay"
+import { creditsMarkersIn, loadCapture, routeCapture } from "./replay"
 import { STATES } from "./states"
 import { putInState, type Steps } from "./steps"
 
@@ -35,6 +36,7 @@ type Target = {
 	viewport?: { width: number; height: number }
 	route: (context: BrowserContext) => Promise<unknown>
 	prepare?: (page: Page) => Promise<void>
+	credits?: CreditsMarker[]
 }
 
 // the saved live pages of the services streamBuddy covers, put back into their state as the visual checks do
@@ -51,6 +53,7 @@ async function savedPages(dir: string): Promise<Target[]> {
 			url: meta.url,
 			viewport: meta.viewport,
 			route: (context) => routeCapture(context, capture),
+			credits: creditsMarkersIn(capture.feeds),
 			prepare: (page) =>
 				putInState(
 					page,
@@ -96,7 +99,7 @@ async function main() {
 		// a saved player's stand-in video keeps loading, so the page may never go quiet
 		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
 		await state.prepare?.(page)
-		const report = await runProbe(page, state.service, script)
+		const report = await runProbe(page, state.service, script, state.credits)
 		await writeFile(path.join(OUT, `${state.name}.json`), JSON.stringify(report, null, "\t"))
 		if (withCoverage) {
 			const { result } = (await cdp.send("Profiler.takePreciseCoverage")) as { result: ScriptCoverage[] }

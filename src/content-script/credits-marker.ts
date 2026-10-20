@@ -14,14 +14,15 @@ export function injectCreditsMarkerReader() {
 
 // the titles the player loaded on this page, newest last, marked or not: it also loads trailers and the next title
 const markers: CreditsMarker[] = []
+export function addCreditsMarker({ creditsFromEnd, duration }: CreditsMarker) {
+	if (!(Number.isFinite(duration) && duration > 0)) return
+	if (creditsFromEnd === undefined) markers.push({ duration })
+	else if (Number.isFinite(creditsFromEnd) && creditsFromEnd > 0 && creditsFromEnd < duration)
+		markers.push({ creditsFromEnd, duration })
+}
 export function listenForCreditsMarkers() {
 	window.addEventListener("message", (event) => {
-		if (event.source !== window || event.data?.type !== CREDITS_MESSAGE) return
-		const { creditsFromEnd, duration } = event.data
-		if (!(Number.isFinite(duration) && duration > 0)) return
-		if (creditsFromEnd === undefined) markers.push({ duration })
-		else if (Number.isFinite(creditsFromEnd) && creditsFromEnd > 0 && creditsFromEnd < duration)
-			markers.push({ creditsFromEnd, duration })
+		if (event.source === window && event.data?.type === CREDITS_MESSAGE) addCreditsMarker(event.data)
 	})
 	injectCreditsMarkerReader()
 	window.postMessage({ type: CREDITS_REQUEST }, location.origin)

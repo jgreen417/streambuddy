@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Copies saved pages into the private fixtures repo (streambuddy-sites) and pushes them. Only the files the replay and
 # the visual checks read go: never a recording or storage.json, which hold the account's session, or live.json, which
-# keeps the names --scrub took out. Stops if any
-# copied text file still has one of the given names as a whole word, in any case (the --scrub lists missed it).
-# The list is required; --none says there's nothing to look for.
+# keeps the names --scrub took out. The feeds' tokens and ids are taken out (clean.ts, which also cleans pages saved
+# before capture.ts did that itself), and it stops if any token or key that holds one is still there, or if any copied
+# text file still has one of the given names as a whole word, in any case (the --scrub lists missed it). The list is
+# required; --none says there's nothing to look for.
 #
 #   e2e/sites/publish.sh ~/streambuddy-firefox-test/captures ~/Projects/streambuddy-sites "Steven Green,Anna"
 set -euo pipefail
@@ -20,6 +21,21 @@ for state in "$captures"/*/; do
 	for file in page.html images.json resources.json feeds.json probe.json shot.png meta.json resources; do
 		[ -e "$state/$file" ] && cp -R "$state/$file" "$into/"
 	done
+done
+
+npx tsx "$(dirname "$0")/clean.ts" "$sites/captures"
+# a JSON web token anywhere, or a key named for a token, a session or an id that follows the account around
+for pattern in 'eyJ[A-Za-z0-9_-]{20,}\.' \
+	'"[A-Za-z_-]*(token|authori[sz]|authurl|session|cookie|password|credential|guid|device_?id|user_?id|account_?id|customer_?id|profile_?id|email)[A-Za-z_-]*"[[:space:]]*:'; do
+	status=0
+	grep -rliIE -e "$pattern" "$sites/captures" || status=$?
+	if [ "$status" = 0 ]; then
+		echo "Those files still hold an account token or id; nothing was committed." >&2
+		exit 1
+	elif [ "$status" != 1 ]; then
+		echo "Couldn't search for account tokens; nothing was committed." >&2
+		exit 1
+	fi
 done
 
 if [ "$names" != --none ]; then

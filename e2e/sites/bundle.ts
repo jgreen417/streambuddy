@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test"
 import { build } from "esbuild"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import type { CreditsMarker } from "@/utils/credits-markers"
 import type { ProbeReport } from "./probe"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
@@ -36,8 +37,17 @@ export async function bundleProbe(): Promise<string> {
 }
 
 // evaluated rather than added as a <script>, so the sites' content security policies don't block it
-export async function runProbe(page: Page, service: ProbeReport["service"], script: string) {
+export async function runProbe(
+	page: Page,
+	service: ProbeReport["service"],
+	script: string,
+	credits: CreditsMarker[] = [],
+) {
 	await page.evaluate(script)
+	await page.evaluate(
+		(markers) => (globalThis as unknown as { sbCredits: (m: CreditsMarker[]) => void }).sbCredits(markers),
+		credits,
+	)
 	const run = () =>
 		page.evaluate((name) => (globalThis as unknown as { sbProbe: (s: string) => ProbeReport }).sbProbe(name), service)
 	// the first pass starts the lookups some answers wait on (Netflix's episode cards, its player metadata)

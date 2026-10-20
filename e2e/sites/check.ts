@@ -10,6 +10,7 @@
 // they aren't compared; a selector that stops matching is.
 import { chromium, type Page } from "@playwright/test"
 import { SERVICES } from "@/constants/streamingServices"
+import { createHash } from "node:crypto"
 import { readdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { parseArgs } from "node:util"
@@ -17,7 +18,7 @@ import pixelmatch from "pixelmatch"
 import { PNG } from "pngjs"
 import { bundleProbe, runProbe } from "./bundle"
 import type { ProbeReport } from "./probe"
-import { loadCapture, routeCapture, screenshotWithoutArt, type Capture } from "./replay"
+import { creditsMarkersIn, FEEDS, loadCapture, routeCapture, screenshotWithoutArt, type Capture } from "./replay"
 import { putInState, type Steps } from "./steps"
 
 const { values: args, positionals } = parseArgs({
@@ -59,6 +60,21 @@ const SLACK: [RegExp, number][] = [
 	[/\.player\.video\.duration$/, 1],
 	[/\.badge\.size\.\d$/, 2],
 ]
+
+// The titles a signed-in account's rows show are what it has been watching, so a difference in one is printed as a
+// short hash of each, which can be pasted anywhere
+const TITLE_KEYS = new Set(["title", "showTitle", "playingTitle", "playingEpisode"])
+const hashed = (title: string) => `title ${createHash("sha1").update(title).digest("hex").slice(0, 8)}`
+function withoutTitles(report: ProbeReport | null): unknown {
+	return JSON.parse(
+		JSON.stringify(report, (key, value: unknown) => {
+			if (typeof value !== "string") return value
+			if (TITLE_KEYS.has(key)) return hashed(value)
+			// an element found by its card's title
+			return value.replace(/data-card-title="([^"]*)"/g, (_, title: string) => `data-card-title="${hashed(title)}"`)
+		}),
+	)
+}
 
 // what a page's structure means to streamBuddy, without the content that changes daily
 function shape(report: ProbeReport) {
@@ -137,8 +153,33 @@ if (!args.live) await browser.close()
 process.exit(failed ? 1 : 0)
 
 // a page of a service streamBuddy doesn't cover yet has no probe report; only its screenshot is compared
-function probeOf(page: Page, meta: Meta) {
-	return meta.service in SERVICES ? runProbe(page, meta.service as ProbeReport["service"], script) : null
+function probeOf(page: Page, meta: Meta, feeds: Capture["feeds"]) {
+	return meta.service in SERVICES
+		? runProbe(page, meta.service as ProbeReport["service"], script, creditsMarkersIn(feeds))
+		: null
+}
+
+// the live site's answers to the feeds a capture saves, as the page loads
+function liveFeeds(page: Page) {
+	const feeds: Capture["feeds"] = {}
+	const bodies: Promise<unknown>[] = []
+	page.on("response", (response) => {
+		const feed = Object.entries(FEEDS).find(([, pattern]) => pattern.test(response.url()))?.[0]
+		if (!feed) return
+		const entry = { url: response.url(), body: null as unknown }
+		;(feeds[feed] ??= []).push(entry)
+		// an answer that isn't JSON has no credits to read
+		bodies.push(
+			response
+				.json()
+				.then((body) => (entry.body = body))
+				.catch(() => {}),
+		)
+	})
+	return async () => {
+		await Promise.all(bodies)
+		return feeds
+	}
 }
 
 async function checkState(capture: Capture, meta: Meta, captured: ProbeReport | null, problems: string[]) {
@@ -146,13 +187,14 @@ async function checkState(capture: Capture, meta: Meta, captured: ProbeReport | 
 		const page = await browser.contexts()[0].newPage()
 		// the live site has the names --scrub took out of the saved addresses and steps
 		const steps = { ...meta, ...capture.live }
+		const feeds = liveFeeds(page)
 		try {
 			await page.setViewportSize(meta.viewport)
 			// the page the steps were taken on, which a click may have left
 			await page.goto(steps.startUrl ?? steps.url, { waitUntil: "load" })
 			await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
 			await putInState(page, { ...steps, wait: meta.wait ?? 3000, scroll: meta.scroll ?? null }, false)
-			const live = await probeOf(page, meta)
+			const live = await probeOf(page, meta, await feeds())
 			if (captured && live) problems.push(...differences(shape(captured), shape(live)))
 		} finally {
 			await page.close()
@@ -166,12 +208,12 @@ async function checkState(capture: Capture, meta: Meta, captured: ProbeReport | 
 		await page.goto(meta.url, { waitUntil: "load" })
 		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
 		await putInState(page, { ...meta, wait: 0, scroll: null }, true)
-		const copy = await probeOf(page, meta)
+		const copy = await probeOf(page, meta, capture.feeds)
 		// A player whose <video> has no length live (Disney+, saved as null) is timed from the site's own player
 		// clock, which the probe can't read; the copy's stand-in has the timeline's length, so its video isn't compared
 		const video = captured?.player?.video
 		if (video && !(video.duration > 0) && copy?.player) copy.player.video = video
-		problems.push(...differences(captured, copy))
+		problems.push(...differences(withoutTitles(captured), withoutTitles(copy)))
 		const shot = await screenshotWithoutArt(page)
 		const { share, diff } = compareShots(await readFile(path.join(capture.dir, "shot.png")), shot)
 		if (share > Number(args.threshold)) {

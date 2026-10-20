@@ -31,9 +31,9 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 			return url
 		}
 	}
-	// Each <p> marked data-sb-p written as a <div> keeping its margins (a div has none of a paragraph's own), so it
-	// parses back as one box holding its blocks. Its </p> is the one that closes it, found by counting the <p>s
-	// opened and closed inside it.
+	// Each <p> marked data-sb-p written as a <div>, so it parses back as one box holding its blocks; the copy makes it
+	// a <p> again once it's parsed, for the site's rules on paragraphs. Its </p> is the one that closes it, found by
+	// counting the <p>s opened and closed inside it.
 	const paragraphsAsDivs = (html: string) => {
 		const open: boolean[] = []
 		// a script's, a style's or a comment's text is passed over: a "<p>" inside one is no tag
@@ -42,9 +42,9 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 			(tag, raw, closing, attrs: string) => {
 				if (raw || attrs === undefined) return tag
 				if (closing) return open.pop() ? "</div>" : tag
-				const margins = /\sdata-sb-p="([^"]*)"/.exec(attrs)
-				open.push(!!margins)
-				return margins ? `<div${attrs.replace(margins[0], "")} data-sb-margins="${margins[1]}">` : tag
+				const marked = /\sdata-sb-p=""/.test(attrs)
+				open.push(marked)
+				return marked ? `<div${attrs}>` : tag
 			},
 		)
 	}
@@ -120,11 +120,8 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		}
 		// a <p> the site's script filled with blocks (Netflix's synopses hold a <div>) can't be written as HTML:
 		// parsing it again closes the <p> before the block, and the text falls out of it
-		for (const para of Array.from(root.querySelectorAll("p"))) {
-			if (!para.querySelector(BLOCKS)) continue
-			const style = getComputedStyle(para)
-			mark(para, "data-sb-p", `${style.marginTop} ${style.marginBottom}`)
-		}
+		for (const para of Array.from(root.querySelectorAll("p")))
+			if (para.querySelector(BLOCKS)) mark(para, "data-sb-p", "")
 		// what was typed into a field (a search box) is in its value, which isn't written out as HTML
 		for (const field of Array.from(root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea")))
 			if (field.value !== field.defaultValue) mark(field, "data-sb-value", field.value)
@@ -209,12 +206,6 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		// links and sources keep their own spelling (site code matches on it, e.g. href^="/video/watch/"); the copy is
 		// served at the page's own URL, so relative ones still resolve
 		for (const attr of Array.from(el.attributes)) if (attr.name.startsWith("on")) el.removeAttribute(attr.name)
-	for (const el of everywhere("[data-sb-margins]") as HTMLElement[]) {
-		const [top, bottom] = el.dataset.sbMargins!.split(" ")
-		el.style.marginTop = top
-		el.style.marginBottom = bottom
-		delete el.dataset.sbMargins
-	}
 	for (const video of everywhere("video")) {
 		video.removeAttribute("src")
 		video.innerHTML = ""

@@ -10,8 +10,9 @@
 // capture → replay round trip is checked against the hand-made fixtures.
 //
 // Writes <out>/<state>/: page.html (the frozen page), images.json, resources.json + resources/ (fonts and other
-// files the stylesheets point at), feeds.json (the site's own data streamBuddy reads), probe.json (what streamBuddy's
-// site code made of the live page), shot.png (screenshot with artwork and video masked) and meta.json.
+// files the stylesheets point at), feeds.json (the site's own data streamBuddy reads, without the account's tokens and
+// ids), probe.json (what streamBuddy's site code made of the live page), shot.png (screenshot with artwork and video
+// masked) and meta.json.
 import { chromium, type Browser, type Page, type Response } from "@playwright/test"
 import { execSync } from "node:child_process"
 import { createHash } from "node:crypto"
@@ -23,7 +24,8 @@ import { handle } from "../visual/harness"
 import { bundleProbe, runProbe } from "./bundle"
 import type { freeze } from "./freeze"
 import { startRecording } from "./record"
-import { FEEDS, screenshotWithoutArt } from "./replay"
+import { creditsMarkersIn, FEEDS, screenshotWithoutArt } from "./replay"
+import { feedsWithoutSecrets, JWT } from "./secrets"
 import { putInState, type Steps } from "./steps"
 
 const { values: args } = parseArgs({
@@ -81,7 +83,7 @@ try {
 	// stylesheets point at, and the data feeds
 	const sheets: Record<string, string> = {}
 	const resources: Record<string, { file: string; type: string }> = {}
-	const feeds: Record<string, unknown[]> = {}
+	const feeds: Record<string, { url: string; request: string | null; body: unknown }[]> = {}
 	const pending: Promise<void>[] = []
 	const onResponse = (response: Response) => {
 		const type = response.request().resourceType()
@@ -95,7 +97,7 @@ try {
 		if (!feed && !svg && !["stylesheet", "font"].includes(type)) return
 		// a feed's answers keep the order they came in, which the replay's latest-first pick relies on
 		const entry = feed ? { url, request: response.request().postData(), body: null as unknown } : null
-		if (feed) (feeds[feed] ??= []).push(entry)
+		if (feed && entry) (feeds[feed] ??= []).push(entry)
 		pending.push(
 			response
 				.body()
@@ -110,7 +112,7 @@ try {
 					}
 				})
 				.catch(() => {
-					if (feed) feeds[feed].splice(feeds[feed].indexOf(entry), 1)
+					if (feed && entry) feeds[feed].splice(feeds[feed].indexOf(entry), 1)
 				}),
 		)
 	}
@@ -153,7 +155,8 @@ try {
 	// is saved to write that code against.
 	const script = await bundleProbe()
 	await page.evaluate(script)
-	const probe = service in SERVICES ? await runProbe(page, service, script) : null
+	await Promise.all(pending)
+	const probe = service in SERVICES ? await runProbe(page, service, script, creditsMarkersIn(feeds)) : null
 	// Profile names and the like, replaced as whole words in every file written, the probe's report included, so the
 	// copy and the report still describe the same page. Longest first, so "Josh Green" goes before "Josh"; a space in a
 	// name also matches the &nbsp; the page may serialise it as.
@@ -226,9 +229,10 @@ try {
 		missingSheets: frozen.missingSheets,
 	}
 	await mkdir(dir, { recursive: true })
-	await writeFile(path.join(dir, "page.html"), scrub(frozen.html))
+	await writeFile(path.join(dir, "page.html"), scrub(frozen.html.replace(JWT, "")))
 	const recorded = finishRecording ? await finishRecording() : 0
-	for (const [name, value] of Object.entries({ images: frozen.images, resources, feeds, probe, meta }))
+	const saving = { images: frozen.images, resources, feeds: feedsWithoutSecrets(feeds), probe, meta }
+	for (const [name, value] of Object.entries(saving))
 		await writeFile(path.join(dir, `${name}.json`), scrub(JSON.stringify(value, null, "\t")))
 	// a name in an address or a selector is still needed to reach the live page again, so those are kept unscrubbed
 	// beside the rest, like the recording, and aren't published
