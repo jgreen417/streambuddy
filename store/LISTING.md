@@ -6,8 +6,8 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 **Name** (from the manifest): streamBuddy
 
-**Summary** (132 max, currently 132):
-> Your friends' Letterboxd ratings on every poster, plus Letterboxd and IMDb scores on Netflix, Prime Video and HBO Max. Skips intros.
+**Summary** (132 max, currently 127):
+> Your friends' Letterboxd ratings on every poster, plus Letterboxd and IMDb scores on Netflix, Prime Video, HBO Max and Disney+.
 
 **Category:** Entertainment
 
@@ -15,7 +15,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 **Description:**
 
-> Watch what your friends loved. streamBuddy puts your Letterboxd friends' ratings, and your own, right on the posters on Netflix, Prime Video and HBO Max.
+> Watch what your friends loved. streamBuddy puts your Letterboxd friends' ratings, and your own, right on the posters on Netflix, Prime Video, HBO Max and Disney+.
 >
 > Every supported title card gets a small colour-coded chip: the Letterboxd average for films and the IMDb rating for series, where a matching rating is available. Connect your Letterboxd and the same chip shows how your friends rated it and whether you've seen it or saved it for later.
 >
@@ -83,7 +83,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 | `activeTab` | Lets the toolbar popup see which streaming service the current tab is on, so it can show that service's settings. |
 | Host: `letterboxd.com` | Fetches public film pages for ratings and, if the user enters a username, their public diary, watchlist and friends' ratings. |
 | Host: `caching.graphql.imdb.com` | Fetches IMDb ratings for series and episodes. |
-| Content scripts on Netflix, Prime Video/Amazon and HBO Max | Reads title names to place rating badges, and finds the player's skip buttons and ad timer to skip intros, credits and ads. Prime Video is hosted on Amazon's domains, so those are included. |
+| Content scripts on Netflix, Prime Video/Amazon, HBO Max and Disney+ | Reads title names to place rating badges, and finds the player's skip buttons and ad timer to skip intros, credits and ads. Prime Video is hosted on Amazon's domains, so those are included. On HBO Max, Prime Video and Disney+ a small page script reads the service's own playback responses for the end-credits time, so the review pill appears as the credits start; it only reads those responses, changes nothing and sends nothing anywhere. |
 
 **Remote code:** No. All code is in the package. Nothing is fetched and run with eval.
 
@@ -109,7 +109,7 @@ Then tick all three certifications: data isn't sold, isn't used for unrelated pu
 
 ## Reviewer notes (test instructions field)
 
-> To see ratings, the extension needs a free TMDb API key, which the welcome page explains how to get. A Letterboxd username is optional. A test key can be supplied on request. Ratings appear on title cards on netflix.com, primevideo.com and play.hbomax.com once signed in to those services.
+> To see ratings, the extension needs a free TMDb API key, which the welcome page explains how to get. A Letterboxd username is optional. A test key can be supplied on request. Ratings appear on title cards on netflix.com, primevideo.com, play.hbomax.com and disneyplus.com once signed in to those services.
 
 ---
 
@@ -128,7 +128,7 @@ Submit at https://addons.mozilla.org/developers/addon/submit/ and choose "On thi
 **Add-on URL:** `streambuddy`
 
 **Summary** (250 max):
-> Your friends' Letterboxd ratings on every poster, plus Letterboxd and IMDb scores on Netflix, Prime Video and HBO Max. Seen and watchlist marks, episode ratings and intro skipping. Free, open source, no tracking.
+> Your friends' Letterboxd ratings on every poster, plus Letterboxd and IMDb scores on Netflix, Prime Video, HBO Max and Disney+. Seen and watchlist marks, episode ratings and intro skipping. Free, open source, no tracking.
 
 **Description:** reuse the Chrome description above. AMO supports basic Markdown, so the capitals headings can become `**bold**`.
 
@@ -150,10 +150,10 @@ Submit at https://addons.mozilla.org/developers/addon/submit/ and choose "On thi
 > 3. `npm run build:release:firefox`
 > 4. The unpacked add-on is in `release/firefox/` and the zip is `release/firefox-1.0.0.zip`.
 >
-> Release builds embed streamBuddy's shared TMDb key from the `STREAMBUDDY_TMDB_KEY` environment variable (given in these notes); `.env` is not used. Ratings work without setup. A Letterboxd username is optional (any public profile works). Ratings appear on title cards on netflix.com, primevideo.com and play.hbomax.com once signed in.
+> Release builds embed streamBuddy's shared TMDb key from the `STREAMBUDDY_TMDB_KEY` environment variable (given in these notes); `.env` is not used. Ratings work without setup. A Letterboxd username is optional (any public profile works). Ratings appear on title cards on netflix.com, primevideo.com, play.hbomax.com and disneyplus.com once signed in.
 >
-> Permissions: storage and activeTab, plus host access to letterboxd.com and caching.graphql.imdb.com for ratings, and content scripts on Netflix, Prime Video and HBO Max. Data collection: website content (title names sent to TMDb, Letterboxd and IMDb to look up ratings) and authentication info (the built-in or user's own TMDb key and the Letterboxd username, sent only to those services). Nothing goes to the developer.
+> Permissions: storage and activeTab, plus host access to letterboxd.com and caching.graphql.imdb.com for ratings, and content scripts on Netflix, Prime Video, HBO Max and Disney+. On HBO Max, Prime Video and Disney+ a page script reads only the service's own playback responses, for the end-credits time. Data collection: website content (title names sent to TMDb, Letterboxd and IMDb to look up ratings) and authentication info (the built-in or user's own TMDb key and the Letterboxd username, sent only to those services). Nothing goes to the developer.
 >
 > The single linter warning (innerHTML) is in Vue's runtime (`runtime-dom.esm-bundler.js`), not in streamBuddy's code.
 
-**Before submitting, test in Firefox:** load `release/firefox/manifest.json` via `about:debugging` → This Firefox → Load Temporary Add-on. Then check badges on Netflix, Prime Video and HBO Max, the welcome page, and the popup.
+**Before submitting, test in Firefox:** load `release/firefox/manifest.json` via `about:debugging` → This Firefox → Load Temporary Add-on. Then check badges on Netflix, Prime Video, HBO Max and Disney+, the welcome page, and the popup.
