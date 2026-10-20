@@ -16,7 +16,7 @@ export function playerQuery<T extends Element = HTMLElement>(selector: string, r
 }
 
 // the page's path without a region prefix ("/en-gb/play/…" → "/play/…")
-export const disneyPath = (path = location.pathname) => path.replace(/^\/[a-z]{2}(?:-[a-z]{2})?(?=\/)/i, "")
+export const disneyPath = (path = location.pathname) => path.replace(/^\/[a-z]{2}(?:-(?:[a-z]{2}|\d{3}))?(?=\/)/i, "")
 
 // the title on this player page, /play/<entity>
 const entity = () => /^\/play\/([^/?#]+)/.exec(disneyPath())?.[1] ?? null
