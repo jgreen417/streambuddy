@@ -10,6 +10,7 @@ import { createHash } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { Script } from "node:vm"
+import { buildSync } from "esbuild"
 
 type Storage = {
 	cookies: Awaited<ReturnType<BrowserContext["cookies"]>>
@@ -43,10 +44,14 @@ export function startRecording(page: Page, dir: string) {
 	// a request made more than once gets a file per answer, as a poll's answers can differ
 	let answers = 0
 	const pending: Promise<void>[] = []
+	// each step of a redirect chain once, however many of the chain's responses come in
+	const redirects = new WeakSet<Request>()
 	const onResponse = (response: Response) => {
 		const request = response.request()
 		// a redirect comes as the response to the request it led to; each step is recorded, so the replay follows it
 		for (let to = request, from = request.redirectedFrom(); from; to = from, from = from.redirectedFrom()) {
+			if (redirects.has(from)) break
+			redirects.add(from)
 			const [step, target] = [from, to]
 			pending.push(
 				step.response().then((redirect) => {
@@ -199,10 +204,14 @@ function absoluteLinks(css: string, base: string) {
 
 function reexport(url: string, source: string) {
 	const from = JSON.stringify(url)
-	// re-exporting a default the module doesn't have is a syntax error. A default is declared directly, or named in an
-	// export list (`export { x as default }`, `export { default } from "./impl.js"`).
-	const lists = [...source.matchAll(/\bexport\s*\{([^}]*)\}/g)].flatMap((list) => list[1].split(","))
-	const exportsDefault =
-		/\bexport\s+default\b/.test(source) || lists.some((item) => item.trim().split(/\s+/).at(-1) === "default")
+	// re-exporting a default the module doesn't have is a syntax error, so its exports are read by parsing it
+	const { metafile } = buildSync({
+		stdin: { contents: source, loader: "js" },
+		format: "esm",
+		write: false,
+		metafile: true,
+		logLevel: "silent",
+	})
+	const exportsDefault = Object.values(metafile.outputs)[0].exports.includes("default")
 	return `export * from ${from}\n${exportsDefault ? `export { default } from ${from}\n` : ""}`
 }

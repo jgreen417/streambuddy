@@ -140,9 +140,10 @@ jobs:
       group: saved-screenshots-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     steps:
+      # the script that holds the token comes from the default branch, not from the pull request being closed
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.repository.default_branch }}
           sparse-checkout: .github/scripts
       - id: settle
         env:
