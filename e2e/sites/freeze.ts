@@ -36,12 +36,17 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 	// opened and closed inside it.
 	const paragraphsAsDivs = (html: string) => {
 		const open: boolean[] = []
-		return html.replace(/<(\/?)p(?=[\s>])([^>]*)>/g, (tag, closing: string, attrs: string) => {
-			if (closing) return open.pop() ? "</div>" : tag
-			const margins = /\sdata-sb-p="([^"]*)"/.exec(attrs)
-			open.push(!!margins)
-			return margins ? `<div${attrs.replace(margins[0], "")} data-sb-margins="${margins[1]}">` : tag
-		})
+		// a script's, a style's or a comment's text is passed over: a "<p>" inside one is no tag
+		return html.replace(
+			/<(script|style)(?=[\s>])[\s\S]*?<\/\1>|<!--[\s\S]*?-->|<(\/?)p(?=[\s>])([^>]*)>/gi,
+			(tag, raw, closing, attrs: string) => {
+				if (raw || attrs === undefined) return tag
+				if (closing) return open.pop() ? "</div>" : tag
+				const margins = /\sdata-sb-p="([^"]*)"/.exec(attrs)
+				open.push(!!margins)
+				return margins ? `<div${attrs.replace(margins[0], "")} data-sb-margins="${margins[1]}">` : tag
+			},
+		)
 	}
 	// url(...) in a stylesheet is relative to the sheet, which won't be where the copy is served from
 	const rebase = (css: string, base: string) =>

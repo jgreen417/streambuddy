@@ -52,7 +52,10 @@ async function seekFromEnd(page: Page, seconds: number) {
 	await page.waitForFunction(() => Array.from(document.querySelectorAll("video")).some((video) => video.duration > 0))
 	// Netflix stops the player if its <video> is seeked directly; it has to go through Netflix's own player
 	const live = await page.evaluate((seconds) => {
-		const video = Array.from(document.querySelectorAll("video")).sort((a, b) => b.duration - a.duration)[0]
+		// a stream with no end (Infinity) counts as the longest
+		const video = Array.from(document.querySelectorAll("video"))
+			.map((video) => ({ video, length: Number.isFinite(video.duration) ? video.duration : Number.MAX_VALUE }))
+			.sort((a, b) => b.length - a.length)[0].video
 		// a stream fed in pieces (Disney+) has no length on its <video>; its player's timeline is seeked instead
 		if (!Number.isFinite(video.duration)) return true
 		const target = video.duration - seconds

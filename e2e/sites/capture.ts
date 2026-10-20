@@ -83,7 +83,8 @@ page.on("response", (response) => {
 		response
 			.body()
 			.then(async (body) => {
-				if (feed) (feeds[feed] ??= []).push({ url, body: JSON.parse(body.toString()) })
+				if (feed)
+					(feeds[feed] ??= []).push({ url, request: response.request().postData(), body: JSON.parse(body.toString()) })
 				else if (type === "stylesheet") sheets[url] = body.toString()
 				else {
 					const file = createHash("sha1").update(url).digest("hex").slice(0, 16) + path.extname(new URL(url).pathname)

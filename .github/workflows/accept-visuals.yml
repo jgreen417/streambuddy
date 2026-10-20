@@ -24,18 +24,20 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
     env:
       HOME: /root
-      SITES_TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
+      - id: sites
+        run: echo "token=${{ secrets.STREAMBUDDY_SITES_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+      # the token isn't left in the checkout while the pull request's code runs; only the push below uses it
       - uses: actions/checkout@v4
-        if: env.SITES_TOKEN != ''
-        continue-on-error: true
+        if: steps.sites.outputs.token == 'true'
         with:
           repository: jgreen417/streambuddy-sites
           token: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
           path: e2e/.sites-fixtures
+          persist-credentials: false
       - run: npm ci
       - name: Write new screenshots
         run: npx playwright test --update-snapshots=changed
@@ -64,6 +66,8 @@ jobs:
       - name: Commit the saved pages' screenshots to streambuddy-sites
         if: hashFiles('e2e/.sites-fixtures/captures/**') != ''
         working-directory: e2e/.sites-fixtures
+        env:
+          SITES_TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
         run: |
           git config --global --add safe.directory "$PWD"
           git config user.name "github-actions[bot]"
@@ -74,7 +78,10 @@ jobs:
           else
             git diff --cached --name-only | sed 's/^/- streambuddy-sites: /' >> "$GITHUB_STEP_SUMMARY"
             git commit -m "Accept new saved-page screenshots (streambuddy#${{ github.event.pull_request.number }})"
-            git push
+            # another pull request's accept may have pushed since the checkout
+            remote="https://x-access-token:$SITES_TOKEN@github.com/jgreen417/streambuddy-sites.git"
+            git pull --rebase "$remote" main
+            git push "$remote" HEAD:main
           fi
       - name: Remove the label
         if: always()

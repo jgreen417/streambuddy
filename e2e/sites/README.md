@@ -95,7 +95,8 @@ Everything below runs against saved pages, so the live site is only needed for s
 5. **Name it everywhere viewers read**: the copy that lists the services (`SUPPORTED_SERVICE_NAMES`, and the
    sentences in the popup's Experience settings, the Guide, Playback and install pages that name them by hand).
 6. **Into CI**: `e2e/sites/publish.sh <captures> <streambuddy-sites clone> "<names>"` copies the new states (never
-   a recording or `storage.json`) and pushes them, after checking no listed name is left in them. Then accept the
-   first screenshots from the failed run's `visual-new-baselines/saved-pages`.
+   a recording or `storage.json`) and pushes them, after checking no listed name is left in them (`--none` when
+   there are none). Then add the `accept-visuals` label to a pull request to write their first screenshots;
+   saved pages' screenshots are never uploaded from CI, as the repo's run output is public.
 7. **Last, the live site**: `npm run sites:check -- <captures> --live http://127.0.0.1:9333` once, then load the build
    in a browser and watch one film through its credits.

@@ -62,7 +62,7 @@ export type Capture = {
 	meta: { state: string; service: string; url: string; viewport: { width: number; height: number } }
 	images: Record<string, [number, number]>
 	resources: Record<string, { file: string; type: string }>
-	feeds: Record<string, { url: string; body: unknown }[]>
+	feeds: Record<string, { url: string; request?: string | null; body: unknown }[]>
 }
 
 export async function loadCapture(dir: string): Promise<Capture> {
@@ -135,8 +135,12 @@ export async function routeCapture(context: BrowserContext, capture: Capture) {
 		const feed = Object.entries(FEEDS).find(([, pattern]) => pattern.test(url))?.[0]
 		const recorded = feed ? capture.feeds[feed] : undefined
 		if (recorded?.length) {
-			// the response recorded for this exact request, else the last one of its kind
-			const match = recorded.find((entry) => entry.url === url) ?? recorded[recorded.length - 1]
+			// the response recorded for this exact request (Netflix asks one URL for different titles, named in the body),
+			// else the last one of its kind
+			const body = request.postData()
+			const match =
+				recorded.find((entry) => entry.url === url && (entry.request === undefined || entry.request === body)) ??
+				recorded[recorded.length - 1]
 			return route.fulfill({ json: match.body })
 		}
 		return handle(route)
