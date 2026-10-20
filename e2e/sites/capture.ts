@@ -132,12 +132,6 @@ if (marked)
 const script = await bundleProbe()
 await page.evaluate(script)
 const probe = service in SERVICES ? await runProbe(page, service, script) : null
-await mkdir(dir, { recursive: true })
-await writeFile(path.join(dir, "shot.png"), await screenshotWithoutArt(page))
-await Promise.all(pending)
-const frozen = await page.evaluate((input) => (globalThis as unknown as { sbFreeze: typeof freeze }).sbFreeze(input), {
-	sheets,
-})
 // Profile names and the like, replaced as whole words in every file written, the probe's report included, so the
 // copy and the report still describe the same page. Longest first, so "Josh Green" goes before "Josh"; a space in a
 // name also matches the &nbsp; the page may serialise it as.
@@ -161,6 +155,28 @@ const named = names.length
 		)
 	: null
 const scrub = (text: string) => (named ? text.replace(named, "Viewer") : text)
+// the screenshot is published too, so the names are replaced on the page itself first (its text, open shadow roots
+// included)
+if (named)
+	await page.evaluate(
+		({ source, flags }) => {
+			const pattern = new RegExp(source, flags)
+			for (const roots: (Document | ShadowRoot)[] = [document]; roots.length;) {
+				const root = roots.pop()!
+				const texts = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+				for (let node = texts.nextNode(); node; node = texts.nextNode())
+					if (node.nodeValue) node.nodeValue = node.nodeValue.replace(pattern, "Viewer")
+				for (const el of Array.from(root.querySelectorAll("*"))) if (el.shadowRoot) roots.push(el.shadowRoot)
+			}
+		},
+		{ source: named.source, flags: named.flags },
+	)
+await mkdir(dir, { recursive: true })
+await writeFile(path.join(dir, "shot.png"), await screenshotWithoutArt(page))
+await Promise.all(pending)
+const frozen = await page.evaluate((input) => (globalThis as unknown as { sbFreeze: typeof freeze }).sbFreeze(input), {
+	sheets,
+})
 const meta = {
 	state: args.state,
 	service,

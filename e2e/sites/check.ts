@@ -87,7 +87,7 @@ function shape(report: ProbeReport) {
 			report.player &&
 			Object.fromEntries(
 				Object.entries(report.player).map(([key, value]) =>
-					key === "skip" || key === "review" ? [key, value] : [key, value != null],
+					key === "skip" || key === "review" || key === "endScreen" ? [key, value] : [key, value != null],
 				),
 			),
 	}

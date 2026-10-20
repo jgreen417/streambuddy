@@ -16,7 +16,16 @@ type Storage = {
 	local: [string, string][]
 	session: [string, string][]
 }
-type Entry = { method: string; url: string; body: string | null; status: number; type: string; file: string }
+type Entry = {
+	method: string
+	url: string
+	body: string | null
+	status: number
+	type: string
+	file: string
+	// where a redirect leads; the request it leads to has its own entry
+	location?: string
+}
 
 const key = (request: Request) =>
 	createHash("sha1")
@@ -31,8 +40,23 @@ export function startRecording(page: Page, dir: string) {
 	const pending: Promise<void>[] = []
 	page.on("response", (response) => {
 		const request = response.request()
-		// a redirect has no body of its own; the request it leads to is recorded instead
-		if (response.status() >= 300 && response.status() < 400) return
+		// a redirect comes as the response to the request it led to; each step is recorded, so the replay follows it
+		for (let to = request, from = request.redirectedFrom(); from; to = from, from = from.redirectedFrom()) {
+			const [step, target] = [from, to]
+			pending.push(
+				step.response().then((redirect) => {
+					entries.push({
+						method: step.method(),
+						url: step.url(),
+						body: step.postData(),
+						status: redirect?.status() ?? 302,
+						type: "",
+						file: "",
+						location: target.url(),
+					})
+				}),
+			)
+		}
 		// the video itself can't be replayed (DRM), and a stream that stays open would hold the recording forever
 		if (request.resourceType() === "media") return
 		pending.push(
@@ -83,15 +107,16 @@ export async function routeRecording(context: BrowserContext, dir: string, fallb
 		for (const [key, value] of storage.session) sessionStorage.setItem(key, value)
 	}, storage)
 	const exact = new Map(entries.map((entry) => [`${entry.method} ${entry.url} ${entry.body ?? ""}`, entry]))
+	const find = (method: string, url: string, body: string | null) =>
+		exact.get(`${method} ${url} ${body ?? ""}`) ??
+		entries.find((entry) => entry.method === method && entry.url === url) ??
+		entries.find((entry) => entry.method === method && withoutQuery(entry.url) === withoutQuery(url))
 	const answer = async (route: Route) => {
 		const request = route.request()
-		const entry =
-			exact.get(`${request.method()} ${request.url()} ${request.postData() ?? ""}`) ??
-			entries.find((entry) => entry.method === request.method() && entry.url === request.url()) ??
-			entries.find(
-				(entry) => entry.method === request.method() && withoutQuery(entry.url) === withoutQuery(request.url()),
-			)
-		if (!entry) return fallback(route)
+		let entry = find(request.method(), request.url(), request.postData())
+		// a routed request's redirect isn't routed again, so a redirect is answered with where it ends up
+		for (let steps = 0; entry?.location && steps < 10; steps++) entry = find("GET", entry.location, null)
+		if (!entry || entry.location) return fallback(route)
 		return route.fulfill({
 			status: entry.status,
 			contentType: entry.type,
