@@ -8,8 +8,8 @@ const SECRET_KEY =
 // a signed link's other parts (CloudFront, Akamai)
 const SIGNED = /^(sig|policy|key-pair-id|hdnt[sl])$/i
 // a JSON web token, on its own or inside a longer string: its "{" header, then at least two more parts (an image
-// address can hold "eyJ" with a single "." after it, which isn't one)
-export const JWT = /(?<![\w-])eyJ[\w-]{10,}\.[\w-]*\.[\w-]*(\.[\w-]*)*/g
+// address can hold "eyJ" with a single "." after it, which isn't one). Any case, like publish.sh's check.
+export const JWT = /eyJ[\w-]{10,}\.[\w-]*\.[\w-]*(\.[\w-]*)*/gi
 
 function withoutSignature(text: string) {
 	if (!/^https?:\/\/[^?]+\?/.test(text) || !URL.canParse(text)) return text
