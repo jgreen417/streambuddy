@@ -30,6 +30,12 @@ describe("page adapters", () => {
 		expect(context.before?.dataset.testid).toBe("dp-atf-synopsis")
 		expect(readEpisodeCards("prime", document.body)[0]).toMatchObject({ season: 2, episode: 3 })
 	})
+	it("reads the season from a Prime page in another language", () => {
+		document.title = "Amazon.fr : Fallout - Saison 2 | Prime Video"
+		document.body.innerHTML = `<div data-testid="atf-component-next-gen"><h1>Fallout</h1></div><div data-testid="episode-list-item" title="Épisode 3 : La Tête"><div data-testid="episode-packshot"></div></div>`
+		expect(readDetailContext("prime")?.mediaType).toBe("tv")
+		expect(readEpisodeCards("prime", document.body)[0]).toMatchObject({ season: 2, episode: 3 })
+	})
 	it("finds the Netflix title when the About heading sits outside the about container", () => {
 		document.body.innerHTML = `<div data-uia="modal-motion-container-DETAIL_MODAL"><h3>About The Irishman</h3><div data-uia="about-container"><div>Cast</div></div><div data-uia="previewModal--detailsMetadata"><span class="year">2019</span></div></div>`
 		expect(readDetailContext("netflix")?.title).toBe("The Irishman")
