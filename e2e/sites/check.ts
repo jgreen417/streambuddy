@@ -143,7 +143,12 @@ async function checkState(capture: Capture, meta: Meta, captured: ProbeReport | 
 		await page.goto(meta.url, { waitUntil: "load" })
 		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
 		await putInState(page, { ...meta, wait: 0, scroll: null }, true)
-		problems.push(...differences(captured, await probeOf(page, meta)))
+		const copy = await probeOf(page, meta)
+		// A player whose <video> has no length live (Disney+, saved as null) is timed from the site's own player
+		// clock, which the probe can't read; the copy's stand-in has the timeline's length, so its video isn't compared
+		const video = captured?.player?.video
+		if (video && !(video.duration > 0) && copy?.player) copy.player.video = video
+		problems.push(...differences(captured, copy))
 		const shot = await screenshotWithoutArt(page)
 		const { share, diff } = compareShots(await readFile(path.join(capture.dir, "shot.png")), shot)
 		if (share > Number(args.threshold)) {

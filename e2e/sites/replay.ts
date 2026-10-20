@@ -26,7 +26,15 @@ const ART = 'img:not([src*=".svg"]), video, picture, canvas, iframe'
 // content security policy blocks, and put back afterwards.
 export async function screenshotWithoutArt(page: Page) {
 	await page.evaluate((art) => {
-		for (const el of Array.from(document.querySelectorAll<HTMLElement>("*"))) {
+		// the page's elements and those in its open shadow roots (Disney+'s player draws its Up Next card in one); a
+		// loop rather than a named helper, which tsx would compile to a call the page doesn't have
+		const all: HTMLElement[] = []
+		for (const roots: (Document | ShadowRoot)[] = [document]; roots.length;)
+			for (const el of Array.from(roots.pop()!.querySelectorAll<HTMLElement>("*"))) {
+				all.push(el)
+				if (el.shadowRoot) roots.push(el.shadowRoot)
+			}
+		for (const el of all) {
 			const hide = el.matches(art)
 			if (!hide && !getComputedStyle(el).backgroundImage.includes("url(")) continue
 			el.dataset.sbStyle = el.getAttribute("style") ?? ""
@@ -36,7 +44,13 @@ export async function screenshotWithoutArt(page: Page) {
 	}, ART)
 	const shot = await page.screenshot({ animations: "disabled" })
 	await page.evaluate(() => {
-		for (const el of Array.from(document.querySelectorAll<HTMLElement>("[data-sb-style]"))) {
+		const marked: HTMLElement[] = []
+		for (const roots: (Document | ShadowRoot)[] = [document]; roots.length;)
+			for (const el of Array.from(roots.pop()!.querySelectorAll<HTMLElement>("*"))) {
+				if (el.dataset.sbStyle !== undefined) marked.push(el)
+				if (el.shadowRoot) roots.push(el.shadowRoot)
+			}
+		for (const el of marked) {
 			if (el.dataset.sbStyle) el.setAttribute("style", el.dataset.sbStyle)
 			else el.removeAttribute("style")
 			delete el.dataset.sbStyle
