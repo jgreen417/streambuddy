@@ -156,8 +156,11 @@ export class PlaybackEngine {
 		show: string | null,
 		settings: PlaybackSettings,
 	) {
-		const before = video.currentTime
-		const remaining = Number.isFinite(video.duration) ? video.duration - before : 0
+		// the title's own clock where the site has one: Disney+'s <video> has no length and restarts at every jump
+		const clock = () => this.site.clock?.() ?? video
+		const before = clock().currentTime
+		const duration = clock().duration
+		const remaining = Number.isFinite(duration) ? duration - before : 0
 		button.click()
 		if (kind === "stillWatching") {
 			if (settings.notices) this.overlay.showNotice("Kept playing")
@@ -170,28 +173,31 @@ export class PlaybackEngine {
 			if (settings.notices) this.announceSkip(kind, remaining, show ? [this.notForShow(kind, show)] : [])
 			return
 		}
-		// the jump lands a moment after the click; measure it then
-		setTimeout(() => {
-			const saved = this.video === video ? video.currentTime - before : 0
-			if (saved > 1 && saved < 30 * 60) this.recordSaved(kind, saved)
-			if (!settings.notices) return
-			const actions = []
-			if (canSeek && this.video === video)
-				actions.push({
-					label: "Undo",
-					run: () => {
-						this.suppressed.add(kind)
-						video.currentTime = before
-					},
-				})
-			if (show)
-				actions.push(
-					this.notForShow(kind, show, () => {
-						if (canSeek && this.video === video) video.currentTime = before
-					}),
-				)
-			this.announceSkip(kind, saved, actions)
-		}, 700)
+		// the jump lands a moment after the click; measure it then (a page-read clock catches up a little later)
+		setTimeout(
+			() => {
+				const saved = this.video === video ? clock().currentTime - before : 0
+				if (saved > 1 && saved < 30 * 60) this.recordSaved(kind, saved)
+				if (!settings.notices) return
+				const actions = []
+				if (canSeek && this.video === video)
+					actions.push({
+						label: "Undo",
+						run: () => {
+							this.suppressed.add(kind)
+							video.currentTime = before
+						},
+					})
+				if (show)
+					actions.push(
+						this.notForShow(kind, show, () => {
+							if (canSeek && this.video === video) video.currentTime = before
+						}),
+					)
+				this.announceSkip(kind, saved, actions)
+			},
+			this.site.clock ? 2500 : 700,
+		)
 	}
 	private announceSkip(kind: SkipKind, saved: number, actions: NoticeAction[]) {
 		const savedText = saved > 1 ? ` · ${formatSaved(saved)} saved` : ""

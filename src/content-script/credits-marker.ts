@@ -32,6 +32,7 @@ export function listenForCreditsMarkers() {
 		const about = {
 			title: typeof event.data.title === "string" ? event.data.title : undefined,
 			episode: typeof event.data.episode === "string" ? event.data.episode : undefined,
+			entity: typeof event.data.entity === "string" ? event.data.entity : undefined,
 		}
 		if (creditsFromEnd === undefined) markers.push({ duration, ...about })
 		else if (Number.isFinite(creditsFromEnd) && creditsFromEnd > 0 && creditsFromEnd < duration)
@@ -51,6 +52,12 @@ export function markerFor(video: Pick<PlayerClock, "duration">) {
 		if (!best || Math.abs(video.duration - marker.duration) <= Math.abs(video.duration - best.duration)) best = marker
 	}
 	return best
+}
+// Disney+'s marker for the title on this player page: the one its playback response named, else (before that's in) one of
+// the exact length that no other page claims. The next title is loaded before it plays, often with the same length.
+export function markerForEntity(entity: string | null, duration: number) {
+	const named = entity ? markers.findLast((marker) => marker.entity === entity) : undefined
+	return named ?? markers.findLast((marker) => marker.entity === undefined && Math.abs(marker.duration - duration) < 2)
 }
 export const markedCreditsFromEnd = (video: PlayerClock) => markerFor(video)?.creditsFromEnd
 

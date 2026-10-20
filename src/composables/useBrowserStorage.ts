@@ -49,16 +49,19 @@ function useBrowserStorage<T>(key: string, defaultValue: T, storageType: "sync" 
 	// Blocking setting storage if it is updating from storage
 	let isUpdatingFromStorage = true
 	const defaultIsObject = isObject(defaultValue)
+	// a stored object gets the defaults for anything it lacks (written by an older version, maybe in another synced browser)
+	const fromStorage = (stored: unknown) => {
+		if (stored === undefined) return
+		if (defaultIsObject && isObject(stored)) {
+			data.value = (merge ? mergeDeep(defaultValue as PlainObject, stored) : stored) as T
+		} else if (checkType(defaultValue, stored)) {
+			data.value = stored as T
+		}
+	}
 	// Initialize storage with the value from browser.storage
 	const promise = (async () => {
 		const result = await browser.storage[storageType].get(key)
-		if (result?.[key] !== undefined) {
-			if (defaultIsObject && isObject(result[key])) {
-				data.value = (merge ? mergeDeep(defaultValue as PlainObject, result[key]) : result[key]) as T
-			} else if (checkType(defaultValue, result[key])) {
-				data.value = result[key]
-			}
-		}
+		fromStorage(result?.[key])
 		await nextTick()
 		isUpdatingFromStorage = false
 	})()
@@ -81,8 +84,7 @@ function useBrowserStorage<T>(key: string, defaultValue: T, storageType: "sync" 
 	browser.storage.onChanged.addListener(async function (changes, areaName) {
 		if (areaName === storageType && changes?.[key]) {
 			isUpdatingFromStorage = true
-			const { newValue } = changes[key]
-			data.value = newValue
+			fromStorage(changes[key].newValue)
 			await nextTick()
 			isUpdatingFromStorage = false
 		}

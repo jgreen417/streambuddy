@@ -16,6 +16,8 @@ export type CreditsMarker = {
 	// what's playing, where the response says (Disney+): its title, and an episode's "S1:E1 Simpsons Roasting…"
 	title?: string
 	episode?: string
+	// the player page it's for (Disney+'s /play/<entity>), once the title has started playing
+	entity?: string
 }
 
 type MaxPlayback = {
@@ -70,6 +72,7 @@ type DisneyPlayback = {
 		editorial?: { label?: unknown; offsetMillis?: unknown }[]
 		playbackRights?: { externalIds?: { availId?: unknown } }
 	}
+	tracking?: { qoe?: { entityId?: unknown } }
 }
 // Disney+ splits it over two responses for the same title (its availId): the player experience has the runtime and
 // what's playing, the playback response the editorial markers, FFEC being the first frame of the end credits. Each
@@ -77,11 +80,12 @@ type DisneyPlayback = {
 export function disneyCreditsMarkers() {
 	const titles = new Map<string, CreditsMarker>()
 	const credits = new Map<string, number>()
+	const entities = new Map<string, string>()
 	const markerFor = (id: string) => {
 		const title = titles.get(id)
 		if (!title) return undefined
 		const found = marker(credits.get(id), title.duration)
-		return found && { ...title, ...found }
+		return found && { ...title, ...found, entity: entities.get(id) }
 	}
 	return {
 		experience(json: DisneyExperience, url: string) {
@@ -101,8 +105,11 @@ export function disneyCreditsMarkers() {
 		playback(json: DisneyPlayback) {
 			const id = json.stream?.playbackRights?.externalIds?.availId
 			const start = json.stream?.editorial?.find((mark) => mark.label === "FFEC")?.offsetMillis
-			if (typeof id !== "string" || typeof start !== "number") return undefined
-			credits.set(id, start / 1000)
+			const entity = json.tracking?.qoe?.entityId
+			if (typeof id !== "string") return undefined
+			if (typeof entity === "string") entities.set(id, entity)
+			if (typeof start === "number") credits.set(id, start / 1000)
+			else if (typeof entity !== "string") return undefined
 			return markerFor(id)
 		},
 	}

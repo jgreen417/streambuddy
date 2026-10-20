@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { listenForCreditsMarkers, markedCreditsFromEnd } from "../../content-script/credits-marker"
+import { listenForCreditsMarkers, markedCreditsFromEnd, markerForEntity } from "../../content-script/credits-marker"
 import {
 	CREDITS_MESSAGE,
 	disneyCreditsMarkers,
@@ -93,11 +93,18 @@ describe("Disney+ credits marker", () => {
 			],
 			playbackRights: { externalIds: { availId: "e9fa3181" } },
 		},
+		// the player page it's for, /play/9a280e53
+		tracking: { qoe: { entityId: "9a280e53" } },
 	}
 	const url = "https://disney.api.edge.bamgrid.com/explore/v1.21/playerExperience/e9fa3181"
 
 	it("joins the runtime and the end credits' first frame, whichever response comes first", () => {
-		const film = { creditsFromEnd: 314.779, duration: 7536, title: "Star Wars: A New Hope (Episode IV)" }
+		const film = {
+			creditsFromEnd: 314.779,
+			duration: 7536,
+			title: "Star Wars: A New Hope (Episode IV)",
+			entity: "9a280e53",
+		}
 		const first = disneyCreditsMarkers()
 		expect(first.experience(experience, url)).toEqual({ duration: 7536, title: film.title })
 		expect(first.playback(playback)).toMatchObject({ ...film, creditsFromEnd: expect.closeTo(314.779) })
@@ -148,6 +155,15 @@ describe("picking the marker for the video playing", () => {
 		send({ creditsFromEnd: 300, duration: 6000 })
 		send({ duration: 6010 })
 		expect(markedCreditsFromEnd(video(6200))).toBeUndefined()
+	})
+	it("on Disney+, takes the marker of the title on the player page over the next one of the same length", () => {
+		send({ creditsFromEnd: 90, duration: 1441, episode: "S1:E1", entity: "ep1" })
+		// the next episode, loaded before it plays
+		send({ duration: 1441.5, episode: "S1:E2" })
+		expect(markerForEntity("ep1", 1441)?.episode).toBe("S1:E1")
+		// before a title's playback response is in, only an unclaimed title of its exact length will do
+		expect(markerForEntity("ep2", 1441)?.episode).toBe("S1:E2")
+		expect(markerForEntity("ep2", 1500)).toBeUndefined()
 	})
 	it("ignores markers that make no sense", () => {
 		send({ creditsFromEnd: 3000, duration: 3000 })

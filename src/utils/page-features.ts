@@ -1,6 +1,7 @@
 import { classicLook, installPageFeatureStyle, type BadgeLook } from "./page-feature-styles"
 import type { RatingSource } from "./ratings"
 import { getScoreColor } from "./rating-sources"
+import { parseEpisodeLabel } from "./series-finale"
 
 import type { FeatureSite } from "@/constants/streamingServices"
 export type { FeatureSite }
@@ -88,6 +89,8 @@ export function readDetailContext(site: FeatureSite, path = location.pathname): 
 		}
 	}
 	if (site === "disney") {
+		// "2009 – 2015 • 6 Seasons • Drama", in the profile's language; failing that, an episode list
+		const seasons = /\b\d+\s+(?:Seasons?|Staffeln?|Saisons?|Temporadas?|Stagion[ei]|Seizoen(?:en)?)\b/i
 		const target = document.querySelector<HTMLElement>('[data-testid="explore-details-view"]')
 		const masthead = text(document.querySelector('[data-testid="masthead-metadata"]'))
 		// the title is a logo; the tab title is "Glee | Disney+"
@@ -98,7 +101,7 @@ export function readDetailContext(site: FeatureSite, path = location.pathname): 
 			target,
 			title,
 			year: masthead.match(/^\d{4}/)?.[0] ?? null,
-			mediaType: /\b\d+\s+Seasons?\b/i.test(masthead) ? "tv" : "movie",
+			mediaType: seasons.test(masthead) || disneyEpisodeCards(document).length ? "tv" : "movie",
 		}
 	}
 	const target = document.querySelector<HTMLElement>('[data-testid="atf-component-next-gen"]')
@@ -141,18 +144,7 @@ export function readEpisodeCards(site: FeatureSite, root: HTMLElement) {
 					})
 			})
 	} else if (site === "disney") {
-		root
-			.querySelectorAll<HTMLElement>('[data-testid="tab-panel--active"] a[data-testid="set-item"]')
-			.forEach((card) => {
-				const match = card.getAttribute("aria-label")?.match(/^Season\s+(\d+)\s+Episode\s+(\d+)\b/)
-				if (match)
-					cards.push({
-						card,
-						target: card.querySelector<HTMLElement>('[data-testid="set-item-tile"]') ?? card,
-						season: Number(match[1]),
-						episode: Number(match[2]),
-					})
-			})
+		cards.push(...disneyEpisodeCards(root))
 	} else {
 		const season = Number(document.title.match(/Season\s+(\d+)/i)?.[1])
 		if (!season) return cards
@@ -354,4 +346,16 @@ export class SearchRatingSort {
 		}
 		this.grids.clear()
 	}
+}
+
+// a Disney+ series' episode tiles, labelled "Season 1 Episode 3 …" in the profile's language
+function disneyEpisodeCards(root: ParentNode) {
+	return Array.from(
+		root.querySelectorAll<HTMLElement>('[data-testid="tab-panel--active"] a[data-testid="set-item"]'),
+		(card) => {
+			const place = parseEpisodeLabel(card.getAttribute("aria-label")?.slice(0, 40))
+			const target = card.querySelector<HTMLElement>('[data-testid="set-item-tile"]') ?? card
+			return place && { card, target, ...place }
+		},
+	).filter((card) => card !== null)
 }
