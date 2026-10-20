@@ -200,6 +200,9 @@ export function fulfillRange(route: Route, body: Buffer, contentType: string) {
 	})
 }
 
+const extensionIds = new WeakMap<BrowserContext, string>()
+export const extensionId = (context: BrowserContext) => extensionIds.get(context)!
+
 export async function launch(options: OpenOptions) {
 	const profileDir = await mkdtemp(path.join(tmpdir(), "sb-visual-"))
 	const context = await chromium.launchPersistentContext(profileDir, {
@@ -216,20 +219,18 @@ export async function launch(options: OpenOptions) {
 	// only the web; the extension's own files load as usual
 	if (options.route) await options.route(context)
 	else await context.route(/^https?:\/\//, handle)
-	// polled rather than awaited as an event: the worker can register between launch returning and a listener
-	// being added, and then the event never comes and the test hangs until it times out
-	// (a runner busy with other browsers can take well over 15s to start it)
-	await expect.poll(() => context.serviceWorkers().length, { timeout: 30_000 }).toBeGreaterThan(0)
-	const worker = context.serviceWorkers()[0]
-	// on first install the extension clears its local storage and then opens its welcome page; seed after that,
-	// or the clear can wipe the seeded ratings
+	// On first install the extension clears its local storage and then opens its welcome page, so the storage is
+	// seeded from that page, after the clear. Not from the service worker: it can start before Playwright is
+	// listening, and then it's never listed. Polled, as the page can open before a listener could be added.
 	const isWelcome = (page: Page) => page.url().includes("options-page")
-	if (!context.pages().some(isWelcome)) await context.waitForEvent("page", { predicate: isWelcome, timeout: 15_000 })
-	await expect.poll(() => worker.evaluate(() => !!globalThis.chrome?.storage?.local)).toBe(true)
+	await expect.poll(() => context.pages().some(isWelcome), { timeout: 30_000 }).toBe(true)
+	const welcome = context.pages().find(isWelcome)!
+	extensionIds.set(context, new URL(welcome.url()).host)
+	await expect.poll(() => welcome.evaluate(() => !!globalThis.chrome?.storage?.local)).toBe(true)
 	const today = new Date().toISOString().split("T")[0]
 	const signedIn = options.signedIn ?? true
 	const letterboxd = signedIn && !options.noLetterboxd
-	await worker.evaluate(
+	await welcome.evaluate(
 		async ({ local, sync }) => {
 			await chrome.storage.local.set(local)
 			await chrome.storage.sync.set(sync)
