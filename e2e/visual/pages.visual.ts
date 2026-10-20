@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test"
-import { test, expect, loaded, type OpenOptions } from "./harness"
+import { test, expect, extensionId, loaded, type OpenOptions } from "./harness"
 import { PROFILE } from "./ratings"
 
 // The extension's own pages (the toolbar popup and the settings pages) and the episode chips on a series' page,
@@ -39,9 +39,8 @@ const LOCAL = {
 }
 
 async function extensionPage(page: Page, path: string, ready: string) {
-	const id = new URL(page.context().serviceWorkers()[0].url()).host
 	await page.clock.setFixedTime(NOW)
-	await page.goto(`chrome-extension://${id}/${path}`)
+	await page.goto(`chrome-extension://${extensionId(page.context())}/${path}`)
 	await expect(page.locator(ready).first()).toBeVisible()
 	// the page's own storage reads were sent first, so they have answered and been drawn once these have
 	await page.evaluate(() => Promise.all([chrome.storage.sync.get(), chrome.storage.local.get()]))

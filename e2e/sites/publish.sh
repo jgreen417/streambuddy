@@ -25,7 +25,7 @@ done
 
 npx tsx "$(dirname "$0")/clean.ts" "$sites/captures"
 # a JSON web token anywhere, or a key named for a token, a session or an id that follows the account around
-for pattern in 'eyJ[A-Za-z0-9_-]{20,}\.' \
+for pattern in 'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*\.' \
 	'"[A-Za-z_-]*(token|authori[sz]|authurl|session|cookie|password|credential|guid|device_?id|user_?id|account_?id|customer_?id|profile_?id|email)[A-Za-z_-]*"[[:space:]]*:'; do
 	status=0
 	grep -rliIE -e "$pattern" "$sites/captures" || status=$?
