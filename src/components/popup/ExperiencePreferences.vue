@@ -203,7 +203,7 @@ const updateMode = (event: Event) => {
 				</span>
 			</summary>
 			<div class="sb-disclosure-body">
-				<p class="sb-help">Title pages, episodes and search work on Netflix, HBO Max and Prime Video.</p>
+				<p class="sb-help">Title pages, episodes and search work on Netflix, HBO Max, Prime Video and Disney+.</p>
 				<label class="sb-cutoff">
 					Ratings from
 					<select v-model="settings.General.ratingSources">
@@ -385,7 +385,7 @@ const updateMode = (event: Event) => {
 					:model-value="speed === true"
 					:mixed="speed === 'mixed'"
 					label="Speed control"
-					description="Remembers your speed per service. Shift + < or > to adjust; Prime Video and HBO Max also get a speed pill."
+					description="Remembers your speed per service. Shift + < or > to adjust; Prime Video, HBO Max and Disney+ also get a speed pill."
 					@update:model-value="speed = $event"
 				/>
 				<PopupToggle

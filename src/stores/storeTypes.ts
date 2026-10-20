@@ -22,6 +22,7 @@ export type settingsType = {
 		hidePaid: boolean
 	}
 	HBO: ServicePlayback
+	Disney: ServicePlayback
 	Video: {
 		dimLowRatings: boolean
 	}
@@ -69,6 +70,7 @@ export const defaultSettings: settingsType = {
 	Netflix: { ...playbackDefaults, hideGames: true },
 	Amazon: { ...playbackDefaults, hidePaid: false },
 	HBO: { ...playbackDefaults },
+	Disney: { ...playbackDefaults },
 	Video: {
 		dimLowRatings: false,
 	},

@@ -176,7 +176,9 @@ describe("playback engine", () => {
 	})
 
 	it("ignores switched-off skips", () => {
-		const { video, tick, addButton } = setup({ skip: { intro: false, recap: true, credits: true, stillWatching: true } })
+		const { video, tick, addButton } = setup({
+			skip: { intro: false, recap: true, credits: true, stillWatching: true },
+		})
 		addButton("intro", 185)
 		tick()
 		expect(video.currentTime).toBe(100)
@@ -275,6 +277,27 @@ describe("playback engine", () => {
 		// the next film autoplays while the review pill isn't updating (a background tab)
 		video.duration = 6000
 		tick()
+		expect(video.playbackRate).toBe(1.25)
+		setFilmEnded(null)
+		engine.stop()
+	})
+
+	it("reads the film's end from the site's own clock where the <video> has no length", async () => {
+		const { video, site, tick, engine } = setup()
+		// Disney+: the <video> runs on an endless stream; the player knows where the title is up to
+		video.duration = Infinity
+		const clock = { currentTime: 7230, duration: 7536, paused: false }
+		site.clock = () => clock
+		await engine.start()
+		tick()
+		setFilmEnded({ duration: 7536, at: 7227 })
+		tick()
+		window.dispatchEvent(new KeyboardEvent("keydown", { key: ">", shiftKey: true }))
+		expect(video.playbackRate).toBe(1)
+		// rewound out of the credits: the speed controls are back
+		clock.currentTime = 3600
+		tick()
+		window.dispatchEvent(new KeyboardEvent("keydown", { key: ">", shiftKey: true }))
 		expect(video.playbackRate).toBe(1.25)
 		setFilmEnded(null)
 		engine.stop()

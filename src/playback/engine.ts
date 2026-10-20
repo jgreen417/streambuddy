@@ -156,8 +156,11 @@ export class PlaybackEngine {
 		show: string | null,
 		settings: PlaybackSettings,
 	) {
-		const before = video.currentTime
-		const remaining = Number.isFinite(video.duration) ? video.duration - before : 0
+		// the title's own clock where the site has one: Disney+'s <video> has no length and restarts at every jump
+		const clock = () => this.site.clock?.() ?? video
+		const before = clock().currentTime
+		const duration = clock().duration
+		const remaining = Number.isFinite(duration) ? duration - before : 0
 		button.click()
 		if (kind === "stillWatching") {
 			if (settings.notices) this.overlay.showNotice("Kept playing")
@@ -170,28 +173,31 @@ export class PlaybackEngine {
 			if (settings.notices) this.announceSkip(kind, remaining, show ? [this.notForShow(kind, show)] : [])
 			return
 		}
-		// the jump lands a moment after the click; measure it then
-		setTimeout(() => {
-			const saved = this.video === video ? video.currentTime - before : 0
-			if (saved > 1 && saved < 30 * 60) this.recordSaved(kind, saved)
-			if (!settings.notices) return
-			const actions = []
-			if (canSeek && this.video === video)
-				actions.push({
-					label: "Undo",
-					run: () => {
-						this.suppressed.add(kind)
-						video.currentTime = before
-					},
-				})
-			if (show)
-				actions.push(
-					this.notForShow(kind, show, () => {
-						if (canSeek && this.video === video) video.currentTime = before
-					}),
-				)
-			this.announceSkip(kind, saved, actions)
-		}, 700)
+		// the jump lands a moment after the click; measure it then (a page-read clock catches up a little later)
+		setTimeout(
+			() => {
+				const saved = this.video === video ? clock().currentTime - before : 0
+				if (saved > 1 && saved < 30 * 60) this.recordSaved(kind, saved)
+				if (!settings.notices) return
+				const actions = []
+				if (canSeek && this.video === video)
+					actions.push({
+						label: "Undo",
+						run: () => {
+							this.suppressed.add(kind)
+							video.currentTime = before
+						},
+					})
+				if (show)
+					actions.push(
+						this.notForShow(kind, show, () => {
+							if (canSeek && this.video === video) video.currentTime = before
+						}),
+					)
+				this.announceSkip(kind, saved, actions)
+			},
+			this.site.clock ? 2500 : 700,
+		)
 	}
 	private announceSkip(kind: SkipKind, saved: number, actions: NoticeAction[]) {
 		const savedText = saved > 1 ? ` · ${formatSaved(saved)} saved` : ""
@@ -249,8 +255,12 @@ export class PlaybackEngine {
 	// #endregion
 
 	// #region speed
+	// the title's own clock where the site has one (Disney+'s <video> has no length)
+	private filmOver() {
+		return filmOver(this.site.clock?.() ?? this.video)
+	}
 	private handleSpeed(settings: PlaybackSettings) {
-		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.() || filmOver(this.video)) {
+		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.() || this.filmOver()) {
 			this.overlay.removeSpeed()
 			return
 		}
@@ -261,8 +271,7 @@ export class PlaybackEngine {
 		this.overlay.renderSpeed(this.rate, SPEED_PRESETS, (rate) => this.chooseRate(rate))
 	}
 	private applyRate() {
-		if (!this.video || this.adRestore || this.rate === null || !this.settings().speedControl || filmOver(this.video))
-			return
+		if (!this.video || this.adRestore || this.rate === null || !this.settings().speedControl || this.filmOver()) return
 		this.setRate(this.video, this.rate)
 	}
 	private setRate(video: HTMLVideoElement, rate: number) {
@@ -275,7 +284,7 @@ export class PlaybackEngine {
 		// a replaced element's teardown isn't the viewer choosing a speed, and once the film is over the site's own
 		// rate stands without replacing the saved one
 		if (video !== this.video || this.adRestore || this.rate === null || !this.settings().speedControl) return
-		if (filmOver(video)) return
+		if (this.filmOver()) return
 		// our own change (rate change events arrive after the fact, so compare rather than flag)
 		if (Math.abs(video.playbackRate - this.rate) < 0.001) return
 		if (video.playbackRate === 1 && this.rate !== 1 && video.currentTime < 3) {
@@ -298,7 +307,7 @@ export class PlaybackEngine {
 		this.overlay.flashSpeed()
 	}
 	private onKey(event: KeyboardEvent) {
-		if (!this.video || !this.settings().speedControl || this.rate === null || filmOver(this.video)) return
+		if (!this.video || !this.settings().speedControl || this.rate === null || this.filmOver()) return
 		const target = event.target as HTMLElement | null
 		if (target?.isContentEditable || /^(input|textarea|select)$/i.test(target?.tagName ?? "")) return
 		// ">" / "<" on most layouts; some keyboards and tools report Shift with "." / ","

@@ -2,17 +2,23 @@
 // player loads a title, this picks out where the service says the end credits start and posts it to streamBuddy's
 // content script: how many seconds of credits run up to the end of the title, and the title's length. It keeps what
 // it has found and posts it all again when asked, for a content script that started listening after the player loaded.
+// On Disney+ it also posts where the player is, which only the page can read (see postDisneyPlayhead).
 import {
 	CREDITS_MESSAGE,
 	CREDITS_REQUEST,
+	PLAYHEAD_MESSAGE,
+	disneyCreditsMarkers,
 	maxCreditsMarker,
 	primeCreditsMarker,
 	type CreditsMarker,
 } from "@/utils/credits-markers"
 
-const READERS: [RegExp, (json: never) => CreditsMarker | undefined][] = [
+const disney = disneyCreditsMarkers()
+const READERS: [RegExp, (json: never, url: string) => CreditsMarker | undefined][] = [
 	[/\/playback\/v1\/playbackInfo/, maxCreditsMarker],
 	[/\/GetVodPlaybackResources/, primeCreditsMarker],
+	[/\/explore\/v[\d.]+\/playerExperience\//, disney.experience],
+	[/\/playback\/ctr-regular/, disney.playback],
 ]
 const found: CreditsMarker[] = []
 const post = (marker: CreditsMarker) => window.postMessage({ type: CREDITS_MESSAGE, ...marker }, location.origin)
@@ -22,7 +28,7 @@ function read(url: string, body: () => Promise<unknown>) {
 	if (!reader) return
 	body()
 		.then((json) => {
-			const marker = json ? reader(json as never) : undefined
+			const marker = json ? reader(json as never, url) : undefined
 			if (!marker) return
 			found.push(marker)
 			post(marker)
@@ -56,4 +62,19 @@ if (!(hooked in window)) {
 	window.addEventListener("message", (event) => {
 		if (event.source === window && event.data?.type === CREDITS_REQUEST) found.forEach(post)
 	})
+	if (/(^|\.)disneyplus\.com$/.test(location.hostname)) setInterval(postDisneyPlayhead, 1000)
+}
+
+// Disney+'s <video> restarts its clock at every seek and has no length, and its timeline is only drawn while the
+// controls are up. The player element's own timeline has the playhead in the title, in milliseconds; it reads 0 for
+// a moment as a title loads, and catches up a second or so after a seek.
+type DisneyTimeline = { playheadPositionMs?: unknown; programDurationMs?: unknown }
+function postDisneyPlayhead() {
+	const player = document.querySelector("disney-web-player") as {
+		mediaPlayer?: { timeline?: { info?: DisneyTimeline } }
+	} | null
+	const info = player?.mediaPlayer?.timeline?.info
+	const { playheadPositionMs: position, programDurationMs: duration } = info ?? {}
+	if (typeof position !== "number" || typeof duration !== "number" || !(position > 0 && duration > 0)) return
+	window.postMessage({ type: PLAYHEAD_MESSAGE, position: position / 1000, duration: duration / 1000 }, location.origin)
 }
