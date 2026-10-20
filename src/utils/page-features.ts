@@ -42,6 +42,9 @@ const text = (element: Element | null) => clean(element?.textContent)
 const headingText = (element: Element | null) =>
 	text(element) || clean(element?.querySelector("img[alt]")?.getAttribute("alt"))
 
+// "Season 2" in the languages of Prime's Amazon sites (Hindi on amazon.in)
+const primeSeason = /(?:Season|Staffel|Saison|Temporada|Stagione|सीज़न)\s+(\d+)/i
+
 export function readDetailContext(site: FeatureSite, path = location.pathname): DetailContext | null {
 	if (site === "netflix") {
 		const root = document.querySelector<HTMLElement>('[data-uia="modal-motion-container-DETAIL_MODAL"]')
@@ -106,7 +109,7 @@ export function readDetailContext(site: FeatureSite, path = location.pathname): 
 		}
 	}
 	const target = document.querySelector<HTMLElement>('[data-testid="atf-component-next-gen"]')
-	const title = headingText(target?.querySelector("h1") ?? null).replace(/\s*-\s*Season\s+\d+.*$/i, "")
+	const title = headingText(target?.querySelector("h1") ?? null).replace(/\s*-\s*(?:Season|Staffel|Saison|Temporada|Stagione|सीज़न)\s+\d+.*$/i, "")
 	if (!target || !title) return null
 	return {
 		root: document.body,
@@ -115,7 +118,7 @@ export function readDetailContext(site: FeatureSite, path = location.pathname): 
 		title,
 		year: text(target.querySelector('[data-testid="release-year-badge"]')) || null,
 		mediaType:
-			/Season\s+\d+/i.test(document.title) || document.querySelector('[data-testid="episode-list-item"]') ? "tv" : null,
+			primeSeason.test(document.title) || document.querySelector('[data-testid="episode-list-item"]') ? "tv" : null,
 	}
 }
 
@@ -147,11 +150,11 @@ export function readEpisodeCards(site: FeatureSite, root: HTMLElement) {
 	} else if (site === "disney") {
 		cards.push(...disneyEpisodeCards(root))
 	} else {
-		const season = Number(document.title.match(/Season\s+(\d+)/i)?.[1])
+		const season = Number(document.title.match(primeSeason)?.[1])
 		if (!season) return cards
 		root.querySelectorAll<HTMLElement>('[data-testid="episode-list-item"]').forEach((card) => {
 			const label = card.getAttribute("title") || text(card.querySelector("h2,h3")) || text(card)
-			const episode = Number(label.match(/^\s*(\d+)\./)?.[1] ?? label.match(/Episode\s+(\d+)/i)?.[1])
+			const episode = Number(label.match(/^\s*(\d+)\./)?.[1] ?? label.match(/(?:Episode|Folge|Épisode|Episodio|एपिसोड)\s+(\d+)/i)?.[1])
 			if (episode > 0)
 				cards.push({
 					card,

@@ -7,8 +7,6 @@ export const SERVICES = {
 		feature: "netflix",
 		script: "src/content-script/netflix.ts",
 		matches: ["*://*.netflix.com/*", "*://*.netflix.ca/*", "*://*.netflix.com.au/*"],
-		// the popup's check of the tab it was opened on
-		host: /(^|\.)netflix\./i,
 	},
 	Amazon: {
 		name: "Prime Video",
@@ -21,8 +19,12 @@ export const SERVICES = {
 			"*://*.amazon.co.jp/*",
 			"*://*.amazon.de/*",
 			"*://*.amazon.co.uk/*",
+			"*://*.amazon.ca/*",
+			"*://*.amazon.fr/*",
+			"*://*.amazon.it/*",
+			"*://*.amazon.es/*",
+			"*://*.amazon.in/*",
 		],
-		host: /(^|\.)(amazon|primevideo)\./i,
 	},
 	HBO: {
 		name: "HBO Max",
@@ -30,7 +32,6 @@ export const SERVICES = {
 		feature: "hbo",
 		script: "src/content-script/max.ts",
 		matches: ["*://*.max.com/*", "*://*.hbomax.com/*"],
-		host: /(^|\.)(hbo)?max\.com$/i,
 	},
 	Disney: {
 		name: "Disney+",
@@ -38,7 +39,6 @@ export const SERVICES = {
 		feature: "disney",
 		script: "src/content-script/disney.ts",
 		matches: ["*://*.disneyplus.com/*"],
-		host: /(^|\.)disneyplus\.com$/i,
 	},
 } as const
 
@@ -51,6 +51,17 @@ export const streamingServices = Object.keys(SERVICES) as StreamingService[]
 export const SERVICE_NAMES_BY_STATS_KEY: Record<string, string> = Object.fromEntries(
 	Object.values(SERVICES).map((service) => [service.statsKey, service.name]),
 )
+
+// The service whose content script runs on this host, for the popup's check of the tab it was opened on. Read from
+// the same match patterns, so the popup never claims a site the extension doesn't run on.
+export function serviceForHost(hostname: string) {
+	return streamingServices.find((service) =>
+		SERVICES[service].matches.some((match) => {
+			const domain = match.replace(/^\*:\/\/\*\./, "").replace(/\/\*$/, "")
+			return hostname === domain || hostname.endsWith(`.${domain}`)
+		}),
+	)
+}
 
 // "Netflix, Prime Video and HBO Max", for copy that says where streamBuddy works
 const names = streamingServices.map((service) => SERVICES[service].name)
