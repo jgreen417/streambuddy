@@ -109,6 +109,8 @@ jobs:
           BRANCH: ${{ steps.sites.outputs.branch }}
           DEFAULT: ${{ github.event.repository.default_branch }}
           NUMBER: ${{ github.event.pull_request.number }}
+        # the container's default sh has no process substitution
+        shell: bash
         run: |
           read -r state MERGED MERGED_AT BASE < <(curl -sSf -H "Authorization: Bearer ${{ github.token }}" \
             "${{ github.api_url }}/repos/${{ github.repository }}/pulls/$NUMBER" |
