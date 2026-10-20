@@ -4,6 +4,7 @@
 // intro, recap and credits are skip buttons the site shows; stillWatching is the "Are you still watching?" prompt
 export type SkipKind = "intro" | "recap" | "credits" | "stillWatching"
 import type { StreamingService } from "@/constants/streamingServices"
+import type { PlayerClock } from "@/utils/credits-review"
 
 export type ServiceKey = StreamingService
 
@@ -11,6 +12,8 @@ export type SiteAdapter = {
 	service: ServiceKey
 	// the main feature video, or null when not on a player page
 	video(): HTMLVideoElement | null
+	// where the title is up to, where the <video>'s own clock isn't the title's (Disney+'s has no length)
+	clock?(): PlayerClock | null
 	// the element that fills the screen while playing, so overlays stay visible in fullscreen
 	playerRoot(): HTMLElement | null
 	skipButton(kind: SkipKind): HTMLElement | null

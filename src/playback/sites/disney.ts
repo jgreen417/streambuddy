@@ -1,4 +1,5 @@
 import { markerFor, pagePlayhead } from "@/content-script/credits-marker"
+import type { PlayerClock } from "@/utils/credits-review"
 import { parseEpisodeLabel } from "@/utils/series-finale"
 import type { SiteAdapter, SkipKind } from "../types"
 import { $, mainVideo } from "./dom"
@@ -28,6 +29,14 @@ export function episodeLabel() {
 	return found ? found.episode : (playerQuery('[data-qa="title-bug.subtitle"]')?.textContent?.trim() ?? undefined)
 }
 
+// the playhead in the title, from the page; the <video> only says whether it's paused
+export function clock(): PlayerClock | null {
+	const playhead = pagePlayhead()
+	const video = disney.video()
+	if (!playhead || !video) return null
+	return { currentTime: playhead.position, duration: playhead.duration, paused: video.paused }
+}
+
 function skipButton(kind: SkipKind): HTMLElement | null {
 	switch (kind) {
 		// one skip button, labelled "Skip Intro" or "Skip Recap"
@@ -48,6 +57,7 @@ function skipButton(kind: SkipKind): HTMLElement | null {
 export const disney: SiteAdapter = {
 	service: "Disney",
 	video: () => (location.pathname.startsWith("/play/") ? mainVideo(player() ?? document) : null),
+	clock,
 	playerRoot: player,
 	skipButton,
 	// a seek on the <video> only moves within the stretch the player has loaded, so skips press its own buttons

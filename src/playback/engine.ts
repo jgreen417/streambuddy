@@ -249,8 +249,12 @@ export class PlaybackEngine {
 	// #endregion
 
 	// #region speed
+	// the title's own clock where the site has one (Disney+'s <video> has no length)
+	private filmOver() {
+		return filmOver(this.site.clock?.() ?? this.video)
+	}
 	private handleSpeed(settings: PlaybackSettings) {
-		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.() || filmOver(this.video)) {
+		if (!settings.speedControl || this.rate === null || this.site.hasNativeSpeedControl?.() || this.filmOver()) {
 			this.overlay.removeSpeed()
 			return
 		}
@@ -261,8 +265,7 @@ export class PlaybackEngine {
 		this.overlay.renderSpeed(this.rate, SPEED_PRESETS, (rate) => this.chooseRate(rate))
 	}
 	private applyRate() {
-		if (!this.video || this.adRestore || this.rate === null || !this.settings().speedControl || filmOver(this.video))
-			return
+		if (!this.video || this.adRestore || this.rate === null || !this.settings().speedControl || this.filmOver()) return
 		this.setRate(this.video, this.rate)
 	}
 	private setRate(video: HTMLVideoElement, rate: number) {
@@ -275,7 +278,7 @@ export class PlaybackEngine {
 		// a replaced element's teardown isn't the viewer choosing a speed, and once the film is over the site's own
 		// rate stands without replacing the saved one
 		if (video !== this.video || this.adRestore || this.rate === null || !this.settings().speedControl) return
-		if (filmOver(video)) return
+		if (this.filmOver()) return
 		// our own change (rate change events arrive after the fact, so compare rather than flag)
 		if (Math.abs(video.playbackRate - this.rate) < 0.001) return
 		if (video.playbackRate === 1 && this.rate !== 1 && video.currentTime < 3) {
@@ -298,7 +301,7 @@ export class PlaybackEngine {
 		this.overlay.flashSpeed()
 	}
 	private onKey(event: KeyboardEvent) {
-		if (!this.video || !this.settings().speedControl || this.rate === null || filmOver(this.video)) return
+		if (!this.video || !this.settings().speedControl || this.rate === null || this.filmOver()) return
 		const target = event.target as HTMLElement | null
 		if (target?.isContentEditable || /^(input|textarea|select)$/i.test(target?.tagName ?? "")) return
 		// ">" / "<" on most layouts; some keyboards and tools report Shift with "." / ","

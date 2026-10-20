@@ -1,7 +1,6 @@
-import { disney, episodeLabel, playerQuery, playing } from "@/playback/sites/disney"
-import type { PlayerClock } from "@/utils/credits-review"
+import { clock, disney, episodeLabel, playerQuery } from "@/playback/sites/disney"
 import { parseEpisodeLabel } from "@/utils/series-finale"
-import { markedCreditsFromEnd, pagePlayhead } from "../credits-marker"
+import { markedCreditsFromEnd } from "../credits-marker"
 import { gridsAround } from "./dom"
 import type { MediaType, RatingsSite } from "./types"
 
@@ -35,14 +34,6 @@ const continueWatching = (card: HTMLElement) =>
 	card
 		.closest('[data-testid="cw-set-item-wrapper"]')
 		?.querySelector<HTMLElement>('[data-testid="cw-set-item-metadata"]')
-
-// the playhead in the title, from the page; the <video> only says whether it's paused
-function playerClock(): PlayerClock | null {
-	const playhead = pagePlayhead()
-	const video = disney.video()
-	if (!playhead || !video) return null
-	return { currentTime: playhead.position, duration: playhead.duration, paused: video.paused }
-}
 
 export const disneySite: RatingsSite = {
 	service: "Disney",
@@ -81,7 +72,7 @@ export const disneySite: RatingsSite = {
 			? gridsAround('a[data-testid="set-item"]', 'a[data-testid="set-item"]')
 			: [],
 	isPlayerPage: () => location.pathname.startsWith("/play/"),
-	playerClock,
+	playerClock: clock,
 	creditsFromEnd: markedCreditsFromEnd,
 	playingTitle: () => disney.showTitle(),
 	// films, and the last episode of a limited series; TMDb's episode counts say which is the last

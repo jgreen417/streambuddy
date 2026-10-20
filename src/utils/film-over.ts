@@ -1,4 +1,4 @@
-import { SHORTEST_FILM } from "@/utils/credits-review"
+import { type PlayerClock, SHORTEST_FILM } from "@/utils/credits-review"
 
 // Whether the film is over: the review pill is up and the film is in its credits, or the service has moved on to a
 // trailer. The review pill (content-script/credits.ts) records which film it came up for and where; the playback
@@ -8,7 +8,7 @@ let ended: { duration: number; at: number } | null = null
 export function setFilmEnded(film: { duration: number; at: number } | null) {
 	ended = film
 }
-export function filmOver(video: HTMLVideoElement | null) {
+export function filmOver(video: Pick<PlayerClock, "currentTime" | "duration"> | null) {
 	if (!ended) return false
 	// no video, or one still loading: wait until it's known whether it's a trailer
 	if (!video || !Number.isFinite(video.duration)) return true
