@@ -30,6 +30,9 @@ export async function putInState(page: Page, steps: Steps, copy: boolean) {
 		await page.locator(steps.fill.selector).first().fill(steps.fill.text)
 		await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {})
 	}
+	// a copy holds what was typed; the field only gets the focus filling it left (for :focus styles), if it's there
+	if (steps.fill && copy && (await page.locator(steps.fill.selector).count()))
+		await page.locator(steps.fill.selector).first().focus()
 	// a copy holds what the clicks opened and has no scripts to act on a later one (a menu's option could be a link
 	// away), so only the first is taken again, for the focus it left, and only when it's still there (a click that
 	// went to another page left that page in the copy); its default action (following a link, ticking a box) is

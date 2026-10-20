@@ -35,7 +35,14 @@ for (const { name } of states) {
 		})
 		await putInState(
 			page,
-			{ seekFromEnd: null, scroll: null, click: meta.click ?? null, fill: null, hover: meta.hover ?? null, wait: 0 },
+			{
+				seekFromEnd: null,
+				scroll: null,
+				click: meta.click ?? null,
+				fill: meta.fill ?? null,
+				hover: meta.hover ?? null,
+				wait: 0,
+			},
 			true,
 		)
 		// some titles only resolve after a lookup, so the count is read once it stops changing, none included
@@ -86,7 +93,9 @@ for (const { name } of states) {
 				art.dataset.sbCorner = badge.style.bottom ? "bottom" : "top"
 			}
 		}, unfitted)
-		expect.soft(specProblems(await measure(page)), "badge placement").toEqual([])
+		// the saved pages are a signed-in account's rows and this log is public, so cards go by number, not title
+		const measured = (await measure(page)).map((m, i) => ({ ...m, card: `card ${i + 1}` }))
+		expect.soft(specProblems(measured), "badge placement").toEqual([])
 		await expect.soft(page).toHaveScreenshot(`${name}.png`)
 	})
 }

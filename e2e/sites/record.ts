@@ -5,7 +5,7 @@
 //
 // A recording holds whatever the site sent this account, and storage.json its cookies and site storage, so both stay
 // with the raw captures on the Mac and don't go into the fixtures repo.
-import type { BrowserContext, Page, Request, Route } from "@playwright/test"
+import type { BrowserContext, Page, Request, Response, Route } from "@playwright/test"
 import { createHash } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
@@ -42,7 +42,7 @@ export function startRecording(page: Page, dir: string) {
 	// a request made more than once gets a file per answer, as a poll's answers can differ
 	let answers = 0
 	const pending: Promise<void>[] = []
-	page.on("response", (response) => {
+	const onResponse = (response: Response) => {
 		const request = response.request()
 		// a redirect comes as the response to the request it led to; each step is recorded, so the replay follows it
 		for (let to = request, from = request.redirectedFrom(); from; to = from, from = from.redirectedFrom()) {
@@ -89,8 +89,11 @@ export function startRecording(page: Page, dir: string) {
 					entries.splice(entries.indexOf(entry), 1)
 				}),
 		)
-	})
+	}
+	page.on("response", onResponse)
 	return async () => {
+		// what comes in from here isn't written, so it isn't listed either
+		page.off("response", onResponse)
 		await Promise.all(pending)
 		await writeFile(path.join(dir, "recording.json"), JSON.stringify(entries, null, "\t"))
 		// the site's code reads its session from these before it asks for anything, and takes a different path

@@ -81,7 +81,22 @@ function player(site: RatingsSite, adapter: SiteAdapter) {
 	}
 }
 
+// streamBuddy's site code sets the odd attribute as it reads (Netflix positions a badge's host); they're put back, so
+// the saved page is the site's own and the extension has to set them again on the copy
 export function probe(service: StreamingService) {
+	const observer = new MutationObserver(() => {})
+	observer.observe(document, { subtree: true, attributes: true, attributeOldValue: true })
+	const report = read(service)
+	for (const change of observer.takeRecords().reverse()) {
+		const el = change.target as Element
+		if (change.oldValue === null) el.removeAttribute(change.attributeName!)
+		else el.setAttribute(change.attributeName!, change.oldValue)
+	}
+	observer.disconnect()
+	return report
+}
+
+function read(service: StreamingService) {
 	const { ratings, playback } = SITES[service]
 	const feature = SERVICES[service].feature
 	const onPlayer = ratings.isPlayerPage()

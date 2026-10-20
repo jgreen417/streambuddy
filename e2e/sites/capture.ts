@@ -72,6 +72,10 @@ if (args.cdp) {
 // capture stops part way; a launched browser is closed
 try {
 	await page.setViewportSize({ width, height })
+	// a cached answer can come back as a 304 with no body to save, so everything is fetched afresh
+	const cdp = await page.context().newCDPSession(page)
+	await cdp.send("Network.enable")
+	await cdp.send("Network.setCacheDisabled", { cacheDisabled: true })
 
 	// recorded from the first request on: stylesheets the page can't read back itself, fonts and images the
 	// stylesheets point at, and the data feeds

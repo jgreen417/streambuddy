@@ -58,7 +58,7 @@ async function savedPages(dir: string): Promise<Target[]> {
 						seekFromEnd: null,
 						scroll: null,
 						click: meta.click ?? null,
-						fill: null,
+						fill: meta.fill ?? null,
 						hover: meta.hover ?? null,
 						wait: 0,
 					},
