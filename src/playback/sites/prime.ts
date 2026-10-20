@@ -5,8 +5,8 @@ const player = () => $(".dv-player-fullscreen") ?? $("#dv-web-player")
 const episodeInfo = () =>
 	($(".atvwebplayersdk-episode-info") ?? $(".atvwebplayersdk-subtitle-text"))?.textContent?.trim() || null
 
-// "Skip recap" as Prime's Amazon sites word it (English, German, French, Italian, Spanish)
-const recapLabel = /recap|rückblick|résumé|riassunto|riepilogo|resumen/i
+// "Skip recap" as Prime's Amazon sites word it (English, German, French, Italian, Spanish, Hindi)
+const recapLabel = /recap|rückblick|résumé|riassunto|riepilogo|resumen|रीकैप/i
 
 function skipButton(kind: SkipKind): HTMLElement | null {
 	switch (kind) {
