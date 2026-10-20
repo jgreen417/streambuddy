@@ -9,7 +9,7 @@ import { keepTidy, tidyPrime } from "@/playback/tidy"
 // Prime Video also lives on Amazon's shopping domains; only act on its pages
 const isPrimeVideo =
 	/primevideo/i.test(location.hostname) ||
-	/\/(gp\/video|video)\b/i.test(location.pathname) ||
+	/\/(gp\/video|video)(\/|$)/i.test(location.pathname) ||
 	// video detail pages on Amazon's own paths ("Watch The Boys | Prime Video"), not shopping results for "prime video"
 	/\|\s*prime video\b/i.test(document.title)
 
