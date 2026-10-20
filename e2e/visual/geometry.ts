@@ -25,9 +25,9 @@ export async function measure(page: Page) {
 	const raw = await page.evaluate(() => {
 		const rows: Element[] = []
 		const biggestSrc = (el: Element) => {
-			const img = Array.from(el.querySelectorAll("img")).sort(
-				(a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width,
-			)[0]
+			// the image the extension reads the logo from: the biggest drawn, as Prime keeps hidden alternates
+			const area = (img: Element) => img.getBoundingClientRect().width * img.getBoundingClientRect().height
+			const img = Array.from(el.querySelectorAll("img")).sort((a, b) => area(b) - area(a))[0]
 			return decodeURIComponent(img?.currentSrc ?? "")
 		}
 		return Array.from(document.querySelectorAll<HTMLElement>("[data-sb-art]")).map((art) => {

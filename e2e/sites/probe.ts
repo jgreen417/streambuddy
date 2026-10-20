@@ -3,6 +3,7 @@
 // chip. Bundled into a page script by bundle.ts, so it works the same on a saved fixture and on the live site, and
 // two reports can be diffed to see exactly where a site has changed under us.
 import { SERVICES, type StreamingService } from "@/constants/streamingServices"
+import { addCreditsMarker } from "@/content-script/credits-marker"
 import { disneySite } from "@/content-script/sites/disney"
 import { maxSite } from "@/content-script/sites/max"
 import { netflixSite } from "@/content-script/sites/netflix"
@@ -13,6 +14,7 @@ import { hbo } from "@/playback/sites/hbo"
 import { netflix } from "@/playback/sites/netflix"
 import { prime } from "@/playback/sites/prime"
 import type { SiteAdapter, SkipKind } from "@/playback/types"
+import type { CreditsMarker } from "@/utils/credits-markers"
 import { readDetailContext, readEpisodeCards } from "@/utils/page-features"
 import { freeze } from "./freeze"
 
@@ -84,7 +86,22 @@ function player(site: RatingsSite, adapter: SiteAdapter) {
 	}
 }
 
+// streamBuddy's site code sets the odd attribute as it reads (Netflix positions a badge's host); they're put back, so
+// the saved page is the site's own and the extension has to set them again on the copy
 export function probe(service: StreamingService) {
+	const observer = new MutationObserver(() => {})
+	observer.observe(document, { subtree: true, attributes: true, attributeOldValue: true })
+	const report = read(service)
+	for (const change of observer.takeRecords().reverse()) {
+		const el = change.target as Element
+		if (change.oldValue === null) el.removeAttribute(change.attributeName!)
+		else el.setAttribute(change.attributeName!, change.oldValue)
+	}
+	observer.disconnect()
+	return report
+}
+
+function read(service: StreamingService) {
 	const { ratings, playback } = SITES[service]
 	const feature = SERVICES[service].feature
 	const onPlayer = ratings.isPlayerPage()
@@ -107,5 +124,8 @@ export function probe(service: StreamingService) {
 export type ProbeReport = ReturnType<typeof probe>
 
 ;(globalThis as { sbProbe?: typeof probe }).sbProbe = probe
+// the credits the player's playback answers mark, which streamBuddy's page script would have passed on
+;(globalThis as { sbCredits?: (markers: CreditsMarker[]) => void }).sbCredits = (markers) =>
+	markers.forEach(addCreditsMarker)
 // capture.ts freezes the page with this copy, as functions handed to page.evaluate from tsx don't survive the trip
 ;(globalThis as { sbFreeze?: typeof freeze }).sbFreeze = freeze

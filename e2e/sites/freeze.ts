@@ -31,28 +31,59 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 			return url
 		}
 	}
-	// Each <p> marked data-sb-p written as a <div> keeping its margins (a div has none of a paragraph's own), so it
-	// parses back as one box holding its blocks. Its </p> is the one that closes it, found by counting the <p>s
-	// opened and closed inside it.
+	// Each <p> marked data-sb-p written as a <div>, so it parses back as one box holding its blocks; the copy makes it
+	// a <p> again once it's parsed, for the site's rules on paragraphs. Its </p> is the one that closes it, found by
+	// counting the <p>s opened and closed inside it.
 	const paragraphsAsDivs = (html: string) => {
 		const open: boolean[] = []
-		return html.replace(/<(\/?)p(?=[\s>])([^>]*)>/g, (tag, closing: string, attrs: string) => {
-			if (closing) return open.pop() ? "</div>" : tag
-			const margins = /\sdata-sb-p="([^"]*)"/.exec(attrs)
-			open.push(!!margins)
-			return margins ? `<div${attrs.replace(margins[0], "")} data-sb-margins="${margins[1]}">` : tag
-		})
+		// a script's, a style's or a comment's text is passed over: a "<p>" inside one is no tag
+		return html.replace(
+			/<(script|style)(?=[\s>])[\s\S]*?<\/\1>|<!--[\s\S]*?-->|<(\/?)p(?=[\s>])([^>]*)>/gi,
+			(tag, raw, closing, attrs: string) => {
+				if (raw || attrs === undefined) return tag
+				if (closing) return open.pop() ? "</div>" : tag
+				const marked = /\sdata-sb-p=""/.test(attrs)
+				open.push(marked)
+				return marked ? `<div${attrs}>` : tag
+			},
+		)
 	}
 	// url(...) in a stylesheet is relative to the sheet, which won't be where the copy is served from
 	const rebase = (css: string, base: string) =>
 		css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (whole, quote, url) =>
 			url.startsWith("data:") ? whole : `url("${absolute(url, base)}")`,
 		)
-	const sheetText = (sheet: CSSStyleSheet) => {
+	// an inlined @import keeps what it was conditional on and the cascade layer it put its rules in
+	const imported = (text: string, layer: string | null, supports: string | null, media: string) => {
+		if (layer !== null) text = `@layer ${layer} {\n${text}\n}`
+		if (supports) text = `@supports (${supports}) {\n${text}\n}`
+		return media ? `@media ${media} {\n${text}\n}` : text
+	}
+	// a sheet the page can't read (another origin) is taken from its saved response, its @imports from theirs
+	const inlineImports = (css: string, base: string, depth = 0): string =>
+		css.replace(
+			/@import\s+(?:url\(\s*)?(['"]?)([^'")\s;]+)\1\s*\)?([^;]*);/g,
+			(rule, quote, url: string, rest: string) => {
+				const href = absolute(url, base)
+				if (depth > 5 || sheets[href] === undefined) return rule
+				const text = rebase(inlineImports(sheets[href], href, depth + 1), href)
+				const layer = /^\s*layer(?:\(([^)]*)\))?/.exec(rest)
+				if (layer) rest = rest.slice(layer[0].length)
+				const supports = /^\s*supports\(((?:[^()]|\([^()]*\))*)\)/.exec(rest)
+				if (supports) rest = rest.slice(supports[0].length)
+				return imported(text, layer ? (layer[1] ?? "") : null, supports?.[1] ?? null, rest.trim())
+			},
+		)
+	const sheetText = (sheet: CSSStyleSheet): string => {
 		try {
-			return Array.from(sheet.cssRules, (rule) => rule.cssText).join("\n")
+			// an @import's sheet is written out in its place, as the copy can't fetch it
+			return Array.from(sheet.cssRules, (rule) => {
+				if (!(rule instanceof CSSImportRule) || !rule.styleSheet) return rule.cssText
+				const text = rebase(sheetText(rule.styleSheet), rule.styleSheet.href ?? location.href)
+				return imported(text, rule.layerName, rule.supportsText, rule.media.mediaText)
+			}).join("\n")
 		} catch {
-			if (sheet.href && sheets[sheet.href] !== undefined) return sheets[sheet.href]
+			if (sheet.href && sheets[sheet.href] !== undefined) return inlineImports(sheets[sheet.href], sheet.href)
 			if (sheet.href) missingSheets.push(sheet.href)
 			return ""
 		}
@@ -83,18 +114,22 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 			root.querySelectorAll<HTMLStyleElement | HTMLLinkElement>("style, link[rel~=stylesheet]"),
 		)) {
 			const sheet = style.sheet
-			if (sheet) mark(style, "data-sb-css", rebase(sheetText(sheet), sheet.href ?? location.href))
+			// a sheet switched off (an alternate theme, one the site disabled) stays off: the copy leaves it out
+			if (sheet?.disabled) mark(style, "data-sb-off", "")
+			else if (sheet) mark(style, "data-sb-css", rebase(sheetText(sheet), sheet.href ?? location.href))
 		}
 		// a <p> the site's script filled with blocks (Netflix's synopses hold a <div>) can't be written as HTML:
 		// parsing it again closes the <p> before the block, and the text falls out of it
-		for (const para of Array.from(root.querySelectorAll("p"))) {
-			if (!para.querySelector(BLOCKS)) continue
-			const style = getComputedStyle(para)
-			mark(para, "data-sb-p", `${style.marginTop} ${style.marginBottom}`)
-		}
+		for (const para of Array.from(root.querySelectorAll("p")))
+			if (para.querySelector(BLOCKS)) mark(para, "data-sb-p", "")
 		// what was typed into a field (a search box) is in its value, which isn't written out as HTML
 		for (const field of Array.from(root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea")))
 			if (field.value !== field.defaultValue) mark(field, "data-sb-value", field.value)
+		// and a ticked box or a chosen option is in its checked or selected, which isn't either
+		for (const box of Array.from(root.querySelectorAll<HTMLInputElement>("input[type=checkbox], input[type=radio]")))
+			if (box.checked !== box.defaultChecked) mark(box, "data-sb-checked", String(box.checked))
+		for (const option of Array.from(root.querySelectorAll("option")))
+			if (option.selected !== option.defaultSelected) mark(option, "data-sb-checked", String(option.selected))
 		videos.push(...Array.from(root.querySelectorAll("video")))
 		timeline ??= root.querySelector('[role="slider"][aria-valuemax]')
 	}
@@ -134,6 +169,8 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		el.removeAttribute("data-sb-video")
 		el.removeAttribute("data-sb-adopted")
 		el.removeAttribute("data-sb-value")
+		el.removeAttribute("data-sb-checked")
+		el.removeAttribute("data-sb-off")
 	}
 
 	// the rest works on a detached copy, so the live page is left as it was. DOMParser leaves the shadow roots as
@@ -159,6 +196,9 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		style.textContent = el.getAttribute("data-sb-css")
 		const href = el.getAttribute("href")
 		if (href) style.dataset.sbFrom = absolute(href, location.href)
+		// a sheet only for print or another width stays only for that
+		const media = el.getAttribute("media")
+		if (media) style.media = media
 		el.replaceWith(style)
 	}
 	for (const el of everywhere("iframe")) el.removeAttribute("src")
@@ -166,15 +206,17 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		// links and sources keep their own spelling (site code matches on it, e.g. href^="/video/watch/"); the copy is
 		// served at the page's own URL, so relative ones still resolve
 		for (const attr of Array.from(el.attributes)) if (attr.name.startsWith("on")) el.removeAttribute(attr.name)
-	for (const el of everywhere("[data-sb-margins]") as HTMLElement[]) {
-		const [top, bottom] = el.dataset.sbMargins!.split(" ")
-		el.style.marginTop = top
-		el.style.marginBottom = bottom
-		delete el.dataset.sbMargins
-	}
 	for (const video of everywhere("video")) {
 		video.removeAttribute("src")
 		video.innerHTML = ""
+	}
+	for (const el of everywhere("[data-sb-off]")) el.remove()
+	for (const el of everywhere("[data-sb-checked]")) {
+		el.toggleAttribute(
+			el.localName === "option" ? "selected" : "checked",
+			el.getAttribute("data-sb-checked") === "true",
+		)
+		el.removeAttribute("data-sb-checked")
 	}
 	for (const field of everywhere("[data-sb-value]")) {
 		const value = field.getAttribute("data-sb-value")!

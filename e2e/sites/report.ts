@@ -1,15 +1,21 @@
-// npm run sites:report [-- --coverage]
+// npm run sites:report [-- <captures folder>] [--coverage]
 // Opens every saved page in headless Chromium, runs probe.ts on it and writes what streamBuddy's site code makes of
-// each page to e2e/.sites/<state>.json. With --coverage it also writes coverage.md: which lines of the site-reading
+// each page to e2e/.sites/<state>.json. The pages are those saved from the live sites (the folder given, else
+// streambuddy-sites' captures as CI checks them out) or, without any, the hand-made fixtures. With --coverage it also writes coverage.md: which lines of the site-reading
 // code no saved page reaches, so a missing capture shows up as a named gap rather than a surprise on the live site.
-import { chromium } from "@playwright/test"
+import { chromium, type BrowserContext, type Page } from "@playwright/test"
+import { existsSync, readdirSync } from "node:fs"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { SourceMapConsumer, type RawSourceMap } from "source-map-js"
+import { SERVICES, type StreamingService } from "@/constants/streamingServices"
+import type { CreditsMarker } from "@/utils/credits-markers"
 import { handle } from "../visual/harness"
 import { bundleProbe, PROBE_URL, runProbe } from "./bundle"
+import { creditsMarkersIn, loadCapture, routeCapture } from "./replay"
 import { STATES } from "./states"
+import { putInState, type Steps } from "./steps"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const OUT = path.join(ROOT, "e2e/.sites")
@@ -23,17 +29,66 @@ const SITE_CODE = [
 ]
 
 type Ranges = { startOffset: number; endOffset: number; count: number }[]
+type Target = {
+	name: string
+	service: StreamingService
+	url: string
+	viewport?: { width: number; height: number }
+	route: (context: BrowserContext) => Promise<unknown>
+	prepare?: (page: Page) => Promise<void>
+	credits?: CreditsMarker[]
+}
+
+// the saved live pages of the services streamBuddy covers, put back into their state as the visual checks do
+async function savedPages(dir: string): Promise<Target[]> {
+	const targets: Target[] = []
+	for (const entry of readdirSync(dir, { withFileTypes: true })) {
+		if (!entry.isDirectory() || entry.name.endsWith(".partial")) continue
+		const capture = await loadCapture(path.join(dir, entry.name))
+		const meta = capture.meta as typeof capture.meta & Partial<Steps>
+		if (!(meta.service in SERVICES)) continue
+		targets.push({
+			name: entry.name,
+			service: meta.service as StreamingService,
+			url: meta.url,
+			viewport: meta.viewport,
+			route: (context) => routeCapture(context, capture),
+			credits: creditsMarkersIn(capture.feeds),
+			prepare: (page) =>
+				putInState(
+					page,
+					{
+						seekFromEnd: null,
+						scroll: null,
+						click: meta.click ?? null,
+						fill: meta.fill ?? null,
+						hover: meta.hover ?? null,
+						wait: 0,
+					},
+					true,
+				),
+		})
+	}
+	return targets
+}
 type ScriptCoverage = { url: string; functions: { ranges: Ranges }[] }
 
 async function main() {
 	const withCoverage = process.argv.includes("--coverage")
+	const given = process.argv.slice(2).find((arg) => !arg.startsWith("--"))
+	const dir = path.resolve(given ?? path.join(ROOT, "e2e/.sites-fixtures/captures"))
+	// the hand-made fixtures stand in when there are no saved pages to run
+	const saved = existsSync(dir) ? await savedPages(dir) : []
+	const targets: Target[] = saved.length
+		? saved
+		: STATES.map((state) => ({ ...state, route: (context) => context.route(/^https?:\/\//, handle) }))
 	const script = await bundleProbe()
 	const browser = await chromium.launch()
 	await mkdir(OUT, { recursive: true })
 	const runs: Ranges[] = []
-	for (const state of STATES) {
+	for (const state of targets) {
 		const context = await browser.newContext({ viewport: state.viewport ?? { width: 1440, height: 900 } })
-		await context.route(/^https?:\/\//, handle)
+		await state.route(context)
 		const page = await context.newPage()
 		const cdp = await context.newCDPSession(page)
 		if (withCoverage) {
@@ -41,9 +96,10 @@ async function main() {
 			await cdp.send("Profiler.startPreciseCoverage", { callCount: true, detailed: true })
 		}
 		await page.goto(state.url)
-		await page.waitForLoadState("networkidle")
+		// a saved player's stand-in video keeps loading, so the page may never go quiet
+		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
 		await state.prepare?.(page)
-		const report = await runProbe(page, state.service, script)
+		const report = await runProbe(page, state.service, script, state.credits)
 		await writeFile(path.join(OUT, `${state.name}.json`), JSON.stringify(report, null, "\t"))
 		if (withCoverage) {
 			const { result } = (await cdp.send("Profiler.takePreciseCoverage")) as { result: ScriptCoverage[] }

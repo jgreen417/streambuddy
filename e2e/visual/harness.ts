@@ -29,6 +29,8 @@ export type OpenOptions = {
 	// answers the web instead of handle (a saved live page, see e2e/sites/replay.ts)
 	route?: (context: BrowserContext) => Promise<void>
 	headless?: boolean
+	// the browser a recording was made in, so the site's own code takes the same path (see e2e/sites/record.ts)
+	browser?: { locale?: string; timezoneId?: string; userAgent?: string }
 }
 
 const PAGES: { host: RegExp; path: RegExp; file: string }[] = [
@@ -208,6 +210,7 @@ export async function launch(options: OpenOptions) {
 		reducedMotion: "reduce",
 		locale: "en-US",
 		timezoneId: "UTC",
+		...options.browser,
 		args: [`--disable-extensions-except=${EXTENSION_DIR}`, `--load-extension=${EXTENSION_DIR}`],
 	})
 	// only the web; the extension's own files load as usual
@@ -215,7 +218,8 @@ export async function launch(options: OpenOptions) {
 	else await context.route(/^https?:\/\//, handle)
 	// polled rather than awaited as an event: the worker can register between launch returning and a listener
 	// being added, and then the event never comes and the test hangs until it times out
-	await expect.poll(() => context.serviceWorkers().length, { timeout: 15_000 }).toBeGreaterThan(0)
+	// (a runner busy with other browsers can take well over 15s to start it)
+	await expect.poll(() => context.serviceWorkers().length, { timeout: 30_000 }).toBeGreaterThan(0)
 	const worker = context.serviceWorkers()[0]
 	// on first install the extension clears its local storage and then opens its welcome page; seed after that,
 	// or the clear can wipe the seeded ratings

@@ -26,41 +26,66 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
     env:
       HOME: /root
-      SITES_TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      # pages saved from the live sites (e2e/sites), kept private; without the token (or before the repo has any)
-      # those checks are skipped
+      # pages saved from the live sites (e2e/sites), kept private; without the token (a fork) those checks are skipped
+      - id: sites
+        env:
+          TOKEN: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
+          # a pull request's accepted saved-page screenshots wait on a branch of their own in streambuddy-sites until
+          # it merges (accept-visuals.yml), so main and other pull requests keep comparing against main's
+          BRANCH: streambuddy/${{ github.head_ref || github.ref_name }}
+          # a pull request stacked on another's starts from the screenshots that one has accepted
+          BASE: ${{ github.base_ref && format('streambuddy/{0}', github.base_ref) || '' }}
+        run: |
+          echo "token=$([ -n "$TOKEN" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          ref=main
+          for branch in "$BRANCH" "$BASE"; do
+            if [ -n "$TOKEN" ] && [ -n "$branch" ] && git ls-remote --exit-code --heads \
+              "https://x-access-token:$TOKEN@github.com/jgreen417/streambuddy-sites.git" "$branch" > /dev/null; then
+              ref=$branch
+              break
+            fi
+          done
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
-        if: env.SITES_TOKEN != ''
-        continue-on-error: true
+        if: steps.sites.outputs.token == 'true'
         with:
           repository: jgreen417/streambuddy-sites
+          ref: ${{ steps.sites.outputs.ref }}
           token: ${{ secrets.STREAMBUDDY_SITES_TOKEN }}
           path: e2e/.sites-fixtures
+          persist-credentials: false
       - run: npm ci
       - name: Typecheck the visual tests
         run: npx tsc -p e2e/tsconfig.json
       - name: Run visual checks
-        run: npx playwright test
+        run: npx playwright test --project=fixtures
+      # The saved pages show a signed-in account's rows, and this repo's run output is public, so their screenshots and
+      # diffs stay out of the uploaded report; the accept-visuals label is how a changed one is accepted.
+      - name: Run visual checks on the saved pages
+        if: steps.sites.outputs.token == 'true' && (success() || failure())
+        env:
+          SB_VISUAL_SKIP_BUILD: "1"
+        run: npx playwright test --project="saved pages" --reporter=list --output=e2e/.saved-results
       - name: Collect changed screenshots
         if: failure()
         run: |
-          mkdir -p e2e/.new-baselines/saved-pages
+          mkdir -p e2e/.new-baselines
           find e2e/.results -name '*-actual.*' | while read -r file; do
-            # saved pages' screenshots belong in streambuddy-sites/baselines, not this repo
-            case "$file" in *-saved-pages/*) into=e2e/.new-baselines/saved-pages ;; *) into=e2e/.new-baselines ;; esac
-            cp "$file" "$into/$(basename "$file" | sed 's/-actual\././')"
+            cp "$file" "e2e/.new-baselines/$(basename "$file" | sed 's/-actual\././')"
           done
           {
             echo "### Screenshots that changed"
             echo
             echo "Download **visual-report** (open \`index.html\`) to see each one as expected / actual / diff."
-            echo "If the new look is right, the files in **visual-new-baselines** replace those in \`e2e/visual/baselines\`,"
-            echo "and those in its \`saved-pages\` folder replace those in streambuddy-sites' \`baselines\`."
+            echo "If the new look is right, the files in **visual-new-baselines** replace those in \`e2e/visual/baselines\`."
+            echo "A saved page's screenshot isn't uploaded: add the accept-visuals label to accept it."
             echo
-            for file in e2e/.new-baselines/*.* e2e/.new-baselines/saved-pages/*; do
-              [ -e "$file" ] && echo "- \`${file#e2e/.new-baselines/}\`"
+            for file in e2e/.new-baselines/*.*; do
+              # (with nothing to list, the loop must still end well, or the step fails)
+              [ ! -e "$file" ] || echo "- \`${file#e2e/.new-baselines/}\`"
             done
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4

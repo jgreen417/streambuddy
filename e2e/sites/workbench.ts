@@ -18,6 +18,10 @@ import { seedsFor } from "../visual/ratings"
 import type { ProbeReport } from "./probe"
 import { routeRecording } from "./record"
 import { loadCapture, routeCapture } from "./replay"
+import { putInState } from "./steps"
+
+// lets the routes answer the extension's own requests (its service worker's TMDb lookups), as playwright.config.ts does
+process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1"
 
 const { values: args, positionals } = parseArgs({
 	allowPositionals: true,
@@ -42,6 +46,10 @@ let options: OpenOptions = {
 	route: (context) =>
 		args.interactive ? routeRecording(context, capture.dir, handle) : routeCapture(context, capture),
 	headless: !!args.shot,
+	// the site's own code picks its language, region and layout from these, and the recording holds that path
+	browser: args.interactive
+		? { locale: capture.meta.language, timezoneId: capture.meta.timeZone, userAgent: capture.meta.userAgent }
+		: undefined,
 }
 
 type Run = { context: BrowserContext; profileDir: string; page: Page }
@@ -49,8 +57,23 @@ async function open(): Promise<Run> {
 	const { context, profileDir } = await launch(options)
 	const page = await context.newPage()
 	if (!args.shot) await addPanel(page)
-	await page.goto(capture.meta.url)
+	// the recording holds the addresses as the live site gave them, before --scrub
+	await page.goto(args.interactive ? (capture.live?.url ?? capture.meta.url) : capture.meta.url)
 	await loaded(page)
+	// a frozen copy gets the focus and hover it was saved with back, as the checks give it
+	if (!args.interactive)
+		await putInState(
+			page,
+			{
+				seekFromEnd: null,
+				scroll: null,
+				click: capture.meta.click ?? null,
+				fill: capture.meta.fill ?? null,
+				hover: capture.meta.hover ?? null,
+				wait: 0,
+			},
+			true,
+		)
 	return { context, profileDir, page }
 }
 async function close(run: Run) {

@@ -17,6 +17,17 @@ export function injectCreditsMarkerReader() {
 const markers: CreditsMarker[] = []
 // where Disney+'s player last said it was, and when
 let playhead: { position: number; duration: number; at: number } | null = null
+export function addCreditsMarker({ creditsFromEnd, duration, title, episode, entity }: CreditsMarker) {
+	if (!(Number.isFinite(duration) && duration > 0)) return
+	const about = {
+		title: typeof title === "string" ? title : undefined,
+		episode: typeof episode === "string" ? episode : undefined,
+		entity: typeof entity === "string" ? entity : undefined,
+	}
+	if (creditsFromEnd === undefined) markers.push({ duration, ...about })
+	else if (Number.isFinite(creditsFromEnd) && creditsFromEnd > 0 && creditsFromEnd < duration)
+		markers.push({ creditsFromEnd, duration, ...about })
+}
 export function listenForCreditsMarkers() {
 	window.addEventListener("message", (event) => {
 		if (event.source !== window) return
@@ -26,17 +37,7 @@ export function listenForCreditsMarkers() {
 				playhead = { position, duration, at: Date.now() }
 			return
 		}
-		if (event.data?.type !== CREDITS_MESSAGE) return
-		const { creditsFromEnd, duration } = event.data
-		if (!(Number.isFinite(duration) && duration > 0)) return
-		const about = {
-			title: typeof event.data.title === "string" ? event.data.title : undefined,
-			episode: typeof event.data.episode === "string" ? event.data.episode : undefined,
-			entity: typeof event.data.entity === "string" ? event.data.entity : undefined,
-		}
-		if (creditsFromEnd === undefined) markers.push({ duration, ...about })
-		else if (Number.isFinite(creditsFromEnd) && creditsFromEnd > 0 && creditsFromEnd < duration)
-			markers.push({ creditsFromEnd, duration, ...about })
+		if (event.data?.type === CREDITS_MESSAGE) addCreditsMarker(event.data)
 	})
 	injectCreditsMarkerReader()
 	window.postMessage({ type: CREDITS_REQUEST }, location.origin)

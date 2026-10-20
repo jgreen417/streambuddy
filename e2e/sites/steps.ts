@@ -30,13 +30,25 @@ export async function putInState(page: Page, steps: Steps, copy: boolean) {
 		await page.locator(steps.fill.selector).first().fill(steps.fill.text)
 		await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {})
 	}
+	// a copy holds what was typed; the field only gets the focus filling it left (for :focus styles), if it's there
+	if (steps.fill && copy && (await page.locator(steps.fill.selector).count()))
+		await page.locator(steps.fill.selector).first().focus()
 	// a copy holds what the clicks opened and has no scripts to act on a later one (a menu's option could be a link
-	// away), so only the first is taken again, for the :focus and :active styles it left
+	// away), so only the first is taken again, for the focus it left, and only when it's still there (a click that
+	// went to another page left that page in the copy); its default action (following a link, ticking a box) is
+	// stopped, as the copy already shows what it did
+	if (copy && clicks.length && !(await page.locator(clicks[0]).count())) clicks.length = 0
+	if (copy && clicks.length)
+		await page.evaluate(() =>
+			addEventListener("click", (event) => event.preventDefault(), { capture: true, once: true }),
+		)
 	for (const click of copy ? clicks.slice(0, 1) : clicks) {
 		await page.locator(click).first().click({ force: copy })
 		if (!copy) await page.waitForTimeout(800)
 	}
-	if (steps.hover) await page.locator(steps.hover).first().hover({ force: copy })
+	// on a copy the hovered element may have given way to what hovering opened
+	if (steps.hover && (!copy || (await page.locator(steps.hover).count())))
+		await page.locator(steps.hover).first().hover({ force: copy })
 	if (copy) return
 	await page.waitForTimeout(steps.wait)
 	// a player hides its controls a few seconds after the pointer stops, so the pointer moves again just before the
@@ -49,12 +61,26 @@ export async function putInState(page: Page, steps: Steps, copy: boolean) {
 }
 
 async function seekFromEnd(page: Page, seconds: number) {
-	await page.waitForFunction(() => Array.from(document.querySelectorAll("video")).some((video) => video.duration > 0))
+	// a web-component player keeps its <video> and timeline in open shadow roots
+	await page.waitForFunction(() => {
+		const roots: (Document | ShadowRoot)[] = [document]
+		for (let i = 0; i < roots.length; i++)
+			for (const el of Array.from(roots[i].querySelectorAll("*"))) {
+				if (el.shadowRoot) roots.push(el.shadowRoot)
+				if ((el instanceof HTMLVideoElement && el.duration > 0) || el.matches('[role="slider"][aria-valuemax]'))
+					return true
+			}
+		return false
+	})
 	// Netflix stops the player if its <video> is seeked directly; it has to go through Netflix's own player
 	const live = await page.evaluate((seconds) => {
-		const video = Array.from(document.querySelectorAll("video")).sort((a, b) => b.duration - a.duration)[0]
-		// a stream fed in pieces (Disney+) has no length on its <video>; its player's timeline is seeked instead
-		if (!Number.isFinite(video.duration)) return true
+		// a stream with no end (Infinity) counts as the longest
+		const video = Array.from(document.querySelectorAll("video"))
+			.map((video) => ({ video, length: Number.isFinite(video.duration) ? video.duration : Number.MAX_VALUE }))
+			.sort((a, b) => b.length - a.length)[0]?.video
+		// a stream fed in pieces (Disney+) has no length on its <video>, and a web-component player's isn't in the
+		// document; the player's timeline is seeked instead
+		if (!video || !Number.isFinite(video.duration)) return true
 		const target = video.duration - seconds
 		type Players = {
 			getAllPlayerSessionIds(): string[]

@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
 # Copies saved pages into the private fixtures repo (streambuddy-sites) and pushes them. Only the files the replay and
-# the visual checks read go: never a recording or storage.json, which hold the account's session. Stops if any
-# copied file still has one of the given names as a whole word, in the same case (the --scrub lists missed it).
+# the visual checks read go: never a recording or storage.json, which hold the account's session, or live.json, which
+# keeps the names --scrub took out. The feeds' tokens and ids are taken out (clean.ts, which also cleans pages saved
+# before capture.ts did that itself), and it stops if any token or key that holds one is still there, or if any copied
+# text file still has one of the given names as a whole word, in any case (the --scrub lists missed it). The list is
+# required; --none says there's nothing to look for.
 #
 #   e2e/sites/publish.sh ~/streambuddy-firefox-test/captures ~/Projects/streambuddy-sites "Steven Green,Anna"
 set -euo pipefail
-captures=$1 sites=$2 names=${3:-}
+captures=$1 sites=$2 names=${3:?"give the names to look for, comma separated, or --none"}
 
 for state in "$captures"/*/; do
 	name=$(basename "$state")
-	[ -f "$state/meta.json" ] || continue
+	# a capture that stopped part way is left in a .partial folder
+	case "$name" in *.partial) continue ;; esac
+	[ -f "$state/meta.json" ] && [ -f "$state/probe.json" ] && [ -f "$state/shot.png" ] || continue
 	into="$sites/captures/$name"
 	rm -rf "$into"
 	mkdir -p "$into"
@@ -18,12 +23,37 @@ for state in "$captures"/*/; do
 	done
 done
 
-if [ -n "$names" ]; then
-	pattern=$(echo "$names" | sed 's/ *, */|/g')
-	if grep -rlwE "$pattern" "$sites/captures" --include='*.html' --include='*.json'; then
-		echo "Those files still mention a name from the list; nothing was committed." >&2
+npx tsx "$(dirname "$0")/clean.ts" "$sites/captures"
+# a JSON web token anywhere, or a key named for a token, a session or an id that follows the account around
+for pattern in 'eyJ[A-Za-z0-9_-]{20,}\.' \
+	'"[A-Za-z_-]*(token|authori[sz]|authurl|session|cookie|password|credential|guid|device_?id|user_?id|account_?id|customer_?id|profile_?id|email)[A-Za-z_-]*"[[:space:]]*:'; do
+	status=0
+	grep -rliIE -e "$pattern" "$sites/captures" || status=$?
+	if [ "$status" = 0 ]; then
+		echo "Those files still hold an account token or id; nothing was committed." >&2
+		exit 1
+	elif [ "$status" != 1 ]; then
+		echo "Couldn't search for account tokens; nothing was committed." >&2
 		exit 1
 	fi
+done
+
+if [ "$names" != --none ]; then
+	IFS=, read -ra list <<< "$names"
+	for name in "${list[@]}"; do
+		name="${name#"${name%%[![:space:]]*}"}" name="${name%"${name##*[![:space:]]}"}"
+		[ -n "$name" ] || continue
+		# fixed strings, so a name with ( or . in it is looked for as written; grep's exit 1 is "not found", 2 an error
+		status=0
+		grep -rliwF -e "$name" "$sites/captures" --exclude='*.png' --exclude='*.jpg' --exclude='*.webp' || status=$?
+		if [ "$status" = 0 ]; then
+			echo "Those files still mention \"$name\"; nothing was committed." >&2
+			exit 1
+		elif [ "$status" != 1 ]; then
+			echo "Couldn't search for \"$name\"; nothing was committed." >&2
+			exit 1
+		fi
+	done
 fi
 
 git -C "$sites" add captures

@@ -13,7 +13,10 @@ import { seedsFor } from "./ratings"
 // Without the saved pages (a fork, or no token for the repo) there is nothing to run.
 export const SITES_DIR = path.resolve(process.env.SITES_DIR ?? "e2e/.sites-fixtures/captures")
 const states = existsSync(SITES_DIR)
-	? readdirSync(SITES_DIR, { withFileTypes: true }).filter((entry) => entry.isDirectory())
+	? readdirSync(SITES_DIR, { withFileTypes: true }).filter(
+			// a .partial folder is a capture that hasn't finished (capture.ts)
+			(entry) => entry.isDirectory() && !entry.name.endsWith(".partial"),
+		)
 	: []
 test.skip(!states.length, `no saved pages in ${SITES_DIR}`)
 
@@ -32,17 +35,24 @@ for (const { name } of states) {
 		})
 		await putInState(
 			page,
-			{ seekFromEnd: null, scroll: null, click: meta.click ?? null, fill: null, hover: meta.hover ?? null, wait: 0 },
+			{
+				seekFromEnd: null,
+				scroll: null,
+				click: meta.click ?? null,
+				fill: meta.fill ?? null,
+				hover: meta.hover ?? null,
+				wait: 0,
+			},
 			true,
 		)
-		// some titles only resolve after a lookup, so the count is read once it stops changing
+		// some titles only resolve after a lookup, so the count is read once it stops changing, none included
 		let badges = -1
 		await expect
 			.poll(
 				async () => {
 					const before = badges
 					badges = await page.locator(".sb-card-rating").count()
-					return badges > 0 && badges === before
+					return badges === before ? badges > 0 : "settling"
 				},
 				{ timeout: 15_000, intervals: [1_000] },
 			)
@@ -83,7 +93,9 @@ for (const { name } of states) {
 				art.dataset.sbCorner = badge.style.bottom ? "bottom" : "top"
 			}
 		}, unfitted)
-		expect.soft(specProblems(await measure(page)), "badge placement").toEqual([])
+		// the saved pages are a signed-in account's rows and this log is public, so cards go by number, not title
+		const measured = (await measure(page)).map((m, i) => ({ ...m, card: `card ${i + 1}` }))
+		expect.soft(specProblems(measured), "badge placement").toEqual([])
 		await expect.soft(page).toHaveScreenshot(`${name}.png`)
 	})
 }

@@ -5,7 +5,9 @@ import type { BrowserContext, Page, Route } from "@playwright/test"
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { artSvg, silentWav } from "../visual/art"
+import { CREDITS_MESSAGE, maxCreditsMarker, primeCreditsMarker } from "@/utils/credits-markers"
 import { fulfillRange, handle } from "../visual/harness"
+import type { Steps } from "./steps"
 
 // the responses streamBuddy reads from each site, as recorded during capture and answered again on replay
 export const FEEDS: Record<string, RegExp> = {
@@ -61,10 +63,20 @@ export async function screenshotWithoutArt(page: Page) {
 
 export type Capture = {
 	dir: string
-	meta: { state: string; service: string; url: string; viewport: { width: number; height: number } }
+	meta: {
+		state: string
+		service: string
+		url: string
+		viewport: { width: number; height: number }
+		userAgent?: string
+		language?: string
+		timeZone?: string
+	} & Partial<Pick<Steps, "click" | "fill" | "hover">>
 	images: Record<string, [number, number]>
 	resources: Record<string, { file: string; type: string }>
-	feeds: Record<string, { url: string; body: unknown }[]>
+	feeds: Record<string, { url: string; request?: string | null; body: unknown }[]>
+	// the addresses and steps as the live site has them, before --scrub; never published (publish.sh)
+	live?: { url: string; startUrl: string } & Pick<Steps, "click" | "fill" | "hover">
 }
 
 export async function loadCapture(dir: string): Promise<Capture> {
@@ -75,18 +87,31 @@ export async function loadCapture(dir: string): Promise<Capture> {
 		images: await json("images"),
 		resources: await json("resources"),
 		feeds: await json("feeds"),
+		live: await json("live").catch(() => undefined),
 	}
 }
 
 // Put back what a static copy can't hold: scroll offsets, and each video as a silent stand-in of the same length,
 // at the same place, playing or paused as it was.
 const RUNTIME = `<script>
-for (const el of document.querySelectorAll("[data-sb-scroll]")) {
+// the marks can sit inside open shadow roots too (a web-component player's <video>)
+const roots = [document]
+for (let i = 0; i < roots.length; i++)
+	for (const el of roots[i].querySelectorAll("*")) if (el.shadowRoot) roots.push(el.shadowRoot)
+const marked = (selector) => roots.flatMap((root) => Array.from(root.querySelectorAll(selector)))
+// a paragraph holding blocks was saved as a <div> to come through parsing whole; it's a paragraph again
+for (const div of marked("div[data-sb-p]")) {
+	const para = document.createElement("p")
+	for (const { name, value } of div.attributes) if (name !== "data-sb-p") para.setAttribute(name, value)
+	para.append(...div.childNodes)
+	div.replaceWith(para)
+}
+for (const el of marked("[data-sb-scroll]")) {
 	const [left, top] = el.dataset.sbScroll.split(",").map(Number)
 	if (el === document.documentElement) addEventListener("load", () => scrollTo(left, top))
 	else el.scrollTo(left, top)
 }
-for (const video of document.querySelectorAll("video[data-sb-video]")) {
+for (const video of marked("video[data-sb-video]")) {
 	const { duration, at, paused } = JSON.parse(video.dataset.sbVideo)
 	if (!duration) continue
 	video.muted = true
@@ -108,12 +133,39 @@ function stableHue(url: string) {
 	return hash
 }
 
+// The credits a player's playback answers mark, oldest first, as streamBuddy's page script reads them. The probe is
+// handed these, as it runs without the extension that would read them in the page.
+export function creditsMarkersIn(feeds: Capture["feeds"]) {
+	const answers = (feed: string) => (feeds[feed] ?? []).flatMap(({ body }) => (body ? [body] : []))
+	return [
+		...answers("primePlayback").map((body) => primeCreditsMarker(body)),
+		...answers("maxPlayback").map((body) => maxCreditsMarker(body)),
+	].filter((marker) => marker !== undefined)
+}
+
+// A player's copy has none of the site's scripts, so nothing asks for the playback answer streamBuddy reads the
+// credits from. Once streamBuddy is listening in the page, the copy asks for it again as it was recorded.
+function playbackRequests(capture: Capture) {
+	const requests = ["primePlayback", "maxPlayback"].flatMap((feed) =>
+		(capture.feeds[feed] ?? []).map(({ url, request }) => ({ url, request: request ?? null })),
+	)
+	if (!requests.length) return ""
+	return `<script>{
+	const requests = ${JSON.stringify(requests).replaceAll("<", "\\u003c")}
+	const listening = setInterval(() => {
+		if (!(Symbol.for(${JSON.stringify(CREDITS_MESSAGE)}) in window)) return
+		clearInterval(listening)
+		for (const { url, request } of requests) fetch(url, request === null ? undefined : { method: "POST", body: request })
+	}, 100)
+}</script>`
+}
+
 export async function routeCapture(context: BrowserContext, capture: Capture) {
 	// A site font marked optional is dropped for the fallback when it isn't there by first paint, which a busy machine
 	// decides differently each run; the copy waits for it, as a live page with the font cached does
 	const page = (await readFile(path.join(capture.dir, "page.html"), "utf8"))
 		.replace(/font-display:\s*optional/g, "font-display: block")
-		.replace(/<\/body>/i, `${RUNTIME}</body>`)
+		.replace(/<\/body>/i, `${RUNTIME}${playbackRequests(capture)}</body>`)
 	const answer = async (route: Route) => {
 		const request = route.request()
 		const url = request.url()
@@ -123,6 +175,8 @@ export async function routeCapture(context: BrowserContext, capture: Capture) {
 		if (resource)
 			return route.fulfill({
 				contentType: resource.type,
+				// a font from another host is only used with this, as on the live site's CDN
+				headers: { "access-control-allow-origin": "*" },
 				body: await readFile(path.join(capture.dir, "resources", resource.file)),
 			})
 		const size = capture.images[url]
@@ -137,9 +191,14 @@ export async function routeCapture(context: BrowserContext, capture: Capture) {
 		const feed = Object.entries(FEEDS).find(([, pattern]) => pattern.test(url))?.[0]
 		const recorded = feed ? capture.feeds[feed] : undefined
 		if (recorded?.length) {
-			// the response recorded for this exact request, else the last one of its kind
-			const match = recorded.find((entry) => entry.url === url) ?? recorded[recorded.length - 1]
-			return route.fulfill({ json: match.body })
+			// the response recorded for this exact request (Netflix asks one URL for different titles, named in the body),
+			// else the last one of its kind
+			const body = request.postData()
+			const match =
+				recorded.findLast((entry) => entry.url === url && (entry.request === undefined || entry.request === body)) ??
+				recorded[recorded.length - 1]
+			// the copy's own page asks for the player's (playbackRequests), from the site's address rather than its API's
+			return route.fulfill({ json: match.body, headers: { "access-control-allow-origin": "*" } })
 		}
 		return handle(route)
 	}
