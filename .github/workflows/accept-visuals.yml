@@ -129,9 +129,16 @@ jobs:
             cd sites
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            # where two pull requests changed the same screenshot, the one merging now is the newer look
-            git merge -q -X theirs "origin/$BRANCH" -m "Accept saved-page screenshots from streambuddy#${{ github.event.pull_request.number }}"
-            git push -q origin HEAD:main
+            # where two pull requests changed the same screenshot, the one merging now is the newer look. Another
+            # pull request closing at the same time can push first, so a refused push starts again from its main.
+            for attempt in 1 2 3 4 5; do
+              git fetch -q origin main
+              git reset -q --hard origin/main
+              git merge -q -X theirs "origin/$BRANCH" -m "Accept saved-page screenshots from streambuddy#${{ github.event.pull_request.number }}"
+              git push -q origin HEAD:main && break
+              [ "$attempt" = 5 ] && exit 1
+              sleep $((attempt * 5))
+            done
             cd ..
             # main's own checks ran before these screenshots reached streambuddy-sites' main, so they run again
             curl -sSf -X POST -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \

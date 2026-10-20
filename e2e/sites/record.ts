@@ -117,13 +117,17 @@ export async function routeRecording(context: BrowserContext, dir: string, fallb
 		for (const [key, value] of storage.session) sessionStorage.setItem(key, value)
 	}, storage)
 	// a request made more than once (a poll) gets its recorded answers in order, then keeps the last; one whose query
-	// changes each time (a timestamp) is matched without it, in order too
+	// changes each time (a timestamp) is matched without it, in order too. An answer given by any of the three lookups
+	// is used up for the others as well.
+	const used = new Set<Entry>()
 	const queues = (key: (entry: Entry) => string) => {
 		const map = new Map<string, Entry[]>()
 		for (const entry of entries) map.set(key(entry), [...(map.get(key(entry)) ?? []), entry])
 		return (wanted: string) => {
 			const answers = map.get(wanted)
-			return answers && answers.length > 1 ? answers.shift() : answers?.[0]
+			const next = answers?.find((entry) => !used.has(entry))
+			if (next) used.add(next)
+			return next ?? answers?.at(-1)
 		}
 	}
 	const exact = queues((entry) => `${entry.method} ${entry.url} ${entry.body ?? ""}`)
@@ -151,12 +155,12 @@ export async function routeRecording(context: BrowserContext, dir: string, fallb
 		if (url !== request.url() && request.resourceType() === "stylesheet")
 			return route.fulfill({ ...head, body: absoluteLinks(body.toString(), url) })
 		// a module is answered with one that re-exports it from where it ends up, so it loads there and its own imports
-		// (and import.meta.url) resolve from that address. Only a module has import or export statements.
+		// (and import.meta.url) resolve from that address. Only a module has import or export statements or import.meta.
 		const text = body.toString()
 		if (
 			url !== request.url() &&
 			request.resourceType() === "script" &&
-			/^\s*(?:import\s*[\w{*'"]|export\s)/m.test(text)
+			(/^\s*(?:import\s*[\w{*'"]|export\s)/m.test(text) || /\bimport\s*\.\s*meta\b/.test(text))
 		)
 			return route.fulfill({ ...head, body: reexport(url, text) })
 		return route.fulfill({ ...head, body })
@@ -174,7 +178,10 @@ function absoluteLinks(css: string, base: string) {
 
 function reexport(url: string, source: string) {
 	const from = JSON.stringify(url)
-	// re-exporting a default the module doesn't have is a syntax error
-	const exportsDefault = /\bexport\s+default\b|\bas\s+default\b/.test(source)
+	// re-exporting a default the module doesn't have is a syntax error. A default is declared directly, or named in an
+	// export list (`export { x as default }`, `export { default } from "./impl.js"`).
+	const lists = [...source.matchAll(/\bexport\s*\{([^}]*)\}/g)].flatMap((list) => list[1].split(","))
+	const exportsDefault =
+		/\bexport\s+default\b/.test(source) || lists.some((item) => item.trim().split(/\s+/).at(-1) === "default")
 	return `export * from ${from}\n${exportsDefault ? `export { default } from ${from}\n` : ""}`
 }

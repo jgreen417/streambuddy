@@ -45,6 +45,10 @@ let options: OpenOptions = {
 	route: (context) =>
 		args.interactive ? routeRecording(context, capture.dir, handle) : routeCapture(context, capture),
 	headless: !!args.shot,
+	// the site's own code picks its language, region and layout from these, and the recording holds that path
+	browser: args.interactive
+		? { locale: capture.meta.language, timezoneId: capture.meta.timeZone, userAgent: capture.meta.userAgent }
+		: undefined,
 }
 
 type Run = { context: BrowserContext; profileDir: string; page: Page }

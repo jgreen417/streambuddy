@@ -59,7 +59,15 @@ export async function screenshotWithoutArt(page: Page) {
 
 export type Capture = {
 	dir: string
-	meta: { state: string; service: string; url: string; viewport: { width: number; height: number } }
+	meta: {
+		state: string
+		service: string
+		url: string
+		viewport: { width: number; height: number }
+		userAgent?: string
+		language?: string
+		timeZone?: string
+	}
 	images: Record<string, [number, number]>
 	resources: Record<string, { file: string; type: string }>
 	feeds: Record<string, { url: string; request?: string | null; body: unknown }[]>

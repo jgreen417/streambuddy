@@ -29,6 +29,8 @@ export type OpenOptions = {
 	// answers the web instead of handle (a saved live page, see e2e/sites/replay.ts)
 	route?: (context: BrowserContext) => Promise<void>
 	headless?: boolean
+	// the browser a recording was made in, so the site's own code takes the same path (see e2e/sites/record.ts)
+	browser?: { locale?: string; timezoneId?: string; userAgent?: string }
 }
 
 const PAGES: { host: RegExp; path: RegExp; file: string }[] = [
@@ -208,6 +210,7 @@ export async function launch(options: OpenOptions) {
 		reducedMotion: "reduce",
 		locale: "en-US",
 		timezoneId: "UTC",
+		...options.browser,
 		args: [`--disable-extensions-except=${EXTENSION_DIR}`, `--load-extension=${EXTENSION_DIR}`],
 	})
 	// only the web; the extension's own files load as usual
