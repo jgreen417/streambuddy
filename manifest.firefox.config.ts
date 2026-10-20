@@ -1,6 +1,7 @@
 import { defineManifest } from "@crxjs/vite-plugin"
 import process from "node:process"
 import ManifestConfig from "./manifest.config.ts"
+import { SERVICES } from "./src/constants/streamingServices.ts"
 
 export default defineManifest((env) => ({
 	...ManifestConfig,
@@ -34,14 +35,6 @@ export default defineManifest((env) => ({
 		"activeTab",
 		// alarms only drives the sideloaded copy's reload-on-rebuild check
 		...(process.env.RELEASE ? [] : ["alarms"]),
-		"*://*.netflix.com/*",
-		"*://*.primevideo.com/*",
-		"*://*.amazon.com/*",
-		"*://*.amazon.co.jp/*",
-		"*://*.amazon.de/*",
-		"*://*.amazon.co.uk/*",
-		"*://*.max.com/*",
-		"*://*.hbomax.com/*",
-		"*://*.disneyplus.com/*",
+		...Object.values(SERVICES).flatMap(({ matches }) => matches),
 	],
 }))

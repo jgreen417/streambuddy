@@ -1,5 +1,13 @@
 # Changelog
 
+# streamBuddy 1.0.5
+
+Disney+ is here.
+
+- Disney+: rating badges on posters and tiles, IMDb scores beside each episode, the review pill when a film's end credits start, and intros and recaps skipped.
+- Prime Video on Amazon's sites in Canada, France, Italy, Spain and India, including season and episode names in French, Italian, Spanish and Hindi.
+- The popup only names a service on sites where streamBuddy actually runs.
+
 # streamBuddy 1.0.4
 
 Request your service, rate streamBuddy, and a tidier look.
