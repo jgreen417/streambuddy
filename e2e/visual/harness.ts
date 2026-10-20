@@ -218,7 +218,8 @@ export async function launch(options: OpenOptions) {
 	else await context.route(/^https?:\/\//, handle)
 	// polled rather than awaited as an event: the worker can register between launch returning and a listener
 	// being added, and then the event never comes and the test hangs until it times out
-	await expect.poll(() => context.serviceWorkers().length, { timeout: 15_000 }).toBeGreaterThan(0)
+	// (a runner busy with other browsers can take well over 15s to start it)
+	await expect.poll(() => context.serviceWorkers().length, { timeout: 30_000 }).toBeGreaterThan(0)
 	const worker = context.serviceWorkers()[0]
 	// on first install the extension clears its local storage and then opens its welcome page; seed after that,
 	// or the clear can wipe the seeded ratings

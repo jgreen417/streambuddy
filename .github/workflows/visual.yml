@@ -79,7 +79,8 @@ jobs:
             echo "A saved page's screenshot isn't uploaded: add the accept-visuals label to accept it."
             echo
             for file in e2e/.new-baselines/*.*; do
-              [ -e "$file" ] && echo "- \`${file#e2e/.new-baselines/}\`"
+              # (with nothing to list, the loop must still end well, or the step fails)
+              [ ! -e "$file" ] || echo "- \`${file#e2e/.new-baselines/}\`"
             done
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
