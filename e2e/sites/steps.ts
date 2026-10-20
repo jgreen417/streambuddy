@@ -31,7 +31,12 @@ export async function putInState(page: Page, steps: Steps, copy: boolean) {
 		await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {})
 	}
 	// a copy holds what the clicks opened and has no scripts to act on a later one (a menu's option could be a link
-	// away), so only the first is taken again, for the :focus and :active styles it left
+	// away), so only the first is taken again, for the focus it left; its default action (following a link, ticking
+	// a box) is stopped, as the copy already shows what it did
+	if (copy && clicks.length)
+		await page.evaluate(() =>
+			addEventListener("click", (event) => event.preventDefault(), { capture: true, once: true }),
+		)
 	for (const click of copy ? clicks.slice(0, 1) : clicks) {
 		await page.locator(click).first().click({ force: copy })
 		if (!copy) await page.waitForTimeout(800)

@@ -10,7 +10,8 @@ captures=$1 sites=$2 names=${3:?"give the names to look for, comma separated, or
 
 for state in "$captures"/*/; do
 	name=$(basename "$state")
-	# a capture that stopped part way has no screenshot yet
+	# a capture that stopped part way is left in a .partial folder
+	case "$name" in *.partial) continue ;; esac
 	[ -f "$state/meta.json" ] && [ -f "$state/probe.json" ] && [ -f "$state/shot.png" ] || continue
 	into="$sites/captures/$name"
 	rm -rf "$into"

@@ -25,7 +25,10 @@ const { values: args, positionals } = parseArgs({
 	options: { live: { type: "string" }, threshold: { type: "string", default: "0.01" } },
 })
 const root = path.resolve((positionals[0] ?? "e2e/.captures").replace(/^~/, process.env.HOME ?? "~"))
-const states = (await readdir(root, { withFileTypes: true })).filter((entry) => entry.isDirectory())
+// a .partial folder is a capture that hasn't finished (capture.ts)
+const states = (await readdir(root, { withFileTypes: true })).filter(
+	(entry) => entry.isDirectory() && !entry.name.endsWith(".partial"),
+)
 const script = await bundleProbe()
 
 // captures from before the wait and scroll were saved settled for capture.ts's default and didn't scroll

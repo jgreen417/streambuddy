@@ -41,7 +41,7 @@ type Target = {
 async function savedPages(dir: string): Promise<Target[]> {
 	const targets: Target[] = []
 	for (const entry of readdirSync(dir, { withFileTypes: true })) {
-		if (!entry.isDirectory()) continue
+		if (!entry.isDirectory() || entry.name.endsWith(".partial")) continue
 		const capture = await loadCapture(path.join(dir, entry.name))
 		const meta = capture.meta as typeof capture.meta & Partial<Steps>
 		if (!(meta.service in SERVICES)) continue
