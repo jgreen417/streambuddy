@@ -57,9 +57,7 @@ jobs:
       - name: Write new screenshots
         run: npx playwright test --update-snapshots=changed
       - name: Commit them
-        env:
-          # branch names can hold quotes, so the ref goes through the environment and a JSON encoder
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        id: own
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
@@ -71,14 +69,10 @@ jobs:
             git diff --cached --name-only | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
             git commit -m "Accept new visual baselines"
             git push
-            # a push made with the workflow token starts no workflows, so start the pull request's checks here
-            for workflow in ci.yml visual.yml; do
-              curl -sSf -X POST -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
-                "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/$workflow/dispatches" \
-                -d "$(node -e 'console.log(JSON.stringify({ ref: process.env.HEAD_REF }))')"
-            done
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
       - name: Commit the saved pages' screenshots to streambuddy-sites
+        id: saved
         if: hashFiles('e2e/.sites-fixtures/captures/**') != ''
         working-directory: e2e/.sites-fixtures
         env:
@@ -95,7 +89,21 @@ jobs:
             git diff --cached --name-only | sed 's/^/- streambuddy-sites: /' >> "$GITHUB_STEP_SUMMARY"
             git commit -m "Accept new saved-page screenshots (streambuddy#${{ github.event.pull_request.number }})"
             git push "https://x-access-token:$SITES_TOKEN@github.com/jgreen417/streambuddy-sites.git" "HEAD:refs/heads/$BRANCH"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+      # a push made with the workflow token, or to streambuddy-sites, starts no workflows here, so the pull request's
+      # checks are started once both are in
+      - name: Re-run the checks
+        if: steps.own.outputs.changed == 'true' || steps.saved.outputs.changed == 'true'
+        env:
+          # branch names can hold quotes, so the ref goes through the environment and a JSON encoder
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          for workflow in ci.yml visual.yml; do
+            curl -sSf -X POST -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" \
+              "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/$workflow/dispatches" \
+              -d "$(node -e 'console.log(JSON.stringify({ ref: process.env.HEAD_REF }))')"
+          done
       - name: Remove the label
         if: always()
         run: |

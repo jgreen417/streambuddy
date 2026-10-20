@@ -133,15 +133,20 @@ function probeOf(page: Page, meta: Meta) {
 async function checkState(capture: Capture, meta: Meta, captured: ProbeReport | null, problems: string[]) {
 	if (args.live) {
 		const page = await browser.contexts()[0].newPage()
-		await page.setViewportSize(meta.viewport)
-		await page.goto(meta.url, { waitUntil: "load" })
-		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
-		await putInState(page, { ...meta, wait: meta.wait ?? 3000, scroll: meta.scroll ?? null }, false)
-		const live = await probeOf(page, meta)
-		if (captured && live) problems.push(...differences(shape(captured), shape(live)))
-		await page.close()
-	} else {
-		const context = await browser.newContext({ viewport: meta.viewport })
+		try {
+			await page.setViewportSize(meta.viewport)
+			await page.goto(meta.url, { waitUntil: "load" })
+			await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
+			await putInState(page, { ...meta, wait: meta.wait ?? 3000, scroll: meta.scroll ?? null }, false)
+			const live = await probeOf(page, meta)
+			if (captured && live) problems.push(...differences(shape(captured), shape(live)))
+		} finally {
+			await page.close()
+		}
+		return
+	}
+	const context = await browser.newContext({ viewport: meta.viewport })
+	try {
 		await routeCapture(context, capture)
 		const page = await context.newPage()
 		await page.goto(meta.url, { waitUntil: "load" })
@@ -160,6 +165,7 @@ async function checkState(capture: Capture, meta: Meta, captured: ProbeReport | 
 			await writeFile(path.join(capture.dir, "replay.png"), shot)
 			if (diff) await writeFile(path.join(capture.dir, "replay-diff.png"), diff)
 		}
+	} finally {
 		await context.close()
 	}
 }

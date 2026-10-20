@@ -79,12 +79,17 @@ export async function loadCapture(dir: string): Promise<Capture> {
 // Put back what a static copy can't hold: scroll offsets, and each video as a silent stand-in of the same length,
 // at the same place, playing or paused as it was.
 const RUNTIME = `<script>
-for (const el of document.querySelectorAll("[data-sb-scroll]")) {
+// the marks can sit inside open shadow roots too (a web-component player's <video>)
+const roots = [document]
+for (let i = 0; i < roots.length; i++)
+	for (const el of roots[i].querySelectorAll("*")) if (el.shadowRoot) roots.push(el.shadowRoot)
+const marked = (selector) => roots.flatMap((root) => Array.from(root.querySelectorAll(selector)))
+for (const el of marked("[data-sb-scroll]")) {
 	const [left, top] = el.dataset.sbScroll.split(",").map(Number)
 	if (el === document.documentElement) addEventListener("load", () => scrollTo(left, top))
 	else el.scrollTo(left, top)
 }
-for (const video of document.querySelectorAll("video[data-sb-video]")) {
+for (const video of marked("video[data-sb-video]")) {
 	const { duration, at, paused } = JSON.parse(video.dataset.sbVideo)
 	if (!duration) continue
 	video.muted = true

@@ -169,6 +169,9 @@ export function freeze({ sheets }: FreezeInput): FrozenPage {
 		style.textContent = el.getAttribute("data-sb-css")
 		const href = el.getAttribute("href")
 		if (href) style.dataset.sbFrom = absolute(href, location.href)
+		// a sheet only for print or another width stays only for that
+		const media = el.getAttribute("media")
+		if (media) style.media = media
 		el.replaceWith(style)
 	}
 	for (const el of everywhere("iframe")) el.removeAttribute("src")
