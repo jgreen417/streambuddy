@@ -10,8 +10,10 @@ import { keepTidy, tidyPrime } from "@/playback/tidy"
 const isPrimeVideo =
 	/primevideo/i.test(location.hostname) ||
 	/\/(gp\/video|video)(\/|$)/i.test(location.pathname) ||
-	// video detail pages on Amazon's own paths ("Watch The Boys | Prime Video"), not shopping results for "prime video"
-	/\|\s*prime video\b/i.test(document.title)
+	// video pages on Amazon's own paths ("Watch The Boys | Prime Video", "Amazon.fr : Films : Prime Video"), not a
+	// shopping search for "prime video", whose title ends with the search words
+	(/[|:]\s*prime video\s*$/i.test(document.title) &&
+		!/prime video/i.test(new URLSearchParams(location.search).get("k") ?? ""))
 
 if (isPrimeVideo) {
 	listenForCreditsMarkers()
