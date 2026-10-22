@@ -122,6 +122,10 @@ test("card inspector", async ({ open }) => {
 	await expect(inspector.getByText("Amazon Prime Video")).toBeVisible({ timeout: 8_000 })
 	await loaded(page)
 	await expect.soft(inspector).toHaveScreenshot("netflix-inspector.png")
+	await inspector.getByRole("button", { name: "Not this title?" }).click()
+	await expect(inspector.getByText("Which title is this?")).toBeVisible()
+	await expect(inspector.getByRole("button", { name: /Past Lives/ })).toBeVisible({ timeout: 8_000 })
+	await expect.soft(inspector).toHaveScreenshot("netflix-inspector-fix.png")
 })
 
 test("episode chips", async ({ open }) => {

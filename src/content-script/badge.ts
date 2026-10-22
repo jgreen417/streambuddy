@@ -369,7 +369,7 @@ export function renderBadge(data: MovieInfo, { general, look, personal, position
 			", Vote count: " +
 			getRatingVoteCount(data),
 	)
-	attachInspector(div, data, personal, service, general.friendsRatings)
+	attachInspector(div, data, personal, service, general.friendsRatings, cardTitle)
 	return div
 }
 

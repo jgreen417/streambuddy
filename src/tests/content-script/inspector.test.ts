@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { MovieInfo } from "../../content-script/cache"
-import { parseProviders, renderInspector, type Availability } from "../../content-script/inspector"
+import { parseProviders, renderFix, renderInspector, type Availability } from "../../content-script/inspector"
 
 const FILM: MovieInfo = {
 	id: 693134,
@@ -82,6 +82,7 @@ describe("card inspector", () => {
 		expect(content.querySelector<HTMLAnchorElement>("a.btn")!.getAttribute("href")).toBe(
 			"https://letterboxd.com/film/dune-part-two/",
 		)
+		expect(content.querySelector(".btn.fix")?.textContent).toBe("Not this title?")
 	})
 	it("tells loading apart from a failed availability lookup", () => {
 		expect(renderInspector(FILM, { watchlist: false }, "Netflix", true, undefined).textContent).toContain(
@@ -90,5 +91,45 @@ describe("card inspector", () => {
 		expect(renderInspector(FILM, { watchlist: false }, "Netflix", true, null).textContent).toContain(
 			"Availability unavailable",
 		)
+	})
+})
+
+describe("fix the match", () => {
+	it("renders the search results and enables the chosen one", () => {
+		const content = renderFix(
+			"Dune: Part Two",
+			{
+				query: "Dune",
+				results: [
+					{ id: 1, media_type: "movie", title: "Dune: Part Two", year: "2024" },
+					{ id: 2, media_type: "movie", title: "Dune", year: "2021" },
+				],
+				selectedId: 2,
+				currentId: 1,
+				searching: false,
+				error: "",
+			},
+			{ search: () => {}, pick: () => {}, apply: () => {}, cancel: () => {} },
+		)
+		expect(content.textContent).toContain("Which title is this?")
+		expect(content.textContent).toContain("The card says “Dune: Part Two”")
+		expect(content.querySelectorAll(".result")).toHaveLength(2)
+		expect(content.querySelector<HTMLButtonElement>('.result[aria-pressed="true"]')?.textContent).toContain("Dune")
+		expect(content.querySelector<HTMLButtonElement>(".btn.primary")!.disabled).toBe(false)
+	})
+	it("does not offer to apply the match that is already in use", () => {
+		const content = renderFix(
+			"Dune: Part Two",
+			{
+				query: "Dune",
+				results: [{ id: 1, media_type: "movie", title: "Dune: Part Two", year: "2024" }],
+				selectedId: 1,
+				currentId: 1,
+				searching: false,
+				error: "",
+			},
+			{ search: () => {}, pick: () => {}, apply: () => {}, cancel: () => {} },
+		)
+		expect(content.querySelector<HTMLButtonElement>(".btn.primary")!.disabled).toBe(true)
 	})
 })
