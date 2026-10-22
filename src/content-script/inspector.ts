@@ -275,17 +275,19 @@ export type FixResult = {
 	title: string
 	year?: string
 }
+// TMDb ids are per media type: film 1399 and series 1399 are different titles
+export const resultKey = (result: { id?: number; media_type?: string }) => `${result.media_type}/${result.id}`
 export type FixState = {
 	query: string
 	results: FixResult[]
-	selectedId?: number
-	currentId: number
+	selected?: string
+	current: string
 	searching: boolean
 	error: string
 }
 export type FixActions = {
 	search: (query: string) => void
-	pick: (id: number) => void
+	pick: (key: string) => void
 	apply: () => void
 	cancel: () => void
 }
@@ -322,7 +324,8 @@ export function renderFix(cardTitle: string, state: FixState, actions: FixAction
 		results.append(el("div", "providers-state", "No matches yet. Search by the title as it appears on the card."))
 	else
 		for (const result of state.results) {
-			const selected = state.selectedId === result.id
+			const key = resultKey(result)
+			const selected = state.selected === key
 			const row = el("button", `result${selected ? " on" : ""}`)
 			row.type = "button"
 			row.setAttribute("aria-label", `${result.title}${result.year ? ` (${result.year})` : ""}`)
@@ -333,9 +336,9 @@ export function renderFix(cardTitle: string, state: FixState, actions: FixAction
 			copy.append(
 				el("span", "", [result.year, result.media_type === "tv" ? "Series" : "Film"].filter(Boolean).join(" · ")),
 			)
-			const pick = el("span", "pick", result.id === state.currentId ? "Current" : selected ? "Selected" : "Choose")
+			const pick = el("span", "pick", key === state.current ? "Current" : selected ? "Selected" : "Choose")
 			row.append(mini, copy, pick)
-			row.addEventListener("click", () => actions.pick(result.id))
+			row.addEventListener("click", () => actions.pick(key))
 			results.append(row)
 		}
 	root.append(results)
@@ -347,7 +350,7 @@ export function renderFix(cardTitle: string, state: FixState, actions: FixAction
 	cancel.addEventListener("click", actions.cancel)
 	const apply = el("button", "btn primary", "Use this title")
 	apply.type = "button"
-	apply.disabled = !state.selectedId || state.selectedId === state.currentId
+	apply.disabled = !state.selected || state.selected === state.current
 	apply.addEventListener("click", actions.apply)
 	buttons.append(cancel, apply)
 	root.append(buttons)
@@ -430,6 +433,7 @@ type FixSearchResult = {
 	original_name?: string
 	release_date?: string
 	first_air_date?: string
+	vote_count?: number
 }
 
 const near = (element: Element, { clientX: x, clientY: y }: PointerEvent, pad: number) => {
@@ -461,7 +465,9 @@ export function attachInspector(
 	let mode: "detail" | "fix" = "detail"
 	let fixQuery = cardTitle
 	let fixResults: FixResult[] = []
-	let fixSelected: number | undefined
+	let fixSelected: string | undefined
+	// a newer search, or closing, makes an older search's answer stale
+	let searchRun = 0
 	let fixSearching = false
 	let fixError = ""
 	let pointerType = ""
@@ -485,10 +491,15 @@ export function attachInspector(
 	const runSearch = async (query: string) => {
 		const wanted = query.trim()
 		if (!wanted) return
+		const run = ++searchRun
 		fixQuery = wanted
+		fixResults = []
+		fixSelected = undefined
 		fixSearching = true
 		fixError = ""
 		paint()
+		let results: FixResult[] = []
+		let error = ""
 		try {
 			const response = (await sendMessage(
 				"fetch",
@@ -499,24 +510,28 @@ export function attachInspector(
 				"background",
 			)) as { results?: FixSearchResult[]; error?: string } | null
 			if (!response || response.error) throw new Error(response?.error ?? "unavailable")
-			fixResults = (response.results ?? [])
+			results = (response.results ?? [])
 				.flatMap((item): FixResult[] => {
 					const type = item.media_type
 					const title = item.title || item.name || item.original_title || item.original_name
 					if ((type !== "movie" && type !== "tv") || !title || typeof item.id !== "number") return []
+					// a title nobody has rated would leave the card with no badge, and so no way back to this view
+					if (!item.vote_count) return []
 					const year = (item.release_date || item.first_air_date || "").slice(0, 4) || undefined
 					return [{ id: item.id, media_type: type, title, year }]
 				})
 				.slice(0, 5)
 		} catch {
-			fixError = "TMDb could not be searched. Try again."
-		} finally {
-			fixSearching = false
-			if (host) paint()
+			error = "TMDb could not be searched. Try again."
 		}
+		if (run !== searchRun) return
+		fixResults = results
+		fixError = error
+		fixSearching = false
+		if (host) paint()
 	}
 	const applyFix = async () => {
-		const picked = fixResults.find((result) => result.id === fixSelected)
+		const picked = fixResults.find((result) => resultKey(result) === fixSelected)
 		if (!picked) return
 		try {
 			await saveOverride(cardTitle, {
@@ -542,15 +557,15 @@ export function attachInspector(
 						{
 							query: fixQuery,
 							results: fixResults,
-							selectedId: fixSelected,
-							currentId: data.id,
+							selected: fixSelected,
+							current: resultKey(data),
 							searching: fixSearching,
 							error: fixError,
 						},
 						{
 							search: (query) => void runSearch(query),
-							pick: (id) => {
-								fixSelected = id
+							pick: (key) => {
+								fixSelected = key
 								paint()
 							},
 							apply: () => void applyFix(),
@@ -593,6 +608,7 @@ export function attachInspector(
 		fixSelected = undefined
 		fixSearching = false
 		fixError = ""
+		searchRun++
 		if (closeOpenInspector === close) closeOpenInspector = null
 		const title = badge.dataset.inspectorTitle
 		if (title) {

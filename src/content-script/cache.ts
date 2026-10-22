@@ -169,7 +169,10 @@ export async function lookupMovieInfo(
 	if (override) {
 		const details = (await sendMessage(
 			"fetch",
-			{ url: `https://api.themoviedb.org/3/${override.media_type}/${override.id}`, type: "tmdb" },
+			{
+				url: `https://api.themoviedb.org/3/${override.media_type}/${override.id}?language=${locale()}`,
+				type: "tmdb",
+			},
 			"background",
 		)) as (MovieMatch & { error?: string }) | null
 		if (!details || details.error) return null

@@ -10,13 +10,13 @@ export type TitleOverride = {
 const STORAGE_KEY = "titleOverrides"
 
 // "Dune: Part Two" and "dune part two" are the same card title to a person, so they share an override. Letters
-// in any script count, so titles that aren't in Latin letters keep a key of their own.
+// and their marks in any script count (only Latin accents are dropped), so other scripts keep keys of their own.
 export const overrideKey = (title: string) =>
 	title
 		.normalize("NFKD")
 		.replaceAll(/[\u0300-\u036f]/g, "")
 		.toLowerCase()
-		.replaceAll(/[^\p{L}\p{N}]+/gu, " ")
+		.replaceAll(/[^\p{L}\p{M}\p{N}]+/gu, " ")
 		.trim()
 
 let overrides: Record<string, TitleOverride> = {}
@@ -32,18 +32,22 @@ export async function loadOverrides() {
 
 export const overrideFor = (title: string) => overrides[overrideKey(title)]
 
+// built on what's stored now rather than this tab's copy, so a fix saved in another tab isn't overwritten
+async function update(change: (all: Record<string, TitleOverride>) => void) {
+	const stored = await browser.storage.local.get(STORAGE_KEY)
+	const next = { ...(stored[STORAGE_KEY] as Record<string, TitleOverride> | undefined) }
+	change(next)
+	await browser.storage.local.set({ [STORAGE_KEY]: next })
+	overrides = next
+}
+
 export async function saveOverride(title: string, value: TitleOverride) {
 	const key = overrideKey(title)
-	if (!key) return
-	overrides = { ...overrides, [key]: value }
-	await browser.storage.local.set({ [STORAGE_KEY]: overrides })
+	if (key) await update((all) => (all[key] = value))
 }
 
 export async function clearOverride(title: string) {
-	const next = { ...overrides }
-	delete next[overrideKey(title)]
-	overrides = next
-	await browser.storage.local.set({ [STORAGE_KEY]: overrides })
+	await update((all) => delete all[overrideKey(title)])
 }
 
 export const overrideCount = () => Object.keys(overrides).length
