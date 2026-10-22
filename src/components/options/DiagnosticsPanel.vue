@@ -41,6 +41,15 @@ async function clearOverrides() {
 	if (!confirm("Clear every fixed title match? Cards will go back to the automatic match.")) return
 	busy.value = true
 	try {
+		// the corrected matches are cached under the card titles too, so they go first or the cards would keep them
+		const stored = await browser.storage.local.get(["DBCache", "titleOverrides"])
+		const fixed = new Set(
+			Object.values((stored.titleOverrides ?? {}) as Record<string, { id: number }>).map((fix) => fix.id),
+		)
+		const cache = Object.entries((stored.DBCache ?? {}) as Record<string, { id?: number }>)
+		await browser.storage.local.set({
+			DBCache: Object.fromEntries(cache.filter(([, entry]) => entry.id === undefined || !fixed.has(entry.id))),
+		})
 		await browser.storage.local.remove("titleOverrides")
 		await load()
 		status.value = "Fixed titles cleared."
