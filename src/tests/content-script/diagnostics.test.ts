@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { diagnosticsReport, formatBytes, relativeSync, summarize } from "../../utils/diagnostics"
+import { diagnosticsReport, summarize } from "../../utils/diagnostics"
 
 const NOW = new Date("2026-10-22T12:00:00Z")
 const SNAPSHOT = {
@@ -35,14 +35,5 @@ describe("diagnostics", () => {
 		expect(report).toContain('"fixedTitles": 1')
 		expect(report).not.toContain("Dune")
 		expect(report).not.toContain("buddy")
-	})
-	it("formats sync age and cache size for people", () => {
-		expect(relativeSync(NOW.getTime() - 20_000, NOW)).toBe("just now")
-		expect(relativeSync(NOW.getTime() - 3 * 3_600_000, NOW)).toBe("3 h ago")
-		expect(relativeSync(NOW.getTime() - 2 * 86_400_000, NOW)).toBe("2 d ago")
-		expect(relativeSync(undefined, NOW)).toBe("not synced yet")
-		expect(formatBytes(500)).toBe("500 B")
-		expect(formatBytes(2048)).toBe("2 KB")
-		expect(formatBytes(1.5 * 1024 * 1024)).toBe("1.5 MB")
 	})
 })

@@ -9,18 +9,9 @@ const status = ref("")
 const busy = ref(false)
 
 async function load() {
-	try {
-		const stored = await browser.storage.local.get([
-			"DBCache",
-			"letterboxdProfile",
-			"titleOverrides",
-			"watchLog",
-			"savedLog",
-		])
-		summary.value = summarize(stored)
-	} catch {
-		status.value = "Local storage could not be read."
-	}
+	summary.value = summarize(
+		await browser.storage.local.get(["DBCache", "letterboxdProfile", "titleOverrides", "watchLog", "savedLog"]),
+	)
 }
 onMounted(load)
 
