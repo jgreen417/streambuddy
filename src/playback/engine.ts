@@ -77,8 +77,9 @@ export class PlaybackEngine {
 		if (video !== this.video) this.enterVideo(video)
 		this.overlay.attach()
 		this.checkEpisode(video)
-		this.loadNextRating()
 		const settings = this.settings()
+		// the rating only shows in the notice after skipping the credits
+		if (settings.skip.credits && settings.notices) this.loadNextRating()
 		this.handleAds(video, settings)
 		if (!this.adRestore) this.handleSkips(video, settings)
 		this.handleSpeed(settings)
@@ -107,6 +108,7 @@ export class PlaybackEngine {
 		if (!key || key === this.episode) return
 		const first = this.episode === null
 		this.episode = key
+		this.next = null
 		this.suppressed.clear()
 		this.lastPress.clear()
 		this.autoplayRun = first || this.touched ? 1 : this.autoplayRun + 1
