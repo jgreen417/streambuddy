@@ -211,6 +211,44 @@ const updateMode = (event: Event) => {
 		>
 			<summary>
 				<span>
+					Browsing
+					<small>{{ settings.General.quietPreviews ? "Previews muted" : "Preview sound on" }}</small>
+				</span>
+			</summary>
+			<div class="sb-disclosure-body">
+				<PopupToggle
+					v-model="settings.General.quietPreviews"
+					label="Quiet browsing"
+					description="Mutes autoplay previews and trailers while you browse."
+				/>
+				<template v-if="targets.includes('Netflix')">
+					<PopupToggle
+						v-model="settings.Netflix.hideTop10"
+						label="Hide Netflix’s Top 10 row"
+						description="The ranked row on the home page."
+					/>
+					<PopupToggle
+						v-model="settings.Netflix.hideGames"
+						label="Hide Netflix games rows"
+						description="Mobile games on the home page and in search."
+					/>
+				</template>
+				<template v-if="targets.includes('Amazon')">
+					<PopupToggle
+						v-model="settings.Amazon.hidePaid"
+						label="Hide Prime Video paid titles"
+						description="Titles that need a rental, purchase or add-on."
+					/>
+				</template>
+				<p class="sb-help">Page cleanups only run on the selected service; quiet browsing applies everywhere.</p>
+			</div>
+		</details>
+		<details
+			class="sb-disclosure"
+			:open="expanded"
+		>
+			<summary>
+				<span>
 					Ratings & discovery
 					<small>{{ cardsInactive ? "Card effects paused" : `${sourceLabel} · Low ratings: ${mode}` }}</small>
 				</span>
