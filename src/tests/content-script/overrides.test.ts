@@ -15,6 +15,8 @@ describe("title overrides", () => {
 	it("treats punctuation and case as the same card title", () => {
 		expect(overrideKey("Dune: Part Two")).toBe("dune part two")
 		expect(overrideKey("  DUNE — part two ")).toBe("dune part two")
+		expect(overrideKey("君の名は。")).toBe("君の名は")
+		expect(overrideKey("Москва")).not.toBe(overrideKey("पठान"))
 	})
 	it("saves a correction and reads it back through the normalised title", async () => {
 		await saveOverride("Dune: Part Two", DUNE)

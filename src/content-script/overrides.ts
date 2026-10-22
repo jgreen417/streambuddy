@@ -9,36 +9,33 @@ export type TitleOverride = {
 
 const STORAGE_KEY = "titleOverrides"
 
-// "Dune: Part Two" and "dune part two" are the same card title to a person, so they share an override
+// "Dune: Part Two" and "dune part two" are the same card title to a person, so they share an override. Letters
+// in any script count, so titles that aren't in Latin letters keep a key of their own.
 export const overrideKey = (title: string) =>
 	title
 		.normalize("NFKD")
 		.replaceAll(/[\u0300-\u036f]/g, "")
 		.toLowerCase()
-		.replaceAll(/[^a-z0-9]+/g, " ")
+		.replaceAll(/[^\p{L}\p{N}]+/gu, " ")
 		.trim()
 
 let overrides: Record<string, TitleOverride> = {}
 
 export async function loadOverrides() {
-	try {
-		const stored = await browser.storage.local.get(STORAGE_KEY)
-		const value = stored?.[STORAGE_KEY]
-		overrides = value && typeof value === "object" ? (value as Record<string, TitleOverride>) : {}
-	} catch {
-		overrides = {}
-	}
+	const stored = await browser.storage.local.get(STORAGE_KEY)
+	overrides = (stored[STORAGE_KEY] as Record<string, TitleOverride> | undefined) ?? {}
 	browser.storage.onChanged.addListener((changes, area) => {
-		if (area !== "local" || !changes[STORAGE_KEY]) return
-		const value = changes[STORAGE_KEY].newValue
-		overrides = value && typeof value === "object" ? (value as Record<string, TitleOverride>) : {}
+		if (area === "local" && changes[STORAGE_KEY])
+			overrides = (changes[STORAGE_KEY].newValue as Record<string, TitleOverride> | undefined) ?? {}
 	})
 }
 
 export const overrideFor = (title: string) => overrides[overrideKey(title)]
 
 export async function saveOverride(title: string, value: TitleOverride) {
-	overrides = { ...overrides, [overrideKey(title)]: value }
+	const key = overrideKey(title)
+	if (!key) return
+	overrides = { ...overrides, [key]: value }
 	await browser.storage.local.set({ [STORAGE_KEY]: overrides })
 }
 

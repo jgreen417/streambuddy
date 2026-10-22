@@ -29,8 +29,10 @@ import { queueSeenTitle } from "./watch-stats"
 let site: RatingsSite | null = null
 export function startCards(service: RatingsSite) {
 	site = service
-	// a corrected match: drop the wrong badges and let the next pass look the title up again
-	document.addEventListener("streambuddy:title-fixed", () => refreshRowPresentation(true))
+	// a corrected match, here or in another tab: drop the wrong badges and let the next pass look the title up again
+	browser.storage.onChanged.addListener((changes, area) => {
+		if (area === "local" && changes.titleOverrides) refreshRowPresentation(true)
+	})
 	if (ratingsEnabled()) startShowRatingInterval()
 }
 

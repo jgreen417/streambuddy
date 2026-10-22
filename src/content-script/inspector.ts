@@ -518,7 +518,6 @@ export function attachInspector(
 				year: picked.year,
 			})
 			deleteCached(cardTitle)
-			document.dispatchEvent(new CustomEvent("streambuddy:title-fixed"))
 			close()
 		} catch {
 			fixError = "The fix could not be saved."
@@ -621,7 +620,8 @@ export function attachInspector(
 		// would count as leaving the badge while the pointer hasn't moved.
 		const away = (event: PointerEvent) => {
 			if (!host) return
-			if (near(badge, event, 24) || near(host, event, 8)) {
+			// typing a search in the fix view keeps it open wherever the pointer drifts
+			if (near(badge, event, 24) || near(host, event, 8) || host.matches(":focus-within")) {
 				clearTimeout(closeTimer)
 				closeTimer = undefined
 			} else closeTimer ??= setTimeout(close, HOVER_CLOSE_MS)
