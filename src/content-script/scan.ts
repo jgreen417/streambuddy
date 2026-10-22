@@ -259,11 +259,12 @@ async function addRating() {
 			if (
 				entry &&
 				isCacheCurrent(entry) &&
-				// a corrected title must not reuse the wrong match still sitting in the cache
-				(!override || entry.id === override.id) &&
+				// a corrected title must not reuse the wrong match still sitting in the cache, and its type wins over the card's
+				(override
+					? entry.id === override.id && entry.media_type === override.media_type
+					: !media_type || entry.media_type == media_type) &&
 				// a Letterboxd/IMDb rating counts even when TMDb has no votes; unrated titles are retried after a week
-				(entry.rating || entry.score || getDiffInDays(entry.date, new Date()) <= 7) &&
-				(!media_type || entry.media_type == media_type)
+				(entry.rating || entry.score || getDiffInDays(entry.date, new Date()) <= 7)
 			) {
 				useDBCache(entry, title, card, media_type)
 			}

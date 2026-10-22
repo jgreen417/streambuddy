@@ -10,13 +10,14 @@ import { deleteCached, type MovieInfo } from "./cache"
 import { saveOverride } from "./overrides"
 import { letterboxdUsername, type PersonalStatus } from "./profile"
 
-export type ProviderKind = "flatrate" | "ads" | "rent" | "buy"
+export type ProviderKind = "flatrate" | "free" | "ads" | "rent" | "buy"
 export type ProviderRow = { name: string; kind: ProviderKind }
 export type Availability = { rows: ProviderRow[]; link?: string }
 
-const KIND_ORDER: Record<ProviderKind, number> = { flatrate: 0, ads: 1, rent: 2, buy: 3 }
+const KIND_ORDER: Record<ProviderKind, number> = { flatrate: 0, free: 1, ads: 2, rent: 3, buy: 4 }
 const KIND_LABEL: Record<ProviderKind, string> = {
 	flatrate: "Included",
+	free: "Free",
 	ads: "Free with ads",
 	rent: "Rent",
 	buy: "Buy",
@@ -49,6 +50,7 @@ export function parseProviders(json: unknown, region: string): Availability | nu
 		}
 	}
 	add(entry.flatrate, "flatrate")
+	add(entry.free, "free")
 	add(entry.ads, "ads")
 	add(entry.rent, "rent")
 	add(entry.buy, "buy")
@@ -85,6 +87,11 @@ function loadProviders(data: MovieInfo): Promise<Availability | null> {
 		)
 			.then((json) => parseProviders(json, region()))
 			.catch(() => null)
+			.then((result) => {
+				// a failed lookup is tried again next time rather than remembered
+				if (!result) providerCache.delete(key)
+				return result
+			})
 		providerCache.set(key, pending)
 	}
 	return pending
@@ -242,17 +249,14 @@ export function renderInspector(
 	}
 
 	const actions = el("div", "actions")
-	const filmUrl = data.rating_url?.startsWith("https://letterboxd.com/film/")
+	const onLetterboxd = data.rating_url?.startsWith("https://letterboxd.com/film/")
+	const filmUrl = onLetterboxd
 		? data.rating_url
 		: data.media_type && data.id
 			? `https://www.themoviedb.org/${data.media_type}/${data.id}`
 			: ""
 	if (filmUrl) {
-		const open = el(
-			"a",
-			"btn primary",
-			filmUrl.startsWith("https://letterboxd.com") ? "Open on Letterboxd" : "Open on TMDb",
-		)
+		const open = el("a", "btn primary", onLetterboxd ? "Open on Letterboxd" : "Open on TMDb")
 		open.href = filmUrl
 		open.target = "_blank"
 		open.rel = "noopener noreferrer"
@@ -271,17 +275,19 @@ export type FixResult = {
 	title: string
 	year?: string
 }
+// TMDb ids are per media type: film 1399 and series 1399 are different titles
+export const resultKey = (result: { id?: number; media_type?: string }) => `${result.media_type}/${result.id}`
 export type FixState = {
 	query: string
 	results: FixResult[]
-	selectedId?: number
-	currentId: number
+	selected?: string
+	current: string
 	searching: boolean
 	error: string
 }
 export type FixActions = {
 	search: (query: string) => void
-	pick: (id: number) => void
+	pick: (key: string) => void
 	apply: () => void
 	cancel: () => void
 }
@@ -318,7 +324,8 @@ export function renderFix(cardTitle: string, state: FixState, actions: FixAction
 		results.append(el("div", "providers-state", "No matches yet. Search by the title as it appears on the card."))
 	else
 		for (const result of state.results) {
-			const selected = state.selectedId === result.id
+			const key = resultKey(result)
+			const selected = state.selected === key
 			const row = el("button", `result${selected ? " on" : ""}`)
 			row.type = "button"
 			row.setAttribute("aria-label", `${result.title}${result.year ? ` (${result.year})` : ""}`)
@@ -329,9 +336,9 @@ export function renderFix(cardTitle: string, state: FixState, actions: FixAction
 			copy.append(
 				el("span", "", [result.year, result.media_type === "tv" ? "Series" : "Film"].filter(Boolean).join(" · ")),
 			)
-			const pick = el("span", "pick", result.id === state.currentId ? "Current" : selected ? "Selected" : "Choose")
+			const pick = el("span", "pick", key === state.current ? "Current" : selected ? "Selected" : "Choose")
 			row.append(mini, copy, pick)
-			row.addEventListener("click", () => actions.pick(result.id))
+			row.addEventListener("click", () => actions.pick(key))
 			results.append(row)
 		}
 	root.append(results)
@@ -343,7 +350,7 @@ export function renderFix(cardTitle: string, state: FixState, actions: FixAction
 	cancel.addEventListener("click", actions.cancel)
 	const apply = el("button", "btn primary", "Use this title")
 	apply.type = "button"
-	apply.disabled = !state.selectedId || state.selectedId === state.currentId
+	apply.disabled = !state.selected || state.selected === state.current
 	apply.addEventListener("click", actions.apply)
 	buttons.append(cancel, apply)
 	root.append(buttons)
@@ -426,6 +433,7 @@ type FixSearchResult = {
 	original_name?: string
 	release_date?: string
 	first_air_date?: string
+	vote_count?: number
 }
 
 const near = (element: Element, { clientX: x, clientY: y }: PointerEvent, pad: number) => {
@@ -435,6 +443,8 @@ const near = (element: Element, { clientX: x, clientY: y }: PointerEvent, pad: n
 
 const HOVER_OPEN_MS = 450
 const HOVER_CLOSE_MS = 220
+// tabbing from one badge to the next shouldn't leave the first one's inspector open
+let closeOpenInspector: (() => void) | null = null
 
 // Wire the hover/focus behaviour onto one badge. Every badge gets its own listeners; only one popover is ever open.
 export function attachInspector(
@@ -455,9 +465,13 @@ export function attachInspector(
 	let mode: "detail" | "fix" = "detail"
 	let fixQuery = cardTitle
 	let fixResults: FixResult[] = []
-	let fixSelected: number | undefined
+	let fixSelected: string | undefined
+	// a newer search, or closing, makes an older search's answer stale
+	let searchRun = 0
 	let fixSearching = false
 	let fixError = ""
+	let pointerType = ""
+	let refocusing = false
 
 	const position = () => {
 		if (!host) return
@@ -477,10 +491,15 @@ export function attachInspector(
 	const runSearch = async (query: string) => {
 		const wanted = query.trim()
 		if (!wanted) return
+		const run = ++searchRun
 		fixQuery = wanted
+		fixResults = []
+		fixSelected = undefined
 		fixSearching = true
 		fixError = ""
 		paint()
+		let results: FixResult[] = []
+		let error = ""
 		try {
 			const response = (await sendMessage(
 				"fetch",
@@ -491,24 +510,28 @@ export function attachInspector(
 				"background",
 			)) as { results?: FixSearchResult[]; error?: string } | null
 			if (!response || response.error) throw new Error(response?.error ?? "unavailable")
-			fixResults = (response.results ?? [])
+			results = (response.results ?? [])
 				.flatMap((item): FixResult[] => {
 					const type = item.media_type
 					const title = item.title || item.name || item.original_title || item.original_name
 					if ((type !== "movie" && type !== "tv") || !title || typeof item.id !== "number") return []
+					// a title nobody has rated would leave the card with no badge, and so no way back to this view
+					if (!item.vote_count) return []
 					const year = (item.release_date || item.first_air_date || "").slice(0, 4) || undefined
 					return [{ id: item.id, media_type: type, title, year }]
 				})
 				.slice(0, 5)
 		} catch {
-			fixError = "TMDb could not be searched. Try again."
-		} finally {
-			fixSearching = false
-			if (host) paint()
+			error = "TMDb could not be searched. Try again."
 		}
+		if (run !== searchRun) return
+		fixResults = results
+		fixError = error
+		fixSearching = false
+		if (host) paint()
 	}
 	const applyFix = async () => {
-		const picked = fixResults.find((result) => result.id === fixSelected)
+		const picked = fixResults.find((result) => resultKey(result) === fixSelected)
 		if (!picked) return
 		try {
 			await saveOverride(cardTitle, {
@@ -534,15 +557,15 @@ export function attachInspector(
 						{
 							query: fixQuery,
 							results: fixResults,
-							selectedId: fixSelected,
-							currentId: data.id,
+							selected: fixSelected,
+							current: resultKey(data),
 							searching: fixSearching,
 							error: fixError,
 						},
 						{
 							search: (query) => void runSearch(query),
-							pick: (id) => {
-								fixSelected = id
+							pick: (key) => {
+								fixSelected = key
 								paint()
 							},
 							apply: () => void applyFix(),
@@ -585,6 +608,8 @@ export function attachInspector(
 		fixSelected = undefined
 		fixSearching = false
 		fixError = ""
+		searchRun++
+		if (closeOpenInspector === close) closeOpenInspector = null
 		const title = badge.dataset.inspectorTitle
 		if (title) {
 			badge.setAttribute("title", title)
@@ -594,6 +619,8 @@ export function attachInspector(
 	const open = () => {
 		if (host || !badge.isConnected) return
 		clearTimeout(openTimer)
+		closeOpenInspector?.()
+		closeOpenInspector = close
 		installPageFont()
 		host = document.createElement("div")
 		host.setAttribute("data-sb-inspector", "")
@@ -633,7 +660,13 @@ export function attachInspector(
 			close()
 		}
 		const escape = (event: KeyboardEvent) => {
-			if (event.key === "Escape") close()
+			if (event.key !== "Escape") return
+			const hadFocus = host?.matches(":focus-within")
+			close()
+			if (!hadFocus) return
+			refocusing = true
+			badge.focus()
+			refocusing = false
 		}
 		const onScroll = () => close()
 		const onResize = () => position()
@@ -672,10 +705,20 @@ export function attachInspector(
 		openTimer = setTimeout(open, HOVER_OPEN_MS)
 	})
 	badge.addEventListener("pointerleave", () => clearTimeout(openTimer))
-	badge.addEventListener("focus", open)
+	badge.addEventListener("focus", () => {
+		if (!refocusing) open()
+	})
+	// the inspector sits at the end of the page, so Tab from the badge goes into it rather than past it
+	badge.addEventListener("keydown", (event) => {
+		const first = shadow?.querySelector<HTMLElement>("button, a[href]")
+		if (event.key !== "Tab" || event.shiftKey || !first) return
+		event.preventDefault()
+		first.focus()
+	})
+	badge.addEventListener("pointerdown", (event) => (pointerType = event.pointerType))
 	badge.addEventListener("click", (event) => {
 		// On touch there is no hover: the first tap opens the inspector instead of a new Letterboxd tab.
-		if (!globalThis.matchMedia?.("(hover: none)")?.matches) return
+		if (pointerType !== "touch") return
 		event.preventDefault()
 		open()
 	})
