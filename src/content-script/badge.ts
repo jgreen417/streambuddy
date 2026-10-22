@@ -168,46 +168,43 @@ function fillBadge(div: HTMLElement, data: MovieInfo, general: settingsType["Gen
 	}
 	main.append(value)
 	div.appendChild(main)
-	// "Score only" keeps the sticker to the number; the tooltip still carries the source, friends and your status.
-	const compact = general.badgeDetail === "score"
 	// Letterboxd's 0-5 is the default; a 0-10 score from IMDb or TMDb says where it's from in the label column
-	if (!compact && data.source !== "letterboxd") {
+	if (data.source !== "letterboxd") {
 		const source = document.createElement("span")
 		Object.assign(source.style, { ...LABEL_COLUMN_STYLE, color: BADGE_LABEL })
 		source.append(data.source === "imdb" ? "IMDb" : "TMDb")
 		div.appendChild(source)
 	}
-	const labelled = general.friendsStyle === "labels"
-	let column: HTMLElement | undefined
-	if (data.source === "letterboxd" && data.friends_rating && general.friendsRatings) {
-		if (!compact) {
-			if (labelled) column = addLabelLine(div, column, color.accent, "friends", data.friends_rating.toFixed(1))
-			else {
-				const segment = addBadgeSegment(div, data.friends_rating.toFixed(1))
-				segment.prepend(friendsIcon(data.friends ?? [], data.friends_count ?? 1, general.friendsStyle))
-			}
-		}
+	const friends = data.source === "letterboxd" && general.friendsRatings ? data.friends_rating : undefined
+	if (friends) {
 		const names = (data.friends ?? []).map((friend) => `${friend.name} ${friend.rating.toFixed(1)}`).join(", ")
 		tooltip.push(
-			`Friends ${data.friends_rating.toFixed(1)} from ${data.friends_count}${names ? `: ${names}` : ""}${(data.friends_count ?? 0) > (data.friends?.length ?? 0) ? "…" : ""}`,
+			`Friends ${friends.toFixed(1)} from ${data.friends_count}${names ? `: ${names}` : ""}${(data.friends_count ?? 0) > (data.friends?.length ?? 0) ? "…" : ""}`,
 		)
 	}
-	if (personal.watched !== undefined) {
-		if (!compact) {
-			if (labelled)
-				addLabelLine(div, column, color.info, "you", personal.watched ? personal.watched.toFixed(1) : "seen")
-			else addBadgeSegment(div, personal.watched ? `✓ you ${personal.watched.toFixed(1)}` : "✓ seen")
-		}
+	if (personal.watched !== undefined)
 		tooltip.push(personal.watched ? `You rated it ${personal.watched.toFixed(1)}` : "You've logged it")
-	} else if (personal.watchlist) {
-		if (!compact) {
-			if (labelled) addLabelLine(div, column, color.info, "you", "watchlist", BADGE_WATCHLIST)
-			else addBadgeSegment(div, "watchlist", BADGE_WATCHLIST)
-		}
-		tooltip.push("On your watchlist")
-	}
+	else if (personal.watchlist) tooltip.push("On your watchlist")
 	div.title = tooltip.join("\n")
 	div.setAttribute("aria-label", tooltip.join(". "))
+	// "Score only" stops here; the tooltip still carries friends and your status
+	if (general.badgeDetail === "score") return
+	const labelled = general.friendsStyle === "labels"
+	let column: HTMLElement | undefined
+	if (friends) {
+		if (labelled) column = addLabelLine(div, column, color.accent, "friends", friends.toFixed(1))
+		else {
+			const segment = addBadgeSegment(div, friends.toFixed(1))
+			segment.prepend(friendsIcon(data.friends ?? [], data.friends_count ?? 1, general.friendsStyle))
+		}
+	}
+	if (personal.watched !== undefined) {
+		if (labelled) addLabelLine(div, column, color.info, "you", personal.watched ? personal.watched.toFixed(1) : "seen")
+		else addBadgeSegment(div, personal.watched ? `✓ you ${personal.watched.toFixed(1)}` : "✓ seen")
+	} else if (personal.watchlist) {
+		if (labelled) addLabelLine(div, column, color.info, "you", "watchlist", BADGE_WATCHLIST)
+		else addBadgeSegment(div, "watchlist", BADGE_WATCHLIST)
+	}
 }
 
 // The badge sits in a corner of the card's artwork: the same gap from both edges of that corner, and its corners

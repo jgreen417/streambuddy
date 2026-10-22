@@ -190,6 +190,7 @@ const updateMode = (event: Event) => {
 					:aria-valuetext="`${settings.General.glassFrost}% frosted`"
 				/>
 			</label>
+			<p class="sb-help">Applies to card and episode ratings.</p>
 			<label class="sb-cutoff">
 				Badge detail
 				<select v-model="settings.General.badgeDetail">
@@ -197,8 +198,7 @@ const updateMode = (event: Event) => {
 					<option value="score">Score only</option>
 				</select>
 			</label>
-			<p class="sb-help">Score only keeps the score; friends and your status stay in the tooltip.</p>
-			<p class="sb-help">Applies to card and episode ratings.</p>
+			<p class="sb-help">Score only keeps the score and its source; friends and your status stay in the tooltip.</p>
 		</div>
 		<details
 			class="sb-disclosure"
