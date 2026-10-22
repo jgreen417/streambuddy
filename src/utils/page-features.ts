@@ -295,6 +295,9 @@ export class EpisodeRatings {
 					chip.append(score, source)
 					if (isBest) chip.dataset.best = "true"
 					look.apply(chip)
+					// the glass look sets its shadow inline, over the stylesheet's ring, so the ring joins it there
+					if (isBest && chip.style.boxShadow)
+						chip.style.boxShadow = `0 0 0 2px var(--sb-accent),${chip.style.boxShadow}`
 					const radius = episodeCornerRadius(entry.target)
 					chip.style.setProperty("--sb-badge-r", `${Math.max(radius - 3, 2)}px`)
 					chip.style.setProperty("--sb-pill-r", `${Math.max(radius - 6, 2)}px`)
