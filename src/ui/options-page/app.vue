@@ -126,7 +126,7 @@ const hash = computed(() => router.currentRoute.value.path)
 		</div>
 		<div class="content flex flex-col overflow-y-auto w-full">
 			<div class="page">
-				<div class="p-4">
+				<div class="p-4 prose">
 					<ServiceRequestBanner />
 					<RouterView />
 				</div>
