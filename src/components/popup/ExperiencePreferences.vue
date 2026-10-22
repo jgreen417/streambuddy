@@ -37,6 +37,11 @@ const credits = preference(["skipCredits"])
 const stillWatching = preference(["skipStillWatching"])
 const ads = preference(["skipAd"])
 const speed = preference(["speedControl"])
+const skipDelayOptions = [
+	{ value: 0, label: "No wait" },
+	{ value: 1, label: "1 second" },
+	{ value: 2, label: "2 seconds" },
+]
 const pauseOptions = [
 	{ value: 0, label: "Never" },
 	{ value: 2, label: "After 2 episodes" },
@@ -394,10 +399,28 @@ const updateMode = (event: Event) => {
 					description="Hear the theme once, then skip it."
 				/>
 				<PopupToggle
+					v-if="has('skipRecap')"
+					v-model="settings.General.keepSeasonRecaps"
+					label="Keep recaps on episode 1"
+					description="Hear the “previously on” when a new season begins."
+				/>
+				<PopupToggle
 					v-model="settings.General.skipNotices"
 					label="Skip notices"
 					description="A short notice with Undo each time something is skipped."
 				/>
+				<label class="sb-cutoff">
+					Wait before skipping
+					<select v-model.number="settings.General.skipDelaySeconds">
+						<option
+							v-for="option in skipDelayOptions"
+							:key="option.value"
+							:value="option.value"
+						>
+							{{ option.label }}
+						</option>
+					</select>
+				</label>
 				<label class="sb-cutoff">
 					Pause autoplay
 					<select v-model.number="settings.General.pauseAfter">

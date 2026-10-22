@@ -79,6 +79,8 @@ function setup(overrides: Partial<PlaybackSettings> = {}) {
 		skipAds: true,
 		speedControl: true,
 		keepFirstIntro: false,
+		keepSeasonRecaps: false,
+		skipDelaySeconds: 0,
 		notices: true,
 		pauseAfter: 0,
 		...overrides,
@@ -134,6 +136,47 @@ describe("playback engine", () => {
 		expect(video.currentTime).toBe(100)
 	})
 
+	it("waits for the configured delay before pressing a skip control", () => {
+		const { video, tick, addButton } = setup({ skipDelaySeconds: 1 })
+		addButton("intro", 185)
+		tick()
+		expect(video.currentTime).toBe(100)
+		vi.advanceTimersByTime(999)
+		tick()
+		expect(video.currentTime).toBe(100)
+		vi.advanceTimersByTime(2)
+		tick()
+		expect(video.currentTime).toBe(185)
+	})
+	it("restarts the wait when the skip control disappears", () => {
+		const { video, tick, addButton, buttons } = setup({ skipDelaySeconds: 1 })
+		addButton("intro", 185)
+		tick()
+		buttons.intro!.remove()
+		vi.advanceTimersByTime(1500)
+		tick()
+		addButton("intro", 185)
+		tick()
+		expect(video.currentTime).toBe(100)
+		vi.advanceTimersByTime(1001)
+		tick()
+		expect(video.currentTime).toBe(185)
+	})
+	it("keeps a recap on the first episode of a season when asked", () => {
+		const { video, tick, addButton, state } = setup({ keepSeasonRecaps: true })
+		state.episodeNumber = 1
+		addButton("recap", 185)
+		tick()
+		expect(video.currentTime).toBe(100)
+		// the number goes with the player controls; it's still episode 1
+		state.episodeNumber = null
+		tick()
+		expect(video.currentTime).toBe(100)
+		state.episode = "e2"
+		state.episodeNumber = 2
+		tick()
+		expect(video.currentTime).toBe(185)
+	})
 	it("leaves a show's intro alone after “Not for this show”", async () => {
 		const { video, tick, addButton } = setup()
 		addButton("intro", 185)
