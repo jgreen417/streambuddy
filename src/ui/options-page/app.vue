@@ -259,17 +259,6 @@ body {
 .content hr {
 	border-color: var(--sb-hairline);
 }
-.content .btn {
-	font-size: 14px;
-	background: var(--sb-hairline);
-	border: 1px solid var(--sb-line-raised);
-	color: var(--sb-text);
-	box-shadow: none;
-	font-weight: 500;
-}
-.content .btn:hover {
-	background: var(--sb-surface-hover);
-}
 .content input:not([type="checkbox"]),
 .content select {
 	background: var(--sb-field);

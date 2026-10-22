@@ -34,9 +34,6 @@ export function useLocale() {
 	// Use the useBrowserLocalStorage composable to persist the locale
 	const { data: currentLocale } = useBrowserLocalStorage<string>(localeKey, defaultLocale, false)
 
-	// Initialize the locale from i18n
-	// currentLocale.value = i18n.global.locale.value
-
 	// Watch for changes in the locale and update i18n
 	watch(currentLocale, (newLocale) => {
 		i18n.global.locale.value = newLocale

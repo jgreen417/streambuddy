@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { SERVICE_NAMES_BY_STATS_KEY as PLATFORM_NAMES } from "@/constants/streamingServices"
 import { computed, ref } from "vue"
-import { storeToRefs } from "pinia"
-import { useOptionsStore } from "@/stores/options.store"
 import { settingsReady } from "@/stores/settings"
 import { getRatingPercentile, getScoreColor } from "@/utils/rating-sources"
 import { color, serviceColors } from "@/design/tokens"
@@ -18,7 +16,6 @@ import {
 	type WatchLog,
 } from "@/utils/stats"
 
-const { settings } = storeToRefs(useOptionsStore())
 const watchLog = ref<WatchLog>({})
 const seenTop = ref<SeenTop>({})
 const watchlistSeen = ref<SeenTop>({})

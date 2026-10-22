@@ -17,11 +17,11 @@ describe("design tokens", () => {
 		const found: string[] = []
 		for (const file of readdirSync(SRC, { recursive: true, encoding: "utf8" })) {
 			if (!/\.(ts|vue|css)$/.test(file) || /^(design|tests|types)\//.test(file)) continue
-			// daisyUI's light theme is inherited from the original extension and never shown
-			const source = read(file).replace(/name: "light";[^}]*/, (theme) => theme.replace(/[^\n]/g, ""))
-			source.split("\n").forEach((line, i) => {
-				if (raw.test(line)) found.push(`${file}:${i + 1}: ${line.trim()}`)
-			})
+			read(file)
+				.split("\n")
+				.forEach((line, i) => {
+					if (raw.test(line)) found.push(`${file}:${i + 1}: ${line.trim()}`)
+				})
 		}
 		expect(found).toEqual([])
 	})

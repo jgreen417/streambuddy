@@ -2,7 +2,13 @@
 import { computed, ref } from "vue"
 import PopupSettings from "@/components/popup/PopupSettings.vue"
 import PopupStats from "@/components/popup/PopupStats.vue"
-import { OTHER_SERVICES, SERVICES, SUPPORTED_SERVICE_NAMES, serviceForHost, streamingServices } from "@/constants/streamingServices"
+import {
+	OTHER_SERVICES,
+	SERVICES,
+	SUPPORTED_SERVICE_NAMES,
+	serviceForHost,
+	streamingServices,
+} from "@/constants/streamingServices"
 import { useAccount } from "@/components/popup/useAccount"
 import { SERVICE_REQUEST_URL } from "@/constants/links"
 import { serviceColors } from "@/design/tokens"

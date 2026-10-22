@@ -3,7 +3,7 @@ import process from "node:process"
 import ManifestConfig from "./manifest.config.ts"
 import { SERVICES } from "./src/constants/streamingServices.ts"
 
-export default defineManifest((env) => ({
+export default defineManifest(() => ({
 	...ManifestConfig,
 	author: "Josh Green",
 	icons: {

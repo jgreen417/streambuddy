@@ -9,11 +9,6 @@ export const useOptionsStore = defineStore("options", () => {
 })
 
 export const useFrontendStore = defineStore("frontend", () => {
-	const { isDark, toggleDark } = useTheme()
-	const currentLocale = useLocale()
-	return {
-		isDark,
-		toggleDark,
-		currentLocale,
-	}
+	useTheme()
+	return { currentLocale: useLocale() }
 })
