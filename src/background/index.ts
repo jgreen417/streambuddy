@@ -34,14 +34,6 @@ browser.runtime.onInstalled.addListener(async ({ reason, previousVersion }) => {
 
 // an empty URL also clears one an earlier version registered
 browser.runtime.setUninstallURL(UNINSTALL_SURVEY_URL)
-
-self.onerror = function (message, source, lineno, colno, error) {
-	console.info("Error: " + message)
-	console.info("Source: " + source)
-	console.info("Line: " + lineno)
-	console.info("Column: " + colno)
-	console.info("Error object: " + error)
-}
 debugLog("background loaded")
 
 // A homepage can ask for dozens of titles at once and Letterboxd copes fine (40 parallel requests finish in ~1.3s).

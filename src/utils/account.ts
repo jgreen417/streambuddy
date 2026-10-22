@@ -49,8 +49,6 @@ export function onAccountChanged(callback: (account: Account) => void) {
 	})
 }
 
-export const isSetUp = (account: Account) => !!account.tmdbToken
-
 // TMDb turned the built-in key away (revoked, or over its limits): every user without their own key is affected,
 // so the popup asks for one instead of leaving the pages silently empty. Cleared once a lookup works again.
 const KEY_REJECTED = "tmdbKeyRejected"

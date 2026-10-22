@@ -11,11 +11,13 @@ const props = defineProps<{ service: StreamingService | null; expanded?: boolean
 const { settings } = storeToRefs(useOptionsStore())
 const loaded = ref(false)
 const loadError = ref(false)
-settingsReady.then(() => {
-	loaded.value = true
-}).catch(() => {
-	loadError.value = true
-})
+settingsReady
+	.then(() => {
+		loaded.value = true
+	})
+	.catch(() => {
+		loadError.value = true
+	})
 const { summary, loading, syncing, error, sync } = useLetterboxdProfile()
 const { username } = useAccount()
 </script>

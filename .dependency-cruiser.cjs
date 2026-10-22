@@ -4,10 +4,14 @@ module.exports = {
 		{ name: "no-circular", severity: "error", from: {}, to: { circular: true } },
 		{
 			name: "utils-are-leaf-logic",
-			comment: "utils/ holds pure domain logic: it may use constants/ and other utils/, never app state, UI, or entry points",
+			comment:
+				"utils/ holds pure domain logic: it may use constants/ and other utils/, never app state, UI, or entry points",
 			severity: "error",
 			from: { path: "^src/utils/" },
-			to: { path: "^src/(stores|composables|components|ui|content-script|playback|background)/", dependencyTypesNot: ["type-only"] },
+			to: {
+				path: "^src/(stores|composables|components|ui|content-script|playback|background)/",
+				dependencyTypesNot: ["type-only"],
+			},
 		},
 		{
 			name: "stores-below-ui",
@@ -32,8 +36,12 @@ module.exports = {
 			name: "shared-code-not-into-sites",
 			comment: "only a service's own entry script may pick its site adapter; shared code receives it as a parameter",
 			severity: "error",
-			from: { path: "^src/(content-script/(?!sites/|netflix\\.ts|amazon\\.ts|max\\.ts|disney\\.ts)|playback/(?!sites/)|utils/)" },
-			to: { path: "^src/(playback/sites/(netflix|prime|hbo|disney)|content-script/sites/(netflix|prime|max|disney))\\.ts$" },
+			from: {
+				path: "^src/(content-script/(?!sites/|netflix\\.ts|amazon\\.ts|max\\.ts|disney\\.ts)|playback/(?!sites/)|utils/)",
+			},
+			to: {
+				path: "^src/(playback/sites/(netflix|prime|hbo|disney)|content-script/sites/(netflix|prime|max|disney))\\.ts$",
+			},
 		},
 		{
 			name: "entries-not-imported",

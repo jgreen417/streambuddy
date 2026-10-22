@@ -52,9 +52,8 @@
 	</ol>
 	<h2>Do I need my own key?</h2>
 	<p>
-		Usually not: streamBuddy comes with a shared key, so ratings work straight after install. Your own key keeps
-		ratings going if TMDb ever pauses the shared one. Either way there’s no server in the middle that sees what you
-		browse.
+		Usually not: streamBuddy comes with a shared key, so ratings work straight after install. Your own key keeps ratings
+		going if TMDb ever pauses the shared one. Either way there’s no server in the middle that sees what you browse.
 	</p>
 	<h2>Is it private?</h2>
 	<p>

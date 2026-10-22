@@ -70,4 +70,7 @@ export class CheckedCards {
 	mark(card: Element, title: string, until = Number.POSITIVE_INFINITY) {
 		this.checked.set(card, { title, until })
 	}
+	clear() {
+		this.checked = new WeakMap()
+	}
 }
