@@ -3,7 +3,7 @@ import { netflixSite } from "@/content-script/sites/netflix"
 import { netflix } from "@/playback/sites/netflix"
 import { startPlayback } from "@/playback/start"
 import { settings, settingsReady } from "@/stores/settings"
-import { keepTidy, quietPreviews, tidyNetflix } from "@/playback/tidy"
+import { keepTidy, quietPreviews, tidyNetflix } from "@/content-script/tidy"
 
 startSharedFunctions(netflixSite)
 startPlayback(netflix)

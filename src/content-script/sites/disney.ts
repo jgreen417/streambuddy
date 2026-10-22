@@ -38,7 +38,7 @@ export const disneySite: RatingsSite = {
 	service: "Disney",
 	// Disney+ puts its "New" badges along the bottom of the artwork; the top-right is clear
 	badge: { corner: "top", zIndex: "2" },
-	titleCards: () => [document.querySelectorAll('a[data-testid="set-item"]:not(.imdb)')],
+	titleCards: () => [document.querySelectorAll('a[data-testid="set-item"]:not(.sb-seen)')],
 	seenMarker: (card) => card,
 	cleanTitle(card) {
 		const label = card.getAttribute("aria-label") ?? ""

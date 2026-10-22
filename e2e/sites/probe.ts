@@ -10,7 +10,7 @@ import { netflixSite } from "@/content-script/sites/netflix"
 import { primeSite } from "@/content-script/sites/prime"
 import type { RatingsSite } from "@/content-script/sites/types"
 import { disney } from "@/playback/sites/disney"
-import { hbo } from "@/playback/sites/hbo"
+import { max } from "@/playback/sites/max"
 import { netflix } from "@/playback/sites/netflix"
 import { prime } from "@/playback/sites/prime"
 import type { SiteAdapter, SkipKind } from "@/playback/types"
@@ -21,7 +21,7 @@ import { freeze } from "./freeze"
 const SITES: Record<StreamingService, { ratings: RatingsSite; playback: SiteAdapter }> = {
 	Netflix: { ratings: netflixSite, playback: netflix },
 	Amazon: { ratings: primeSite, playback: prime },
-	HBO: { ratings: maxSite, playback: hbo },
+	HBO: { ratings: maxSite, playback: max },
 	Disney: { ratings: disneySite, playback: disney },
 }
 const SKIPS: SkipKind[] = ["intro", "recap", "credits", "stillWatching"]

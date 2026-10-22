@@ -36,6 +36,12 @@ browser.runtime.onInstalled.addListener(async ({ reason, previousVersion }) => {
 browser.runtime.setUninstallURL(UNINSTALL_SURVEY_URL)
 debugLog("background loaded")
 
+// a failed lookup goes back as { error }, which the content script retries later instead of caching as "no rating"
+function lookupFailed(error: unknown) {
+	logLookupFailure("streamBuddy lookup failed:", error)
+	return { error: (error as Error).message }
+}
+
 // A homepage can ask for dozens of titles at once and Letterboxd copes fine (40 parallel requests finish in ~1.3s).
 // Benchmarked on a 40-card homepage, a cap of 8 made badges slower than no cap (1.44s vs 0.90s average) and 32 was
 // within noise of uncapped (0.92s). The cap stays at 8 so a page of cards never floods Letterboxd; the cache absorbs
@@ -83,8 +89,7 @@ onMessage("letterboxdRating", async (message) => {
 		const username = friends ? (await getAccount()).letterboxdUsername : ""
 		return await withLetterboxdSlot(() => fetchLetterboxdRating(tmdbId, username))
 	} catch (error) {
-		logLookupFailure("streamBuddy lookup failed:", error)
-		return { error: (error as Error).message }
+		return lookupFailed(error)
 	}
 })
 // a show's Letterboxd page, if it has one: only limited series do
@@ -93,16 +98,14 @@ onMessage("letterboxdSeries", async (message) => {
 		const username = message.data.friends ? (await getAccount()).letterboxdUsername : ""
 		return await withLetterboxdSlot(() => fetchLetterboxdByImdb(message.data.imdbId, username))
 	} catch (error) {
-		logLookupFailure("streamBuddy lookup failed:", error)
-		return { error: (error as Error).message }
+		return lookupFailed(error)
 	}
 })
 onMessage("imdbRating", async (message) => {
 	try {
 		return await fetchImdbRating(message.data.imdbId)
 	} catch (error) {
-		logLookupFailure("streamBuddy lookup failed:", error)
-		return { error: (error as Error).message }
+		return lookupFailed(error)
 	}
 })
 
@@ -199,7 +202,6 @@ onMessage("fetch", async (message) => {
 			{ method: "GET", headers },
 		)
 	} catch (error) {
-		logLookupFailure("streamBuddy lookup failed:", error)
-		return { error: (error as Error).message }
+		return lookupFailed(error)
 	}
 })

@@ -326,7 +326,6 @@ export function renderBadge(data: MovieInfo, { general, look, personal, position
 		div = a
 	} else div = document.createElement("div")
 	installPageFeatureStyle()
-	div.id = "rating"
 	div.classList.add("sb-card-rating")
 	// which streamBuddy build drew this badge (handy for checking that a rebuild was picked up)
 	div.dataset.sbBuild = __BUILD_ID__

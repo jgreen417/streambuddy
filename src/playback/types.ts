@@ -1,15 +1,13 @@
 // What a streaming site has to tell the playback engine. Everything site-specific lives in an adapter
 // (sites/*.ts); the engine, toasts, speed control and rules are shared.
-
-// intro, recap and credits are skip buttons the site shows; stillWatching is the "Are you still watching?" prompt
-export type SkipKind = "intro" | "recap" | "credits" | "stillWatching"
 import type { StreamingService } from "@/constants/streamingServices"
 import type { PlayerClock } from "@/utils/credits-review"
 
-export type ServiceKey = StreamingService
+// intro, recap and credits are skip buttons the site shows; stillWatching is the "Are you still watching?" prompt
+export type SkipKind = "intro" | "recap" | "credits" | "stillWatching"
 
 export type SiteAdapter = {
-	service: ServiceKey
+	service: StreamingService
 	// the main feature video, or null when not on a player page
 	video(): HTMLVideoElement | null
 	// where the title is up to, where the <video>'s own clock isn't the title's (Disney+'s has no length)

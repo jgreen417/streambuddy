@@ -2,7 +2,7 @@ import { markerForEntity, pagePlayhead } from "@/content-script/credits-marker"
 import type { PlayerClock } from "@/utils/credits-review"
 import { parseEpisodeLabel } from "@/utils/series-finale"
 import type { SiteAdapter, SkipKind } from "../types"
-import { $, mainVideo, parseSeason } from "./dom"
+import { $, RECAP_LABEL, mainVideo, parseSeason } from "./dom"
 
 // Disney+'s player is built of web components, each drawing its controls in its own (open) shadow root
 export function playerQuery<T extends Element = HTMLElement>(selector: string, root: ParentNode = document): T | null {
@@ -43,8 +43,6 @@ export function clock(): PlayerClock | null {
 	return { currentTime: playhead.position, duration: playhead.duration, paused: video.paused }
 }
 
-const RECAP = /recap|rückblick|résumé|récap|resumen|riassunto|riepilogo|samenvatting|resumo/i
-
 function skipButton(kind: SkipKind): HTMLElement | null {
 	switch (kind) {
 		// one skip button, labelled "Skip Intro" or "Skip Recap" in the profile's language: anything not a recap is the intro
@@ -52,7 +50,7 @@ function skipButton(kind: SkipKind): HTMLElement | null {
 		case "recap": {
 			const button = playerQuery('[data-qa="skip-overlay.skipButton"]')?.shadowRoot?.querySelector("button")
 			if (!button) return null
-			return RECAP.test(button.textContent ?? "") === (kind === "recap") ? button : null
+			return RECAP_LABEL.test(button.textContent ?? "") === (kind === "recap") ? button : null
 		}
 		// an episode's end card plays the next one
 		case "credits":

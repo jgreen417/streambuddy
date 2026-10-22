@@ -1,4 +1,4 @@
-import { hbo } from "@/playback/sites/hbo"
+import { max } from "@/playback/sites/max"
 import { episodeFromPlayer, gridsAround, text } from "./dom"
 import { markedCreditsFromEnd } from "../credits-marker"
 import type { RatingsSite } from "./types"
@@ -16,7 +16,7 @@ const TITLE_PAGES = ["show", "series", "movie", "topical", "standalone"]
 export const maxSite: RatingsSite = {
 	service: "HBO",
 	badge: { corner: "bottom", zIndex: "2" },
-	titleCards: () => [document.querySelectorAll("a[class*='StyledTileLinkNormal-']:not(.imdb)")],
+	titleCards: () => [document.querySelectorAll("a[class*='StyledTileLinkNormal-']:not(.sb-seen)")],
 	seenMarker: (card) => card,
 	cleanTitle(card) {
 		const href = card.getAttribute("href") || ""
@@ -40,7 +40,7 @@ export const maxSite: RatingsSite = {
 	creditsFromEnd: markedCreditsFromEnd,
 	playingTitle: () => document.title,
 	// the player can be missing its show title
-	playingEpisode: () => episodeFromPlayer(text('[data-testid="player-ux-season-episode"]'), hbo.showTitle()),
+	playingEpisode: () => episodeFromPlayer(text('[data-testid="player-ux-season-episode"]'), max.showTitle()),
 	endScreenShowing: () => false,
 	placeReview: () => {},
 }

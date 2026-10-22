@@ -72,7 +72,7 @@ describe("Amazon_titleLink", () => {
 		article.innerHTML = html
 		return article
 	}
-	const badge = '<a id="rating" class="sb-card-rating" href="https://letterboxd.com/film/invincible/">4.1</a>'
+	const badge = '<a class="sb-card-rating" href="https://letterboxd.com/film/invincible/">4.1</a>'
 	const link = '<a href="https://www.primevideo.com/detail/0ABC/" aria-label="Invincible"></a>'
 
 	it("finds the title link", () => {

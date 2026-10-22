@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest"
-import { quietPreviews, tidyNetflix } from "../../playback/tidy"
+import { quietPreviews, tidyNetflix } from "../../content-script/tidy"
 
 describe("Netflix's games", () => {
 	afterEach(() => {

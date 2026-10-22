@@ -78,8 +78,8 @@ const rowCardTitles = new WeakMap<HTMLElement, string>()
 const rowCardDecorations = new WeakMap<HTMLElement, HTMLElement[]>()
 // let the next pass pick the card up again
 function releaseCard(card: HTMLElement) {
-	card.classList.remove("imdb")
-	card.closest("li")?.classList.remove("imdb")
+	card.classList.remove("sb-seen")
+	card.closest("li")?.classList.remove("sb-seen")
 }
 // after the cache or a title fix changes: unrated cards are looked up again too, not just the badged ones
 export function forgetCards() {
@@ -244,12 +244,12 @@ async function addRating() {
 		for (let i = 0; i < titleCards.length; i++) {
 			const card = titleCards[i] as HTMLElement
 			const marker = site.seenMarker(card, type)
-			marker?.classList.add("imdb")
+			marker?.classList.add("sb-seen")
 			const media_type = site.mediaType(card, url)
 			const title = site.cleanTitle(card, type)
 			if (!title) {
 				// a card whose title is still being worked out gets another pass once it's known
-				if (site.titlePending?.(card)) card.classList.remove("imdb")
+				if (site.titlePending?.(card)) card.classList.remove("sb-seen")
 				continue
 			}
 			if (checkedCards.isChecked(card, checkedKey(title))) continue
@@ -271,7 +271,7 @@ async function addRating() {
 				useDBCache(entry, title, card, media_type)
 			}
 			// if element is not visible skip it
-			else if (!isElementVisible(card)) marker?.classList.remove("imdb")
+			else if (!isElementVisible(card)) marker?.classList.remove("sb-seen")
 			else {
 				getMovieInfo(title, card, media_type)
 				updateDBCache = true

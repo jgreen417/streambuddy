@@ -4,7 +4,7 @@ import { disneySite } from "@/content-script/sites/disney"
 import { disney } from "@/playback/sites/disney"
 import { startPlayback } from "@/playback/start"
 import { settings, settingsReady } from "@/stores/settings"
-import { keepTidy, quietPreviews } from "@/playback/tidy"
+import { keepTidy, quietPreviews } from "@/content-script/tidy"
 
 listenForCreditsMarkers()
 startSharedFunctions(disneySite)
