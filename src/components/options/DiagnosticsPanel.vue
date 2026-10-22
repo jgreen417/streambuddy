@@ -44,12 +44,13 @@ async function clearOverrides() {
 	try {
 		// the corrected matches are cached under the card titles too, so they go first or the cards would keep them
 		const stored = await browser.storage.local.get(["DBCache", "titleOverrides"])
-		const fixed = new Set(
-			Object.values((stored.titleOverrides ?? {}) as Record<string, { id: number }>).map((fix) => fix.id),
-		)
-		const cache = Object.entries((stored.DBCache ?? {}) as Record<string, { id?: number }>)
+		// TMDb ids are per media type, so film 1399 and series 1399 are different titles
+		type Match = { id?: number; media_type?: string }
+		const key = ({ id, media_type }: Match) => `${media_type}/${id}`
+		const fixed = new Set(Object.values((stored.titleOverrides ?? {}) as Record<string, Match>).map(key))
+		const cache = Object.entries((stored.DBCache ?? {}) as Record<string, Match>)
 		await browser.storage.local.set({
-			DBCache: Object.fromEntries(cache.filter(([, entry]) => entry.id === undefined || !fixed.has(entry.id))),
+			DBCache: Object.fromEntries(cache.filter(([, entry]) => !fixed.has(key(entry)))),
 		})
 		await browser.storage.local.remove("titleOverrides")
 		await load()
