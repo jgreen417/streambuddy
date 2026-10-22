@@ -50,6 +50,10 @@ export type settingsType = {
 		skipNotices: boolean
 		// let the first episode of a season play its intro
 		keepFirstIntro: boolean
+		// hear the recap when a season starts
+		keepSeasonRecaps: boolean
+		// wait this many seconds after a skip control appears before pressing it; 0 = press at once
+		skipDelaySeconds: number
 		// pause when this many episodes autoplay in a row without the viewer touching anything; 0 = off
 		pauseAfter: number
 	}
@@ -90,6 +94,8 @@ export const defaultSettings: settingsType = {
 		rateOnCredits: true,
 		skipNotices: true,
 		keepFirstIntro: false,
+		keepSeasonRecaps: false,
+		skipDelaySeconds: 0,
 		pauseAfter: 0,
 	},
 }

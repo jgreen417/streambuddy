@@ -69,6 +69,18 @@ describe("experience preferences integration", () => {
 		await nextTick()
 		expect(state.General.glassFrost).toBe(20)
 	})
+	it("sets a skip delay and keeps season recaps", async () => {
+		const { root, state } = mount(fresh())
+		const delay = Array.from(root.querySelectorAll<HTMLInputElement>('input[type="radio"]')).find(
+			(input) => input.closest("fieldset")?.textContent?.includes("Wait before skipping") && input.value === "1",
+		)!
+		delay.click()
+		await nextTick()
+		expect(state.General.skipDelaySeconds).toBe(1)
+		toggle(root, "Keep recaps").click()
+		await nextTick()
+		expect(state.General.keepSeasonRecaps).toBe(true)
+	})
 	it("edits an individual recap without changing intros or other services", async () => {
 		const { root, state } = mount(fresh())
 		toggle(root, "Skip recaps").click()

@@ -37,6 +37,15 @@ const credits = preference(["skipCredits"])
 const stillWatching = preference(["skipStillWatching"])
 const ads = preference(["skipAd"])
 const speed = preference(["speedControl"])
+const skipDelayOptions = [
+	{ value: 0, label: "Off" },
+	{ value: 1, label: "1 second" },
+	{ value: 2, label: "2 seconds" },
+]
+const skipQualitySummary = computed(() => {
+	const delay = settings.value.General.skipDelaySeconds
+	return `${delay ? `Waits ${delay}s` : "Instant"}${settings.value.General.keepSeasonRecaps ? " · recaps kept" : ""}`
+})
 const pauseOptions = [
 	{ value: 0, label: "Never" },
 	{ value: 2, label: "After 2 episodes" },
@@ -411,6 +420,43 @@ const updateMode = (event: Event) => {
 					</select>
 				</label>
 				<p class="sb-help">Counts episodes that play in a row while you don’t touch anything.</p>
+			</div>
+		</details>
+		<details
+			class="sb-disclosure"
+			:open="expanded"
+		>
+			<summary>
+				<span>
+					Skip quality
+					<small>{{ skipQualitySummary }}</small>
+				</span>
+			</summary>
+			<div class="sb-disclosure-body">
+				<fieldset class="sb-filter">
+					<legend>Wait before skipping</legend>
+					<div class="sb-mode">
+						<label
+							v-for="option in skipDelayOptions"
+							:key="option.value"
+						>
+							<input
+								type="radio"
+								:name="`${id}-skip-delay`"
+								:value="option.value"
+								:checked="settings.General.skipDelaySeconds === option.value"
+								@change="settings.General.skipDelaySeconds = option.value"
+							/>
+							<span>{{ option.label }}</span>
+						</label>
+					</div>
+				</fieldset>
+				<PopupToggle
+					v-model="settings.General.keepSeasonRecaps"
+					label="Keep recaps at the start of a season"
+					description="Hear the “previously on” when a new season begins."
+				/>
+				<p class="sb-help">After you undo a skip, streamBuddy leaves that part alone for the rest of the episode.</p>
 			</div>
 		</details>
 	</div>
