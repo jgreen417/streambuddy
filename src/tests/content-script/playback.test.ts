@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { PlaybackEngine } from "../../playback/engine"
 import { isExcepted, showKey, withException, withoutException } from "../../playback/rules"
-import { parseClock, parseEpisodeNumber } from "../../playback/sites/dom"
+import { parseClock, parseEpisodeNumber, parseSeason } from "../../playback/sites/dom"
 import type { PlaybackSettings, SiteAdapter, SkipKind } from "../../playback/types"
 import { setFilmEnded } from "../../utils/film-over"
 
@@ -26,6 +26,16 @@ describe("player text parsing", () => {
 		[undefined, null],
 	])("parseEpisodeNumber(%s) = %s", (text, episode) => {
 		expect(parseEpisodeNumber(text)).toBe(episode)
+	})
+	it.each([
+		["S2 E5", 2],
+		["S1:E1", 1],
+		["Season 3, Ep. 5", 3],
+		["Staffel 4, Folge 1", 4],
+		["E5", null],
+		["Episode 3: Kiss 2", null],
+	])("parseSeason(%s) = %s", (text, season) => {
+		expect(parseSeason(text)).toBe(season)
 	})
 })
 

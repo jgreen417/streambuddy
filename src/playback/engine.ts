@@ -38,10 +38,7 @@ export class PlaybackEngine {
 	private pendingSaved: Record<string, number> = {}
 	private savedFlush: ReturnType<typeof setTimeout> | undefined
 	// the next episode's score, looked up once per episode for the credits notice
-	private nextRating: string | null = null
-	private nextRatingKey = ""
-	private nextSeason: number | null = null
-	private nextEpisode: number | null = null
+	private next: { key: string; season: number; episode: number; rating: string | null } | null = null
 
 	constructor(
 		private site: SiteAdapter,
@@ -213,8 +210,7 @@ export class PlaybackEngine {
 	}
 	// " · Next S3 E5 · IMDb 8.7" when the season lookup found the following episode
 	private nextExtra() {
-		if (!this.nextRating || this.nextSeason === null || this.nextEpisode === null) return ""
-		return ` · Next S${this.nextSeason} E${this.nextEpisode + 1} · ${this.nextRating}`
+		return this.next?.rating ? ` · Next S${this.next.season} E${this.next.episode + 1} · ${this.next.rating}` : ""
 	}
 	private loadNextRating() {
 		const show = this.site.showTitle()
@@ -222,16 +218,10 @@ export class PlaybackEngine {
 		const episode = this.site.episodeNumber()
 		if (!show || !season || !episode) return
 		const key = `${show}|${season}|${episode}`
-		if (key === this.nextRatingKey) return
-		this.nextRatingKey = key
-		this.nextRating = null
-		this.nextSeason = season
-		this.nextEpisode = episode
-		nextEpisodeRating(show, season, episode)
-			.then((rating) => {
-				if (this.nextRatingKey === key) this.nextRating = rating
-			})
-			.catch(() => {})
+		if (key === this.next?.key) return
+		const next = { key, season, episode, rating: null as string | null }
+		this.next = next
+		nextEpisodeRating(show, season, episode).then((rating) => (next.rating = rating))
 	}
 	private notForShow(kind: SkipKind, show: string, undo?: () => void): NoticeAction {
 		return {
