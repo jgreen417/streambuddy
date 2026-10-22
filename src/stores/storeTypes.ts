@@ -18,6 +18,8 @@ export type settingsType = {
 	Netflix: ServicePlayback & {
 		// hide the mobile-games rows that fill the Netflix homepage
 		hideGames: boolean
+		// hide the ranked "Top 10" row
+		hideTop10: boolean
 	}
 	Amazon: ServicePlayback & {
 		// hide titles that need renting, buying or an add-on subscription
@@ -55,6 +57,8 @@ export type settingsType = {
 		keepFirstIntro: boolean
 		// pause when this many episodes autoplay in a row without the viewer touching anything; 0 = off
 		pauseAfter: number
+		// mute autoplay previews and trailers while browsing
+		quietPreviews: boolean
 	}
 }
 
@@ -70,7 +74,7 @@ const playbackDefaults: ServicePlayback = {
 
 // Default settings
 export const defaultSettings: settingsType = {
-	Netflix: { ...playbackDefaults, hideGames: true },
+	Netflix: { ...playbackDefaults, hideGames: true, hideTop10: false },
 	Amazon: { ...playbackDefaults, hidePaid: false },
 	HBO: { ...playbackDefaults },
 	Disney: { ...playbackDefaults },
@@ -95,5 +99,6 @@ export const defaultSettings: settingsType = {
 		skipNotices: true,
 		keepFirstIntro: false,
 		pauseAfter: 0,
+		quietPreviews: true,
 	},
 }
