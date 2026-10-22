@@ -148,6 +148,7 @@ const updateMode = (event: Event) => {
 		</div>
 		<div class="sb-label">Badge look</div>
 		<div class="sb-group sb-badge-look">
+			<p class="sb-help">Applies to card and episode ratings.</p>
 			<div
 				class="sb-mode sb-look-picker"
 				role="radiogroup"
@@ -190,7 +191,6 @@ const updateMode = (event: Event) => {
 					:aria-valuetext="`${settings.General.glassFrost}% frosted`"
 				/>
 			</label>
-			<p class="sb-help">Applies to card and episode ratings.</p>
 			<label class="sb-cutoff">
 				Badge detail
 				<select v-model="settings.General.badgeDetail">
