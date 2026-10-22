@@ -166,6 +166,9 @@ describe("playback engine", () => {
 		tick()
 		expect(video.paused).toBe(true)
 		expect(noticeText()).toContain("Stopped after this episode")
+		const before = video.currentTime
+		tick()
+		expect(video.currentTime).toBe(before)
 	})
 	it("stops when autoplay moves on before the stop fired, but not after the viewer picks another episode", () => {
 		const { video, tick, state } = setup()

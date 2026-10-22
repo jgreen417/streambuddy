@@ -40,6 +40,8 @@ export class PlaybackEngine {
 	private sleepAt: number | null = null
 	private sleepMinutes: number | null = null
 	private stopAtEnd = false
+	// a fired timer or stop holds the skips and ad handling until the title plays again
+	private resting = false
 	// seconds left in the title at the last tick, to tell autoplay moving on from the viewer picking another title
 	private lastRemaining = Infinity
 	private timeLabel = ""
@@ -83,6 +85,8 @@ export class PlaybackEngine {
 	private tick() {
 		const video = this.site.video()
 		if (!video) {
+			// a timer that runs out away from the player is spent, not kept for the next title
+			if (this.sleepAt !== null && Date.now() >= this.sleepAt) this.sleepAt = this.sleepMinutes = null
 			if (this.video) this.leavePlayer()
 			return
 		}
@@ -253,7 +257,8 @@ export class PlaybackEngine {
 	// The time pill only appears with the player's own controls (pointer movement). Its menu is the sleep timer.
 	private updateTime(video: HTMLVideoElement) {
 		const clock = this.site.clock?.() ?? video
-		if (this.filmOver() || !Number.isFinite(clock.duration) || clock.duration <= 0) {
+		// during a fast-forwarded ad the rate (and on some sites the clock) is the ad's, not the title's
+		if (this.adRestore || this.filmOver() || !Number.isFinite(clock.duration) || clock.duration <= 0) {
 			if (this.timeLabel) {
 				this.timeLabel = ""
 				this.overlay.removeTime()
@@ -307,6 +312,8 @@ export class PlaybackEngine {
 		this.overlay.showNotice(wasSleeping ? "Sleep timer cancelled" : "Stop cancelled", [], 3000)
 	}
 	private checkSleep(video: HTMLVideoElement) {
+		if (this.resting && video.paused) return true
+		this.resting = false
 		if (this.sleepAt !== null && Date.now() >= this.sleepAt) {
 			this.fireSleep(video)
 			return true
@@ -325,6 +332,7 @@ export class PlaybackEngine {
 		this.sleepAt = null
 		this.sleepMinutes = null
 		this.timeLabel = ""
+		this.resting = true
 		video.pause()
 		this.overlay.showNotice(
 			`Slept · paused at ${formatClock(Date.now())}`,
@@ -335,6 +343,7 @@ export class PlaybackEngine {
 	private fireStop(video: HTMLVideoElement) {
 		const isEpisode = this.site.episodeNumber() !== null
 		this.stopAtEnd = false
+		this.resting = true
 		video.pause()
 		this.overlay.showNotice(
 			`Stopped after this ${isEpisode ? "episode" : "film"}`,

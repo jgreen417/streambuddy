@@ -337,12 +337,15 @@ export class PlayerOverlay {
 		this.timeValue?.setAttribute("aria-expanded", "true")
 		menu.querySelector<HTMLButtonElement>("button")?.focus()
 	}
+	// the pill fades again once its menu closes, and keyboard focus goes back to the pill rather than the page
 	closeTimeMenu() {
 		if (!this.timeMenu) return
+		const hadFocus = this.timeMenu.contains(this.root.activeElement)
 		this.timeMenu.remove()
 		this.timeMenu = null
-		this.time?.classList.remove("open")
+		this.time?.classList.remove("open", "show")
 		this.timeValue?.setAttribute("aria-expanded", "false")
+		if (hadFocus) this.timeValue?.focus()
 	}
 }
 
