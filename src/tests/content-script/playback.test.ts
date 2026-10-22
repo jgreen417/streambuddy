@@ -168,6 +168,11 @@ describe("playback engine", () => {
 		addButton("recap", 185)
 		tick()
 		expect(video.currentTime).toBe(100)
+		// the number goes with the player controls; it's still episode 1
+		state.episodeNumber = null
+		tick()
+		expect(video.currentTime).toBe(100)
+		state.episode = "e2"
 		state.episodeNumber = 2
 		tick()
 		expect(video.currentTime).toBe(185)

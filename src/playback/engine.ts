@@ -25,6 +25,8 @@ export class PlaybackEngine {
 	private lastPress = new Map<SkipKind, number>()
 	// when each skip control first appeared, for the optional wait before pressing it
 	private firstSeen = new Map<SkipKind, number>()
+	// the player only shows the episode number with its controls, so remember an episode 1 once seen
+	private premiere = false
 	// speed the viewer wants; null until loaded from storage
 	private rate: number | null = null
 	private renderedRate: number | null = null
@@ -95,6 +97,7 @@ export class PlaybackEngine {
 	// it would restart the autoplay run on every episode
 	private leavePlayer() {
 		this.video = null
+		this.firstSeen.clear()
 		this.overlay.removeSpeed()
 		this.overlay.detach()
 	}
@@ -108,6 +111,7 @@ export class PlaybackEngine {
 		this.suppressed.clear()
 		this.lastPress.clear()
 		this.firstSeen.clear()
+		this.premiere = false
 		this.autoplayRun = first || this.touched ? 1 : this.autoplayRun + 1
 		this.touched = false
 		const limit = this.settings().pauseAfter
@@ -139,10 +143,11 @@ export class PlaybackEngine {
 	// #region skips
 	private handleSkips(video: HTMLVideoElement, settings: PlaybackSettings) {
 		const show = this.site.showTitle()
+		this.premiere ||= this.site.episodeNumber() === 1
 		for (const kind of SKIP_ORDER) {
 			if (!settings.skip[kind] || this.suppressed.has(kind) || isExcepted(this.rules, show, kind)) continue
-			if (kind === "intro" && settings.keepFirstIntro && this.site.episodeNumber() === 1) continue
-			if (kind === "recap" && settings.keepSeasonRecaps && this.site.episodeNumber() === 1) continue
+			if (kind === "intro" && settings.keepFirstIntro && this.premiere) continue
+			if (kind === "recap" && settings.keepSeasonRecaps && this.premiere) continue
 			const button = this.site.skipButton(kind)
 			// a control that comes and goes (ads, the end screen) starts its wait again next time it appears
 			if (!button || !isShown(button)) {
