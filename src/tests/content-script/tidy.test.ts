@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest"
-import { tidyNetflix } from "../../playback/tidy"
+import { quietPreviews, tidyNetflix } from "../../playback/tidy"
 
 describe("Netflix's games", () => {
 	afterEach(() => {
@@ -40,5 +40,52 @@ describe("Netflix's games", () => {
 		document.querySelector("#cell > div")!.innerHTML = `<a data-uia="standard-card"></a>`
 		tidyNetflix(true)
 		expect(document.getElementById("cell")!.style.display).toBe("")
+	})
+})
+
+describe("Netflix's Top 10 row", () => {
+	afterEach(() => {
+		document.body.innerHTML = ""
+	})
+	it("hides and restores the row holding ranked cards", () => {
+		document.body.innerHTML = `<section id="row"><a data-uia="ranked-card"></a></section>`
+		tidyNetflix(false, true)
+		expect(document.getElementById("row")!.style.display).toBe("none")
+		tidyNetflix(false, false)
+		expect(document.getElementById("row")!.style.display).toBe("")
+	})
+	it("still restores games when only the Top 10 row is asked for", () => {
+		document.body.innerHTML = `<section id="games"><a data-uia="cloud-game-card"></a></section>`
+		tidyNetflix(true, false)
+		expect(document.getElementById("games")!.style.display).toBe("none")
+		tidyNetflix(false, false)
+		expect(document.getElementById("games")!.style.display).toBe("")
+	})
+})
+
+describe("quiet previews", () => {
+	afterEach(() => {
+		document.body.innerHTML = ""
+		quietPreviews(false)
+	})
+	it("mutes a preview and only unmutes what it muted", () => {
+		document.body.innerHTML = `<video id="preview"></video><video id="already-muted"></video>`
+		const preview = document.getElementById("preview") as HTMLVideoElement
+		const alreadyMuted = document.getElementById("already-muted") as HTMLVideoElement
+		alreadyMuted.muted = true
+		quietPreviews(true)
+		expect(preview.muted).toBe(true)
+		expect(alreadyMuted.muted).toBe(true)
+		quietPreviews(false)
+		expect(preview.muted).toBe(false)
+		expect(alreadyMuted.muted).toBe(true)
+	})
+	it("leaves a preview the viewer unmuted alone when switched off", () => {
+		document.body.innerHTML = `<video id="preview"></video>`
+		const preview = document.getElementById("preview") as HTMLVideoElement
+		quietPreviews(true)
+		preview.muted = false
+		quietPreviews(false)
+		expect(preview.muted).toBe(false)
 	})
 })
