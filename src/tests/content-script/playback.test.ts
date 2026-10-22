@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { PlaybackEngine } from "../../playback/engine"
 import { isExcepted, showKey, withException, withoutException } from "../../playback/rules"
-import { parseClock, parseEpisodeNumber } from "../../playback/sites/dom"
+import { parseClock, parseEpisodeNumber, parseSeason } from "../../playback/sites/dom"
 import type { PlaybackSettings, SiteAdapter, SkipKind } from "../../playback/types"
 import { setFilmEnded } from "../../utils/film-over"
+
+vi.mock("../../utils/next-episode", () => ({ nextEpisodeRating: vi.fn(async () => "IMDb 8.7") }))
 
 describe("player text parsing", () => {
 	it.each([
@@ -24,6 +26,16 @@ describe("player text parsing", () => {
 		[undefined, null],
 	])("parseEpisodeNumber(%s) = %s", (text, episode) => {
 		expect(parseEpisodeNumber(text)).toBe(episode)
+	})
+	it.each([
+		["S2 E5", 2],
+		["S1:E1", 1],
+		["Season 3, Ep. 5", 3],
+		["Staffel 4, Folge 1", 4],
+		["E5", null],
+		["Episode 3: Kiss 2", null],
+	])("parseSeason(%s) = %s", (text, season) => {
+		expect(parseSeason(text)).toBe(season)
 	})
 })
 
@@ -62,7 +74,13 @@ class FakeVideo extends EventTarget {
 function setup(overrides: Partial<PlaybackSettings> = {}) {
 	const video = new FakeVideo()
 	const buttons: Partial<Record<SkipKind, HTMLButtonElement>> = {}
-	const state = { episode: "ep1", episodeNumber: 2 as number | null, ad: null as number | null, show: "The Bear" }
+	const state = {
+		episode: "ep1",
+		episodeNumber: 2 as number | null,
+		season: 3 as number | null,
+		ad: null as number | null,
+		show: "The Bear",
+	}
 	const site: SiteAdapter = {
 		service: "Netflix",
 		video: () => video as unknown as HTMLVideoElement,
@@ -72,6 +90,7 @@ function setup(overrides: Partial<PlaybackSettings> = {}) {
 		adStrategy: "seek",
 		episodeKey: () => state.episode,
 		episodeNumber: () => state.episodeNumber,
+		episodeSeason: () => state.season,
 		showTitle: () => state.show,
 	}
 	const settings: PlaybackSettings = {
@@ -176,6 +195,16 @@ describe("playback engine", () => {
 		state.episodeNumber = 2
 		tick()
 		expect(video.currentTime).toBe(185)
+	})
+	it("puts the next episode's rating in the credits notice", async () => {
+		const { tick, addButton } = setup()
+		tick()
+		await Promise.resolve()
+		await Promise.resolve()
+		addButton("credits", 2_900)
+		tick()
+		expect(noticeText()).toContain("Next S3 E3")
+		expect(noticeText()).toContain("IMDb 8.7")
 	})
 	it("leaves a show's intro alone after “Not for this show”", async () => {
 		const { video, tick, addButton } = setup()

@@ -1,5 +1,5 @@
 import type { SiteAdapter, SkipKind } from "../types"
-import { $, buttonWithText, mainVideo, parseClock, parseEpisodeNumber } from "./dom"
+import { $, buttonWithText, mainVideo, parseClock, parseEpisodeNumber, parseSeason } from "./dom"
 
 const player = () => $(".dv-player-fullscreen") ?? $("#dv-web-player")
 const episodeInfo = () =>
@@ -43,5 +43,6 @@ export const prime: SiteAdapter = {
 		return title ? `${title}|${episodeInfo() ?? ""}` : null
 	},
 	episodeNumber: () => parseEpisodeNumber(episodeInfo()),
+	episodeSeason: () => parseSeason(episodeInfo()),
 	showTitle: () => $(".atvwebplayersdk-title-text")?.textContent?.trim() || null,
 }
