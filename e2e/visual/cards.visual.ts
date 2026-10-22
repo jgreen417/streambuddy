@@ -18,6 +18,7 @@ for (const { name, url, badges, shots } of SITES) {
 const LOOKS: { name: string; settings: Record<string, unknown>; video?: Record<string, unknown> }[] = [
 	{ name: "glass-clear", settings: { badgeStyle: "glass", glassFrost: 0 } },
 	{ name: "glass-frosted", settings: { badgeStyle: "glass", glassFrost: 100 } },
+	{ name: "compact", settings: { badgeDetail: "score" } },
 	{ name: "friends-dots", settings: { friendsStyle: "dots" } },
 	{ name: "friends-trio", settings: { friendsStyle: "trio" } },
 	{ name: "friends-hidden", settings: { friendsRatings: false } },

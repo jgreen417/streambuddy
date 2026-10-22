@@ -19,6 +19,7 @@ import {
 	type MovieInfo,
 } from "./cache"
 import { getPersonalStatus, loggedRating } from "./profile"
+import { overrideFor } from "./overrides"
 import { settings } from "@/stores/settings"
 import { ratingSources } from "./settings"
 import type { RatingsSite } from "./sites/types"
@@ -79,6 +80,13 @@ const rowCardDecorations = new WeakMap<HTMLElement, HTMLElement[]>()
 function releaseCard(card: HTMLElement) {
 	card.classList.remove("imdb")
 	card.closest("li")?.classList.remove("imdb")
+}
+// after the cache or a title fix changes: unrated cards are looked up again too, not just the badged ones
+export function forgetCards() {
+	checkedCards.clear()
+	temporaryResults.clear()
+	lookupsInFlight.clear()
+	refreshRowPresentation(true)
 }
 // redrawAll: drop every card badge so the next pass draws it again (after a setting that changes how badges look)
 export function refreshRowPresentation(redrawAll = false) {
@@ -249,12 +257,16 @@ async function addRating() {
 			if (lastTitle == title || title.includes("Netflix") || title.includes("Prime Video")) continue
 			lastTitle = title
 			const entry = cached(title)
+			const override = overrideFor(title)
 			if (
 				entry &&
 				isCacheCurrent(entry) &&
+				// a corrected title must not reuse the wrong match still sitting in the cache, and its type wins over the card's
+				(override
+					? entry.id === override.id && entry.media_type === override.media_type
+					: !media_type || entry.media_type == media_type) &&
 				// a Letterboxd/IMDb rating counts even when TMDb has no votes; unrated titles are retried after a week
-				(entry.rating || entry.score || getDiffInDays(entry.date, new Date()) <= 7) &&
-				(!media_type || entry.media_type == media_type)
+				(entry.rating || entry.score || getDiffInDays(entry.date, new Date()) <= 7)
 			) {
 				useDBCache(entry, title, card, media_type)
 			}
@@ -292,6 +304,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		look: badgeLook(settings.value.General),
 		personal,
 		position: site.badge,
+		service: site.service,
 		cardTitle: title,
 	})
 	if (data.source !== "tmdb" && data.rating) {

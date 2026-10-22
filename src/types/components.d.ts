@@ -17,6 +17,7 @@ declare module 'vue' {
     IMdiFormatListBulleted: typeof import('~icons/mdi/format-list-bulleted')['default']
     IMdiPlayCircleOutline: typeof import('~icons/mdi/play-circle-outline')['default']
     IMdiTune: typeof import('~icons/mdi/tune')['default']
+    OptionsDiagnosticsPanel: typeof import('./../components/options/DiagnosticsPanel.vue')['default']
     OptionsServiceRequestBanner: typeof import('./../components/options/ServiceRequestBanner.vue')['default']
     PopupExperiencePreferences: typeof import('./../components/popup/ExperiencePreferences.vue')['default']
     PopupPopupSettings: typeof import('./../components/popup/PopupSettings.vue')['default']

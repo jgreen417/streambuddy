@@ -173,6 +173,14 @@ export async function handle(route: Route) {
 		const result = TMDB_RESULTS[url.searchParams.get("query") ?? ""]
 		return route.fulfill({ json: { page: 1, results: result ? [result] : [], total_results: result ? 1 : 0 } })
 	}
+	if (url.hostname === "api.themoviedb.org" && /^\/3\/(movie|tv)\/\d+\/watch\/providers$/.test(url.pathname)) {
+		const availability = {
+			link: "https://www.themoviedb.org/movie/1/watch",
+			flatrate: [{ provider_name: "Amazon Prime Video" }],
+			rent: [{ provider_name: "Apple TV" }],
+		}
+		return route.fulfill({ json: { results: { US: availability, GB: availability } } })
+	}
 	if (url.hostname === "caching.graphql.imdb.com") {
 		const { query } = JSON.parse(request.postData() ?? "{}")
 		if (/episodes\(/.test(query ?? "")) return route.fulfill({ json: imdbEpisodes(query) })
