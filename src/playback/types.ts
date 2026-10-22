@@ -41,6 +41,10 @@ export type PlaybackSettings = {
 	skipAds: boolean
 	speedControl: boolean
 	keepFirstIntro: boolean
+	// hear the recap when a season starts
+	keepSeasonRecaps: boolean
+	// wait this many seconds after a skip control appears before pressing it; 0 = press at once
+	skipDelaySeconds: number
 	notices: boolean
 	// pause after this many episodes play back to back without the viewer touching anything; 0 = off
 	pauseAfter: number

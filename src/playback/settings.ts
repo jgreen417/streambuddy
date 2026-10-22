@@ -15,6 +15,8 @@ export function playbackSettings(settings: settingsType, service: ServiceKey): P
 		skipAds: s.skipAd,
 		speedControl: s.speedControl,
 		keepFirstIntro: g.keepFirstIntro,
+		keepSeasonRecaps: g.keepSeasonRecaps,
+		skipDelaySeconds: g.skipDelaySeconds,
 		notices: g.skipNotices,
 		pauseAfter: g.pauseAfter,
 	}

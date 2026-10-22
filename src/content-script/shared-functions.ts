@@ -45,6 +45,7 @@ function watchSettings() {
 			settings.value.General.friendsRatings,
 			settings.value.General.friendsStyle,
 			settings.value.General.badgeStyle,
+			settings.value.General.badgeDetail,
 			settings.value.General.glassFrost,
 			settings.value.General.markWatched,
 		],
