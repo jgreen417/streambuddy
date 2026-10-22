@@ -1,10 +1,12 @@
 // Ratings already looked up, kept in local storage for a month so a title isn't looked up on every page
+import { sendMessage } from "webext-bridge/content-script"
 import { debugLog } from "@/utils/log"
 import { getExternalRating, prefetchLetterboxd, searchTitle } from "@/utils/lookup"
 import { usesSource } from "@/utils/rating-sources"
 import type { FriendRating, RatingSource } from "@/utils/ratings"
 import { settings } from "@/stores/settings"
 import { locale, ratingSources } from "./settings"
+import { overrideFor } from "./overrides"
 import type { RatingSources } from "@/stores/storeTypes"
 
 export type MovieInfo = {
@@ -103,27 +105,37 @@ async function garbageCollection() {
 	setDBCache()
 }
 
-export async function lookupMovieInfo(
+// The parts of a TMDb search result or details response that a lookup needs.
+type MovieMatch = {
+	id: number
+	media_type?: string
+	title?: string
+	original_title?: string
+	name?: string
+	original_name?: string
+	vote_average: number
+	vote_count: number
+	release_date?: string
+	first_air_date?: string
+	poster_path: string | null
+}
+
+async function compileMovie(
+	match: MovieMatch,
+	mediaType: string,
 	title: string,
-	media_type: string | null,
-	year: string | null,
-	sources: RatingSources = ratingSources(),
-): Promise<MovieInfo | null> {
-	const friends = settings.value.General.friendsRatings
-	if (media_type !== "tv" && usesSource(sources, "letterboxd")) prefetchLetterboxd(title, friends)
-	// no match, or TMDb unreachable: show nothing and leave the title uncached so the next visit retries
-	const movie = await searchTitle(title, media_type, year, locale())
-	if (!movie) return null
-	const resolvedMediaType = media_type ?? movie.media_type
-	const external = await getExternalRating(movie.id, resolvedMediaType, title, sources, friends)
-	const compiledData: MovieInfo = {
-		id: movie.id,
-		media_type: resolvedMediaType,
-		score: movie.vote_average,
-		vote_count: movie.vote_count,
-		release_date: movie.release_date || movie.first_air_date,
-		title: movie.title || movie.original_title || movie.name || movie.original_name,
-		poster_path: movie.poster_path ?? null,
+	sources: RatingSources,
+	friends: boolean,
+): Promise<MovieInfo> {
+	const external = await getExternalRating(match.id, mediaType, title, sources, friends)
+	return {
+		id: match.id,
+		media_type: mediaType,
+		score: match.vote_average,
+		vote_count: match.vote_count,
+		release_date: match.release_date || match.first_air_date || "",
+		title: match.title || match.original_title || match.name || match.original_name || title,
+		poster_path: match.poster_path ?? null,
 		date: today(),
 		db: "tmdb",
 		source: external.rating?.source ?? "tmdb",
@@ -137,8 +149,55 @@ export async function lookupMovieInfo(
 		retryAfter: external.transient ? Date.now() + 30_000 : undefined,
 		sources,
 	}
+}
+
+export function deleteCached(title: string) {
+	if (!(title in DBCache)) return
+	delete DBCache[title]
+	scheduleCacheSave()
+}
+
+export async function lookupMovieInfo(
+	title: string,
+	media_type: string | null,
+	year: string | null,
+	sources: RatingSources = ratingSources(),
+): Promise<MovieInfo | null> {
+	const friends = settings.value.General.friendsRatings
+	// a title the viewer corrected: ask TMDb for that exact id instead of searching again
+	const override = overrideFor(title)
+	if (override) {
+		const details = (await sendMessage(
+			"fetch",
+			{
+				url: `https://api.themoviedb.org/3/${override.media_type}/${override.id}?language=${locale()}`,
+				type: "tmdb",
+			},
+			"background",
+		)) as (MovieMatch & { error?: string }) | null
+		if (!details || details.error) return null
+		const compiledData = await compileMovie(
+			{ ...details, id: override.id, media_type: override.media_type },
+			override.media_type,
+			title,
+			sources,
+			friends,
+		)
+		// a temporary Letterboxd/IMDb failure must not pin the corrected title to the fallback for a month
+		if (!compiledData.retryAfter) {
+			DBCache[title] = compiledData
+			scheduleCacheSave()
+		}
+		return compiledData
+	}
+	if (media_type !== "tv" && usesSource(sources, "letterboxd")) prefetchLetterboxd(title, friends)
+	// no match, or TMDb unreachable: show nothing and leave the title uncached so the next visit retries
+	const movie = await searchTitle(title, media_type, year, locale())
+	if (!movie) return null
+	const resolvedMediaType = media_type ?? movie.media_type
+	const compiledData = await compileMovie(movie, resolvedMediaType, title, sources, friends)
 	// a temporary Letterboxd/IMDb failure must not pin this title to the fallback for a month
-	if (!external.transient) {
+	if (!compiledData.retryAfter) {
 		DBCache[title] = compiledData
 		scheduleCacheSave()
 	}

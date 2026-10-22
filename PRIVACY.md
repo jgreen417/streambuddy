@@ -17,6 +17,7 @@ All of the following stays in your browser's extension storage. "Synced" items t
 | Watch time per day and service, and estimated time saved by skipping | This device, last 120 days | For the Stats tab |
 | Recently displayed titles and their streaming-page URLs | This device, last 7 days, up to 25 titles | For the Stats tab |
 | Titles you choose to hide | This device | To hide them |
+| Titles you corrected with "Not this title?" (the card's title and the TMDb title you picked) | This device | To keep showing the right rating |
 
 Uninstalling streamBuddy deletes all of it. You can also erase it with "Reset" on the Backup page in settings.
 
@@ -26,7 +27,7 @@ Removing streamBuddy opens a short, optional form asking why, and "Request a ser
 
 streamBuddy contacts these services directly from your browser, only to show ratings and where a title is streaming:
 
-- **The Movie Database (api.themoviedb.org):** the titles shown on the streaming page, with streamBuddy's built-in TMDb key or your own, to identify each film or show; and, when you open a badge's card inspector, that title's TMDb ID, to list where else it's streaming (TMDb returns every country's list; streamBuddy picks your region's from your browser language without sending it).
+- **The Movie Database (api.themoviedb.org):** the titles shown on the streaming page, with streamBuddy's built-in TMDb key or your own, to identify each film or show; when you open a badge's card inspector, that title's TMDb ID, to list where else it's streaming (TMDb returns every country's list; streamBuddy picks your region's from your browser language without sending it); and anything you search for under "Not this title?".
 - **Letterboxd (letterboxd.com):** requests for film pages, and for your public profile, diary, watchlist and friends' ratings if you've entered a username.
 - **IMDb (caching.graphql.imdb.com):** IMDb IDs, to fetch series and episode ratings.
 

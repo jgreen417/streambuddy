@@ -19,6 +19,7 @@ import {
 	type MovieInfo,
 } from "./cache"
 import { getPersonalStatus, loggedRating } from "./profile"
+import { overrideFor } from "./overrides"
 import { settings } from "@/stores/settings"
 import { ratingSources } from "./settings"
 import type { RatingsSite } from "./sites/types"
@@ -28,6 +29,10 @@ import { queueSeenTitle } from "./watch-stats"
 let site: RatingsSite | null = null
 export function startCards(service: RatingsSite) {
 	site = service
+	// a corrected match, here or in another tab: drop the wrong badges and let the next pass look the title up again
+	browser.storage.onChanged.addListener((changes, area) => {
+		if (area === "local" && changes.titleOverrides) refreshRowPresentation(true)
+	})
 	if (ratingsEnabled()) startShowRatingInterval()
 }
 
@@ -249,12 +254,16 @@ async function addRating() {
 			if (lastTitle == title || title.includes("Netflix") || title.includes("Prime Video")) continue
 			lastTitle = title
 			const entry = cached(title)
+			const override = overrideFor(title)
 			if (
 				entry &&
 				isCacheCurrent(entry) &&
+				// a corrected title must not reuse the wrong match still sitting in the cache, and its type wins over the card's
+				(override
+					? entry.id === override.id && entry.media_type === override.media_type
+					: !media_type || entry.media_type == media_type) &&
 				// a Letterboxd/IMDb rating counts even when TMDb has no votes; unrated titles are retried after a week
-				(entry.rating || entry.score || getDiffInDays(entry.date, new Date()) <= 7) &&
-				(!media_type || entry.media_type == media_type)
+				(entry.rating || entry.score || getDiffInDays(entry.date, new Date()) <= 7)
 			) {
 				useDBCache(entry, title, card, media_type)
 			}
