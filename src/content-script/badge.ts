@@ -176,30 +176,36 @@ function fillBadge(div: HTMLElement, data: MovieInfo, general: settingsType["Gen
 		source.append(data.source === "imdb" ? "IMDb" : "TMDb")
 		div.appendChild(source)
 	}
-	const labelled = general.friendsStyle === "labels"
-	let column: HTMLElement | undefined
-	if (data.source === "letterboxd" && data.friends_rating && general.friendsRatings) {
-		if (labelled) column = addLabelLine(div, column, color.accent, "friends", data.friends_rating.toFixed(1))
-		else {
-			const segment = addBadgeSegment(div, data.friends_rating.toFixed(1))
-			segment.prepend(friendsIcon(data.friends ?? [], data.friends_count ?? 1, general.friendsStyle))
-		}
+	const friends = data.source === "letterboxd" && general.friendsRatings ? data.friends_rating : undefined
+	if (friends) {
 		const names = (data.friends ?? []).map((friend) => `${friend.name} ${friend.rating.toFixed(1)}`).join(", ")
 		tooltip.push(
-			`Friends ${data.friends_rating.toFixed(1)} from ${data.friends_count}${names ? `: ${names}` : ""}${(data.friends_count ?? 0) > (data.friends?.length ?? 0) ? "…" : ""}`,
+			`Friends ${friends.toFixed(1)} from ${data.friends_count}${names ? `: ${names}` : ""}${(data.friends_count ?? 0) > (data.friends?.length ?? 0) ? "…" : ""}`,
 		)
+	}
+	if (personal.watched !== undefined)
+		tooltip.push(personal.watched ? `You rated it ${personal.watched.toFixed(1)}` : "You've logged it")
+	else if (personal.watchlist) tooltip.push("On your watchlist")
+	div.title = tooltip.join("\n")
+	div.setAttribute("aria-label", tooltip.join(". "))
+	// "Score only" stops here; the tooltip still carries friends and your status
+	if (general.badgeDetail === "score") return
+	const labelled = general.friendsStyle === "labels"
+	let column: HTMLElement | undefined
+	if (friends) {
+		if (labelled) column = addLabelLine(div, column, color.accent, "friends", friends.toFixed(1))
+		else {
+			const segment = addBadgeSegment(div, friends.toFixed(1))
+			segment.prepend(friendsIcon(data.friends ?? [], data.friends_count ?? 1, general.friendsStyle))
+		}
 	}
 	if (personal.watched !== undefined) {
 		if (labelled) addLabelLine(div, column, color.info, "you", personal.watched ? personal.watched.toFixed(1) : "seen")
 		else addBadgeSegment(div, personal.watched ? `✓ you ${personal.watched.toFixed(1)}` : "✓ seen")
-		tooltip.push(personal.watched ? `You rated it ${personal.watched.toFixed(1)}` : "You've logged it")
 	} else if (personal.watchlist) {
 		if (labelled) addLabelLine(div, column, color.info, "you", "watchlist", BADGE_WATCHLIST)
 		else addBadgeSegment(div, "watchlist", BADGE_WATCHLIST)
-		tooltip.push("On your watchlist")
 	}
-	div.title = tooltip.join("\n")
-	div.setAttribute("aria-label", tooltip.join(". "))
 }
 
 // The badge sits in a corner of the card's artwork: the same gap from both edges of that corner, and its corners
