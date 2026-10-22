@@ -1,5 +1,18 @@
 # Changelog
 
+# streamBuddy 1.0.6
+
+Hover a rating badge to see who rated it and where else it's streaming. Quiet browsing now mutes autoplay previews by default.
+
+- Hover or focus a rating badge for the card inspector: friends' stars, the number of ratings, and where else the title is streaming. “Not this title?” fixes a wrong match and remembers it.
+- A bedtime pill in the player: see when the title ends, set a 15/30/45/60-minute sleep timer, or stop after this episode or film.
+- The credits notice now tells you what is up next and how good it is.
+- Quiet browsing mutes autoplay previews on every service (on by default; turn it off under Browsing). Netflix's Top 10 row and games rows can be hidden too.
+- The best-rated episode of a season gets a tangerine star and ring.
+- A score-only badge for dense rows.
+- Skips can wait 1 or 2 seconds, and the first episode of a season can keep its recap.
+- Diagnostics in settings: cache size, profile sync, fixed matches, and local-only controls.
+
 # streamBuddy 1.0.5
 
 Disney+ is here.
