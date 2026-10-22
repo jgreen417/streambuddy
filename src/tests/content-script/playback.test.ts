@@ -99,6 +99,13 @@ function setup(overrides: Partial<PlaybackSettings> = {}) {
 }
 const noticeText = () =>
 	document.querySelector("[data-streambuddy]")?.shadowRoot?.querySelector(".notice")?.textContent ?? ""
+const shadow = () => document.querySelector("[data-streambuddy]")?.shadowRoot
+const timeText = () => shadow()?.querySelector(".time")?.textContent ?? ""
+const timeButton = () => shadow()!.querySelector<HTMLButtonElement>(".time .value")!
+const menuButton = (label: string) =>
+	Array.from(shadow()!.querySelectorAll<HTMLButtonElement>(".time-menu button")).find((button) =>
+		button.textContent?.includes(label),
+	)
 const noticeButton = (label: string) =>
 	Array.from(
 		document.querySelector("[data-streambuddy]")?.shadowRoot?.querySelectorAll<HTMLButtonElement>(".notice button") ??
@@ -134,6 +141,32 @@ describe("playback engine", () => {
 		expect(video.currentTime).toBe(100)
 	})
 
+	it("shows when the title ends", () => {
+		const { tick } = setup()
+		tick()
+		expect(timeText()).toContain("Ends")
+		expect(timeText()).toContain("left")
+	})
+	it("pauses when the sleep timer runs out", () => {
+		const { video, tick } = setup()
+		tick()
+		timeButton().click()
+		menuButton("15 minutes")!.click()
+		vi.advanceTimersByTime(15 * 60 * 1000)
+		tick()
+		expect(video.paused).toBe(true)
+		expect(noticeText()).toContain("Slept")
+	})
+	it("stops at the credits instead of advancing when asked", () => {
+		const { video, tick, addButton } = setup()
+		tick()
+		timeButton().click()
+		menuButton("End of the episode")!.click()
+		addButton("credits", 2_900)
+		tick()
+		expect(video.paused).toBe(true)
+		expect(noticeText()).toContain("Stopped after this episode")
+	})
 	it("leaves a show's intro alone after “Not for this show”", async () => {
 		const { video, tick, addButton } = setup()
 		addButton("intro", 185)

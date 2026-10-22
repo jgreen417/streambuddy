@@ -1,8 +1,9 @@
 import { cssDeclarations } from "@/design/tokens"
 import { installPageFont } from "@/utils/page-feature-styles"
 
-// streamBuddy's in-player UI: a notice pill (bottom left) and the speed pill (top right). Both live in one
-// shadow root so the site's CSS can't reach them, and the host moves into whichever element is fullscreen.
+// streamBuddy's in-player UI: a notice pill (bottom left), the speed pill (top centre) and the time pill with its
+// sleep-timer menu (top right). They live in one shadow root so the site's CSS can't reach them, and the host moves
+// into whichever element is fullscreen.
 
 const STYLE = `
 :host { all: initial; ${cssDeclarations()} }
@@ -39,6 +40,18 @@ button.quiet:hover { color: var(--sb-text); background: var(--sb-hairline); }
 `
 
 export type NoticeAction = { label: string; quiet?: boolean; run: () => void }
+export type TimeMenuState = {
+	isEpisode: boolean
+	endsAt: string
+	sleepAt?: string
+	sleepMinutes?: number
+	stopAtEnd: boolean
+}
+export type TimeMenuActions = {
+	setSleep: (minutes: number) => void
+	setEnd: () => void
+	cancel: () => void
+}
 
 export class PlayerOverlay {
 	private host = document.createElement("div")
@@ -48,6 +61,11 @@ export class PlayerOverlay {
 	private noticeTimer: ReturnType<typeof setTimeout> | undefined
 	private speed: HTMLDivElement | null = null
 	private speedTimer: ReturnType<typeof setTimeout> | undefined
+	private time: HTMLDivElement | null = null
+	private timeValue: HTMLButtonElement | null = null
+	private timeMenu: HTMLDivElement | null = null
+	private timeTimer: ReturnType<typeof setTimeout> | undefined
+	private timeOpener: (() => void) | null = null
 
 	constructor(private findPlayerRoot: () => HTMLElement | null) {
 		installPageFont()
@@ -62,6 +80,14 @@ export class PlayerOverlay {
 		this.notice.addEventListener("mouseleave", () => this.hideNoticeSoon(2500))
 		this.layer.append(this.notice)
 		this.root.append(style, this.layer)
+		document.addEventListener("pointerdown", (event) => {
+			if (this.timeMenu && !event.composedPath().includes(this.host)) this.closeTimeMenu()
+		})
+		this.host.addEventListener("keydown", (event) => {
+			if (event.key !== "Escape" || !this.timeMenu) return
+			event.preventDefault()
+			this.closeTimeMenu()
+		})
 	}
 
 	// keep the overlay inside the player (or the fullscreen element) as the site re-renders
@@ -76,6 +102,7 @@ export class PlayerOverlay {
 		return true
 	}
 	detach() {
+		this.closeTimeMenu()
 		this.host.remove()
 	}
 
@@ -157,9 +184,153 @@ export class PlayerOverlay {
 		this.speed?.remove()
 		this.speed = null
 	}
+
+	// the time pill: when the title ends, click to set a sleep timer or stop after this episode/film
+	renderTime(label: string, onOpen: () => void) {
+		if (!this.attach()) return
+		if (!this.time) {
+			this.time = document.createElement("div")
+			this.time.className = "time"
+			this.timeValue = document.createElement("button")
+			this.timeValue.type = "button"
+			this.timeValue.className = "value"
+			this.timeValue.addEventListener("click", (event) => {
+				event.stopPropagation()
+				if (this.timeMenu) this.closeTimeMenu()
+				else this.timeOpener?.()
+			})
+			this.time.append(this.timeValue)
+			this.layer.append(this.time)
+		}
+		this.timeOpener = onOpen
+		const [main, ...rest] = label.split(" · ")
+		const icon = document.createElement("span")
+		icon.className = "icon"
+		icon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.2 1.3"/></svg>`
+		const copy = document.createElement("span")
+		const strong = document.createElement("b")
+		strong.textContent = main
+		copy.append(strong)
+		if (rest.length) copy.append(` · ${rest.join(" · ")}`)
+		this.timeValue?.replaceChildren(icon, copy)
+		if (this.timeValue) {
+			this.timeValue.title = label
+			this.timeValue.setAttribute("aria-label", label)
+			this.timeValue.setAttribute("aria-expanded", String(!!this.timeMenu))
+		}
+	}
+	flashTime(duration = 2500) {
+		if (!this.time) return
+		this.time.classList.add("show")
+		clearTimeout(this.timeTimer)
+		this.timeTimer = setTimeout(() => {
+			if (!this.timeMenu) this.time?.classList.remove("show")
+		}, duration)
+	}
+	hasTime() {
+		return !!this.time?.isConnected
+	}
+	removeTime() {
+		this.closeTimeMenu()
+		this.time?.remove()
+		this.time = null
+		this.timeValue = null
+		this.timeOpener = null
+		clearTimeout(this.timeTimer)
+	}
+	openTimeMenu(state: TimeMenuState, actions: TimeMenuActions) {
+		if (!this.time) return
+		this.closeTimeMenu()
+		const menu = document.createElement("div")
+		menu.className = "time-menu"
+		menu.setAttribute("role", "dialog")
+		menu.setAttribute("aria-label", "Sleep timer")
+		const head = document.createElement("div")
+		head.className = "head"
+		head.textContent = "Sleep timer"
+		menu.append(head)
+		const ends = document.createElement("div")
+		ends.className = "ends"
+		ends.textContent = state.endsAt
+		menu.append(ends)
+		if (state.sleepAt || state.stopAtEnd) {
+			const status = document.createElement("div")
+			status.className = "status"
+			const text = document.createElement("span")
+			if (state.sleepAt) {
+				text.append("Pausing at ")
+				const at = document.createElement("b")
+				at.textContent = state.sleepAt
+				text.append(at)
+			} else text.textContent = `Stopping after this ${state.isEpisode ? "episode" : "film"}`
+			const cancel = document.createElement("button")
+			cancel.type = "button"
+			cancel.className = "quiet"
+			cancel.textContent = "Cancel"
+			cancel.addEventListener("click", (event) => {
+				event.stopPropagation()
+				this.closeTimeMenu()
+				actions.cancel()
+			})
+			status.append(text, cancel)
+			menu.append(status)
+		}
+		for (const minutes of [15, 30, 45, 60]) {
+			const option = document.createElement("button")
+			option.type = "button"
+			option.className = "opt"
+			option.append(`${minutes} minutes`)
+			if (state.sleepMinutes === minutes) {
+				const check = document.createElement("span")
+				check.className = "check"
+				check.textContent = "✓"
+				option.append(check)
+			}
+			option.addEventListener("click", (event) => {
+				event.stopPropagation()
+				this.closeTimeMenu()
+				actions.setSleep(minutes)
+			})
+			menu.append(option)
+		}
+		const rule = document.createElement("div")
+		rule.className = "rule"
+		menu.append(rule)
+		const end = document.createElement("button")
+		end.type = "button"
+		end.className = "opt"
+		end.append(`End of the ${state.isEpisode ? "episode" : "film"}`)
+		if (state.stopAtEnd) {
+			const check = document.createElement("span")
+			check.className = "check"
+			check.textContent = "✓"
+			end.append(check)
+		}
+		end.addEventListener("click", (event) => {
+			event.stopPropagation()
+			this.closeTimeMenu()
+			actions.setEnd()
+		})
+		menu.append(end)
+		this.time.append(menu)
+		this.timeMenu = menu
+		this.time.classList.add("open")
+		this.timeValue?.setAttribute("aria-expanded", "true")
+		menu.querySelector<HTMLButtonElement>("button")?.focus()
+	}
+	closeTimeMenu() {
+		if (!this.timeMenu) return
+		this.timeMenu.remove()
+		this.timeMenu = null
+		this.time?.classList.remove("open")
+		this.timeValue?.setAttribute("aria-expanded", "false")
+	}
 }
 
 export const formatRate = (rate: number) => (Number.isInteger(rate) ? String(rate) : rate.toFixed(2).replace(/0$/, ""))
+
+const CLOCK = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" })
+export const formatClock = (at: number) => CLOCK.format(new Date(at))
 
 export function formatSaved(seconds: number) {
 	const s = Math.max(0, Math.round(seconds))
