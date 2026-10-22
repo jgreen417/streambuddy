@@ -3,6 +3,7 @@ import { isExcepted, loadRules, onRulesChanged, saveRules, withException } from 
 import { SKIP_LABELS, type PlaybackSettings, type SiteAdapter, type SkipKind, type SkipRules } from "./types"
 import { addSavedSeconds, formatDuration, type SavedLog } from "@/utils/stats"
 import { filmOver } from "@/utils/film-over"
+import { nextEpisodeRating } from "@/utils/next-episode"
 
 const TICK_MS = 250
 const SPEED_PRESETS = [0.75, 1, 1.25, 1.5, 1.75, 2]
@@ -40,6 +41,8 @@ export class PlaybackEngine {
 	private pendingPause = false
 	private pendingSaved: Record<string, number> = {}
 	private savedFlush: ReturnType<typeof setTimeout> | undefined
+	// the next episode's score, looked up once per episode for the credits notice
+	private next: { key: string; season: number; episode: number; rating: string | null } | null = null
 	// bedtime: a wall-clock sleep timer, or a one-off stop at the end of this title
 	private sleepAt: number | null = null
 	private sleepMinutes: number | null = null
@@ -98,6 +101,8 @@ export class PlaybackEngine {
 		this.overlay.attach()
 		this.checkEpisode(video)
 		const settings = this.settings()
+		// the rating only shows in the notice after skipping the credits
+		if (settings.skip.credits && settings.notices) this.loadNextRating()
 		if (this.checkSleep(video)) return
 		this.handleAds(video, settings)
 		if (!this.adRestore) this.handleSkips(video, settings)
@@ -131,6 +136,7 @@ export class PlaybackEngine {
 		if (!key || key === this.episode) return
 		const first = this.episode === null
 		this.episode = key
+		this.next = null
 		// the stop was for the title that just ended: if autoplay got past it, stop here; if the viewer left it early, drop it
 		if (this.stopAtEnd && !first) {
 			if (this.lastRemaining < 120) this.fireStop(video)
@@ -225,7 +231,8 @@ export class PlaybackEngine {
 		if (kind === "credits") {
 			// announce now: the next episode replaces the player, so a notice after it would have nowhere to go
 			if (remaining > 1 && remaining < 30 * 60) this.recordSaved(kind, remaining)
-			if (settings.notices) this.announceSkip(kind, remaining, show ? [this.notForShow(kind, show)] : [])
+			if (settings.notices)
+				this.announceSkip(kind, remaining, show ? [this.notForShow(kind, show)] : [], this.nextExtra())
 			return
 		}
 		// the jump lands a moment after the click; measure it then (a page-read clock catches up a little later)
@@ -254,9 +261,24 @@ export class PlaybackEngine {
 			this.site.clock ? 2500 : 700,
 		)
 	}
-	private announceSkip(kind: SkipKind, saved: number, actions: NoticeAction[]) {
+	private announceSkip(kind: SkipKind, saved: number, actions: NoticeAction[], extra = "") {
 		const savedText = saved > 1 ? ` · ${formatSaved(saved)} saved` : ""
-		this.overlay.showNotice(`Skipped ${SKIP_LABELS[kind]}${savedText}`, actions)
+		this.overlay.showNotice(`Skipped ${SKIP_LABELS[kind]}${savedText}${extra}`, actions)
+	}
+	// " · Next S3 E5 · IMDb 8.7" when the season lookup found the following episode
+	private nextExtra() {
+		return this.next?.rating ? ` · Next S${this.next.season} E${this.next.episode + 1} · ${this.next.rating}` : ""
+	}
+	private loadNextRating() {
+		const show = this.site.showTitle()
+		const season = this.site.episodeSeason?.() ?? null
+		const episode = this.site.episodeNumber()
+		if (!show || !season || !episode) return
+		const key = `${show}|${season}|${episode}`
+		if (key === this.next?.key) return
+		const next = { key, season, episode, rating: null as string | null }
+		this.next = next
+		nextEpisodeRating(show, season, episode).then((rating) => (next.rating = rating))
 	}
 	private notForShow(kind: SkipKind, show: string, undo?: () => void): NoticeAction {
 		return {
