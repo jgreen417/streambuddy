@@ -140,15 +140,15 @@ export class PlaybackEngine {
 	private handleSkips(video: HTMLVideoElement, settings: PlaybackSettings) {
 		const show = this.site.showTitle()
 		for (const kind of SKIP_ORDER) {
+			if (!settings.skip[kind] || this.suppressed.has(kind) || isExcepted(this.rules, show, kind)) continue
+			if (kind === "intro" && settings.keepFirstIntro && this.site.episodeNumber() === 1) continue
+			if (kind === "recap" && settings.keepSeasonRecaps && this.site.episodeNumber() === 1) continue
 			const button = this.site.skipButton(kind)
 			// a control that comes and goes (ads, the end screen) starts its wait again next time it appears
 			if (!button || !isShown(button)) {
 				this.firstSeen.delete(kind)
 				continue
 			}
-			if (!settings.skip[kind] || this.suppressed.has(kind) || isExcepted(this.rules, show, kind)) continue
-			if (kind === "intro" && settings.keepFirstIntro && this.site.episodeNumber() === 1) continue
-			if (kind === "recap" && settings.keepSeasonRecaps && this.site.episodeNumber() === 1) continue
 			const now = Date.now()
 			if (settings.skipDelaySeconds > 0) {
 				const first = this.firstSeen.get(kind) ?? now
