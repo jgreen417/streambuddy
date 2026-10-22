@@ -7,6 +7,7 @@ import type { MovieInfo } from "./cache"
 import type { PersonalStatus } from "./profile"
 import type { BadgeHost, RatingsSite } from "./sites/types"
 import type { FriendsStyle, settingsType } from "@/stores/storeTypes"
+import { attachInspector } from "./inspector"
 
 // TMDb is only the fallback: grey when too few people voted
 export const TMDB_LOW_RATING = 5.5
@@ -302,11 +303,13 @@ export type BadgeOptions = {
 	look: BadgeLook
 	personal: PersonalStatus
 	position: RatingsSite["badge"]
+	// the service this page belongs to, for the inspector's "Watching here" row
+	service: RatingsSite["service"]
 	// the title as read off the card, for the badge's alt text
 	cardTitle: string
 }
 // the badge for a title that has a rating: a link to it, styled and filled in, not yet on the page
-export function renderBadge(data: MovieInfo, { general, look, personal, position, cardTitle }: BadgeOptions) {
+export function renderBadge(data: MovieInfo, { general, look, personal, position, service, cardTitle }: BadgeOptions) {
 	let div: HTMLElement
 	if (data.id) {
 		const a = document.createElement("a")
@@ -366,6 +369,7 @@ export function renderBadge(data: MovieInfo, { general, look, personal, position
 			", Vote count: " +
 			getRatingVoteCount(data),
 	)
+	attachInspector(div, data, personal, service, general.friendsRatings)
 	return div
 }
 

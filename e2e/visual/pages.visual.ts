@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test"
-import { test, expect, extensionId, loaded, type OpenOptions } from "./harness"
+import { test, expect, extensionId, loaded, settle, type OpenOptions } from "./harness"
 import { PROFILE } from "./ratings"
+import { site } from "./sites"
 
 // The extension's own pages (the toolbar popup and the settings pages) and the episode chips on a series' page,
 // screenshotted so a change to their layout shows up in review like the badges do.
@@ -110,6 +111,18 @@ for (const { name, route, options } of SETTINGS_PAGES) {
 		}
 	})
 }
+
+test("card inspector", async ({ open }) => {
+	const page = await open("https://www.netflix.com/browse")
+	await settle(page, site("netflix").badges)
+	const badge = page.locator('[data-shot="standard"] .sb-card-rating').first()
+	await badge.hover()
+	const inspector = page.locator("[data-sb-inspector]")
+	await expect(inspector).toBeVisible({ timeout: 8_000 })
+	await expect(inspector.getByText("Amazon Prime Video")).toBeVisible({ timeout: 8_000 })
+	await loaded(page)
+	await expect.soft(inspector).toHaveScreenshot("netflix-inspector.png")
+})
 
 test("episode chips", async ({ open }) => {
 	const page = await open("https://www.netflix.com/title/80057281")
