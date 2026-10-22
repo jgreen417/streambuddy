@@ -38,8 +38,8 @@ button.quiet:hover { color: var(--sb-text); background: var(--sb-hairline); }
 .speed .presets button[aria-pressed="true"] { background: var(--sb-text); color: var(--sb-bg); }
 /* under the speed pill, for the same reason; shown with the player's controls, like the speed pill */
 .time { position: absolute; left: 50%; transform: translateX(-50%); top: 64px; padding: 4px; opacity: 0;
-	transition: opacity 0.2s ease; }
-.time.show, .time.open, .time:hover, .time:focus-within { opacity: 1; }
+	pointer-events: none; transition: opacity 0.2s ease; }
+.time.show, .time.open, .time:hover, .time:focus-within { opacity: 1; pointer-events: auto; }
 .time .value { display: flex; align-items: center; gap: 8px; background: transparent; font-weight: 500;
 	font-variant-numeric: tabular-nums; }
 .time .value b { font-weight: 700; }
