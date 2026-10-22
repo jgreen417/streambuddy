@@ -28,6 +28,11 @@ import { queueSeenTitle } from "./watch-stats"
 let site: RatingsSite | null = null
 export function startCards(service: RatingsSite) {
 	site = service
+	// clearing the cache or the fixed titles from settings should show up without a reload
+	browser.storage.onChanged.addListener((changes, area) => {
+		if (area !== "local") return
+		if ((changes.DBCache && !changes.DBCache.newValue) || changes.titleOverrides) refreshRowPresentation(true)
+	})
 	if (ratingsEnabled()) startShowRatingInterval()
 }
 

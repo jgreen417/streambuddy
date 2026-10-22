@@ -63,7 +63,7 @@ export async function loadCache() {
 	if (getDiffInDays(settings.value.General.GCdate, new Date()) >= GCdiff) garbageCollection()
 
 	browser.storage.onChanged.addListener(function (changes, areaName) {
-		if (areaName === "local" && changes?.DBCache) DBCache = changes.DBCache.newValue as DBCacheType
+		if (areaName === "local" && changes?.DBCache) DBCache = (changes.DBCache.newValue as DBCacheType | undefined) ?? {}
 	})
 }
 // set DB Cache if cache size under 5MB
