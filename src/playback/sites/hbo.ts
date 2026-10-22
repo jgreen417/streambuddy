@@ -1,5 +1,5 @@
 import type { SiteAdapter, SkipKind } from "../types"
-import { $, buttonWithText, mainVideo, parseEpisodeNumber } from "./dom"
+import { $, buttonWithText, mainVideo, parseEpisodeNumber, parseSeason } from "./dom"
 
 function skipButton(kind: SkipKind): HTMLElement | null {
 	switch (kind) {
@@ -29,6 +29,7 @@ export const hbo: SiteAdapter = {
 	skipButton,
 	episodeKey: () => /\/video\/watch\/([^/?#]+(?:\/[^/?#]+)?)/.exec(location.pathname)?.[1] ?? null,
 	episodeNumber: () => parseEpisodeNumber($('[data-testid="player-ux-season-episode"]')?.textContent),
+	episodeSeason: () => parseSeason($('[data-testid="player-ux-season-episode"]')?.textContent),
 	showTitle: () =>
 		$('[data-testid="player-ux-asset-title"]')?.textContent?.trim() ||
 		document.title.split(/\s+[•|·-]\s+/)[0]?.trim() ||

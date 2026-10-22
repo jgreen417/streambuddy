@@ -17,6 +17,12 @@ export function parseClock(text: string | null | undefined): number | null {
 	return match[3] === undefined ? a * 60 + b : a * 3600 + b * 60 + Number(match[3])
 }
 
+// "S2 E5", "Season 2, Ep. 5", "S1:E1" -> 2/1
+export function parseSeason(text: string | null | undefined): number | null {
+	const match = /(?:S|Season|Staffel|Saison|Temporada|Stagione|Seizoen|सीज़न)\s*:?\s*(\d+)/i.exec(text ?? "")
+	return match ? Number(match[1]) : null
+}
+
 // "S2 E5", "Season 2, Ep. 5", "E5", "Flg. 5" -> 5
 export function parseEpisodeNumber(text: string | null | undefined): number | null {
 	if (!text) return null

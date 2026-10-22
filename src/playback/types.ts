@@ -27,6 +27,8 @@ export type SiteAdapter = {
 	// identifies the episode being played, so per-episode state resets when it changes
 	episodeKey(): string | null
 	episodeNumber(): number | null
+	// the season the playing episode belongs to, where the player labels it
+	episodeSeason?(): number | null
 	// the series (or film) title, used for per-show rules
 	showTitle(): string | null
 	// true when the player already has its own speed menu: streamBuddy then only remembers the speed and
