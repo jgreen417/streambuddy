@@ -1,6 +1,6 @@
 # streamBuddy privacy policy
 
-_Last updated: 16 October 2026_
+_Last updated: 22 October 2026_
 
 streamBuddy is a browser extension that shows film and TV ratings on streaming sites. It has no server, no analytics and no advertising. The developer never receives your data.
 
@@ -24,9 +24,9 @@ Removing streamBuddy opens a short, optional form asking why, and "Request a ser
 
 ## What streamBuddy sends, and to whom
 
-streamBuddy contacts these services directly from your browser, only to show ratings:
+streamBuddy contacts these services directly from your browser, only to show ratings and where a title is streaming:
 
-- **The Movie Database (api.themoviedb.org):** the titles shown on the streaming page, with streamBuddy's built-in TMDb key or your own, to identify each film or show.
+- **The Movie Database (api.themoviedb.org):** the titles shown on the streaming page, with streamBuddy's built-in TMDb key or your own, to identify each film or show; and, when you open a badge's card inspector, that title's TMDb ID, to list where else it's streaming (TMDb returns every country's list; streamBuddy picks your region's from your browser language without sending it).
 - **Letterboxd (letterboxd.com):** requests for film pages, and for your public profile, diary, watchlist and friends' ratings if you've entered a username.
 - **IMDb (caching.graphql.imdb.com):** IMDb IDs, to fetch series and episode ratings.
 

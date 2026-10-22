@@ -292,6 +292,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		look: badgeLook(settings.value.General),
 		personal,
 		position: site.badge,
+		service: site.service,
 		cardTitle: title,
 	})
 	if (data.source !== "tmdb" && data.rating) {
