@@ -167,6 +167,23 @@ describe("playback engine", () => {
 		expect(video.paused).toBe(true)
 		expect(noticeText()).toContain("Stopped after this episode")
 	})
+	it("stops when autoplay moves on before the stop fired, but not after the viewer picks another episode", () => {
+		const { video, tick, state } = setup()
+		tick()
+		timeButton().click()
+		menuButton("End of the episode")!.click()
+		state.episode = "ep2"
+		tick()
+		expect(video.paused).toBe(false)
+		timeButton().click()
+		menuButton("End of the episode")!.click()
+		video.currentTime = 2_950
+		tick()
+		state.episode = "ep3"
+		video.currentTime = 0
+		tick()
+		expect(video.paused).toBe(true)
+	})
 	it("leaves a show's intro alone after “Not for this show”", async () => {
 		const { video, tick, addButton } = setup()
 		addButton("intro", 185)

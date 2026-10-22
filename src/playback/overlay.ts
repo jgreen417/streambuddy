@@ -1,8 +1,8 @@
 import { cssDeclarations } from "@/design/tokens"
 import { installPageFont } from "@/utils/page-feature-styles"
 
-// streamBuddy's in-player UI: a notice pill (bottom left), the speed pill (top centre) and the time pill with its
-// sleep-timer menu (top right). They live in one shadow root so the site's CSS can't reach them, and the host moves
+// streamBuddy's in-player UI: a notice pill (bottom left), the speed pill (top centre) and, under it, the time pill
+// with its sleep-timer menu. They live in one shadow root so the site's CSS can't reach them, and the host moves
 // into whichever element is fullscreen.
 
 const STYLE = `
@@ -36,7 +36,29 @@ button.quiet:hover { color: var(--sb-text); background: var(--sb-hairline); }
 .speed.open .presets { display: flex; }
 .speed .presets button { padding: 6px 10px; }
 .speed .presets button[aria-pressed="true"] { background: var(--sb-text); color: var(--sb-bg); }
-@media (prefers-reduced-motion: reduce) { .notice, .speed { transition: none; } }
+/* under the speed pill, for the same reason; shown with the player's controls, like the speed pill */
+.time { position: absolute; left: 50%; transform: translateX(-50%); top: 64px; padding: 4px; opacity: 0;
+	transition: opacity 0.2s ease; }
+.time.show, .time.open, .time:hover, .time:focus-within { opacity: 1; }
+.time .value { display: flex; align-items: center; gap: 8px; background: transparent; font-weight: 500;
+	font-variant-numeric: tabular-nums; }
+.time .value b { font-weight: 700; }
+.time .icon { display: flex; }
+.time .icon svg { width: 16px; height: 16px; }
+.time-menu { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); min-width: 240px;
+	padding: 8px; display: flex; flex-direction: column; gap: 2px; background: var(--sb-glass-dark);
+	border: 1px solid var(--sb-line-raised); border-radius: var(--sb-radius-lg); box-shadow: var(--sb-shadow-float);
+	backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.time-menu .head { padding: 4px 12px 0; font-weight: 700; }
+.time-menu .ends { padding: 0 12px 6px; color: var(--sb-text-muted); font-size: 12px; }
+.time-menu .status { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+	padding: 2px 2px 6px 12px; font-size: 13px; }
+.time-menu .opt { display: flex; justify-content: space-between; background: transparent;
+	border-radius: var(--sb-radius-md); font-weight: 500; }
+.time-menu .opt:hover { background: var(--sb-line-hover); }
+.time-menu .check { color: var(--sb-accent); }
+.time-menu .rule { height: 1px; margin: 4px 8px; background: var(--sb-line-raised); }
+@media (prefers-reduced-motion: reduce) { .notice, .speed, .time { transition: none; } }
 `
 
 export type NoticeAction = { label: string; quiet?: boolean; run: () => void }
@@ -190,7 +212,7 @@ export class PlayerOverlay {
 		if (!this.attach()) return
 		if (!this.time) {
 			this.time = document.createElement("div")
-			this.time.className = "time"
+			this.time.className = "time pill"
 			this.timeValue = document.createElement("button")
 			this.timeValue.type = "button"
 			this.timeValue.className = "value"
@@ -226,9 +248,6 @@ export class PlayerOverlay {
 		this.timeTimer = setTimeout(() => {
 			if (!this.timeMenu) this.time?.classList.remove("show")
 		}, duration)
-	}
-	hasTime() {
-		return !!this.time?.isConnected
 	}
 	removeTime() {
 		this.closeTimeMenu()

@@ -40,6 +40,8 @@ export class PlaybackEngine {
 	private sleepAt: number | null = null
 	private sleepMinutes: number | null = null
 	private stopAtEnd = false
+	// seconds left in the title at the last tick, to tell autoplay moving on from the viewer picking another title
+	private lastRemaining = Infinity
 	private timeLabel = ""
 
 	constructor(
@@ -120,6 +122,11 @@ export class PlaybackEngine {
 		if (!key || key === this.episode) return
 		const first = this.episode === null
 		this.episode = key
+		// the stop was for the title that just ended: if autoplay got past it, stop here; if the viewer left it early, drop it
+		if (this.stopAtEnd && !first) {
+			if (this.lastRemaining < 120) this.fireStop(video)
+			else this.stopAtEnd = false
+		}
 		this.suppressed.clear()
 		this.lastPress.clear()
 		this.autoplayRun = first || this.touched ? 1 : this.autoplayRun + 1
@@ -305,6 +312,7 @@ export class PlaybackEngine {
 			return true
 		}
 		const clock = this.site.clock?.() ?? video
+		if (Number.isFinite(clock.duration)) this.lastRemaining = clock.duration - clock.currentTime
 		const atEnd =
 			video.ended || (Number.isFinite(clock.duration) && clock.duration > 1 && clock.currentTime >= clock.duration - 1)
 		if (this.stopAtEnd && atEnd) {
