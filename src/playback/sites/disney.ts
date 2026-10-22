@@ -2,7 +2,7 @@ import { markerForEntity, pagePlayhead } from "@/content-script/credits-marker"
 import type { PlayerClock } from "@/utils/credits-review"
 import { parseEpisodeLabel } from "@/utils/series-finale"
 import type { SiteAdapter, SkipKind } from "../types"
-import { $, mainVideo } from "./dom"
+import { $, mainVideo, parseSeason } from "./dom"
 
 // Disney+'s player is built of web components, each drawing its controls in its own (open) shadow root
 export function playerQuery<T extends Element = HTMLElement>(selector: string, root: ParentNode = document): T | null {
@@ -72,6 +72,7 @@ export const disney: SiteAdapter = {
 	seekBlocked: true,
 	episodeKey: entity,
 	episodeNumber: () => parseEpisodeLabel(episodeLabel())?.episode ?? null,
+	episodeSeason: () => parseSeason(episodeLabel()),
 	showTitle: () =>
 		playing()?.title ||
 		playerQuery('[data-qa="title-bug.title"]')?.textContent?.trim() ||

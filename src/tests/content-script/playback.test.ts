@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { PlaybackEngine } from "../../playback/engine"
 import { isExcepted, showKey, withException, withoutException } from "../../playback/rules"
-import { parseClock, parseEpisodeNumber } from "../../playback/sites/dom"
+import { parseClock, parseEpisodeNumber, parseSeason } from "../../playback/sites/dom"
 import type { PlaybackSettings, SiteAdapter, SkipKind } from "../../playback/types"
 import { setFilmEnded } from "../../utils/film-over"
+
+vi.mock("../../utils/next-episode", () => ({ nextEpisodeRating: vi.fn(async () => "IMDb 8.7") }))
 
 describe("player text parsing", () => {
 	it.each([
@@ -24,6 +26,16 @@ describe("player text parsing", () => {
 		[undefined, null],
 	])("parseEpisodeNumber(%s) = %s", (text, episode) => {
 		expect(parseEpisodeNumber(text)).toBe(episode)
+	})
+	it.each([
+		["S2 E5", 2],
+		["S1:E1", 1],
+		["Season 3, Ep. 5", 3],
+		["Staffel 4, Folge 1", 4],
+		["E5", null],
+		["Episode 3: Kiss 2", null],
+	])("parseSeason(%s) = %s", (text, season) => {
+		expect(parseSeason(text)).toBe(season)
 	})
 })
 
@@ -62,7 +74,13 @@ class FakeVideo extends EventTarget {
 function setup(overrides: Partial<PlaybackSettings> = {}) {
 	const video = new FakeVideo()
 	const buttons: Partial<Record<SkipKind, HTMLButtonElement>> = {}
-	const state = { episode: "ep1", episodeNumber: 2 as number | null, ad: null as number | null, show: "The Bear" }
+	const state = {
+		episode: "ep1",
+		episodeNumber: 2 as number | null,
+		season: 3 as number | null,
+		ad: null as number | null,
+		show: "The Bear",
+	}
 	const site: SiteAdapter = {
 		service: "Netflix",
 		video: () => video as unknown as HTMLVideoElement,
@@ -72,6 +90,7 @@ function setup(overrides: Partial<PlaybackSettings> = {}) {
 		adStrategy: "seek",
 		episodeKey: () => state.episode,
 		episodeNumber: () => state.episodeNumber,
+		episodeSeason: () => state.season,
 		showTitle: () => state.show,
 	}
 	const settings: PlaybackSettings = {
@@ -79,6 +98,8 @@ function setup(overrides: Partial<PlaybackSettings> = {}) {
 		skipAds: true,
 		speedControl: true,
 		keepFirstIntro: false,
+		keepSeasonRecaps: false,
+		skipDelaySeconds: 0,
 		notices: true,
 		pauseAfter: 0,
 		...overrides,
@@ -99,6 +120,13 @@ function setup(overrides: Partial<PlaybackSettings> = {}) {
 }
 const noticeText = () =>
 	document.querySelector("[data-streambuddy]")?.shadowRoot?.querySelector(".notice")?.textContent ?? ""
+const shadow = () => document.querySelector("[data-streambuddy]")?.shadowRoot
+const timeText = () => shadow()?.querySelector(".time")?.textContent ?? ""
+const timeButton = () => shadow()!.querySelector<HTMLButtonElement>(".time .value")!
+const menuButton = (label: string) =>
+	Array.from(shadow()!.querySelectorAll<HTMLButtonElement>(".time-menu button")).find((button) =>
+		button.textContent?.includes(label),
+	)
 const noticeButton = (label: string) =>
 	Array.from(
 		document.querySelector("[data-streambuddy]")?.shadowRoot?.querySelectorAll<HTMLButtonElement>(".notice button") ??
@@ -134,6 +162,103 @@ describe("playback engine", () => {
 		expect(video.currentTime).toBe(100)
 	})
 
+	it("puts the next episode's rating in the credits notice", async () => {
+		const { tick, addButton } = setup()
+		tick()
+		await Promise.resolve()
+		await Promise.resolve()
+		addButton("credits", 2_900)
+		tick()
+		expect(noticeText()).toContain("Next S3 E3")
+		expect(noticeText()).toContain("IMDb 8.7")
+	})
+	it("shows when the title ends", () => {
+		const { tick } = setup()
+		tick()
+		expect(timeText()).toContain("Ends")
+		expect(timeText()).toContain("left")
+	})
+	it("pauses when the sleep timer runs out", () => {
+		const { video, tick } = setup()
+		tick()
+		timeButton().click()
+		menuButton("15 minutes")!.click()
+		vi.advanceTimersByTime(15 * 60 * 1000)
+		tick()
+		expect(video.paused).toBe(true)
+		expect(noticeText()).toContain("Slept")
+	})
+	it("stops at the credits instead of advancing when asked", () => {
+		const { video, tick, addButton } = setup()
+		tick()
+		timeButton().click()
+		menuButton("End of the episode")!.click()
+		addButton("credits", 2_900)
+		tick()
+		expect(video.paused).toBe(true)
+		expect(noticeText()).toContain("Stopped after this episode")
+		const before = video.currentTime
+		tick()
+		expect(video.currentTime).toBe(before)
+	})
+	it("stops when autoplay moves on before the stop fired, but not after the viewer picks another episode", () => {
+		const { video, tick, state } = setup()
+		tick()
+		timeButton().click()
+		menuButton("End of the episode")!.click()
+		state.episode = "ep2"
+		tick()
+		expect(video.paused).toBe(false)
+		timeButton().click()
+		menuButton("End of the episode")!.click()
+		video.currentTime = 2_950
+		tick()
+		state.episode = "ep3"
+		video.currentTime = 0
+		tick()
+		expect(video.paused).toBe(true)
+	})
+	it("waits for the configured delay before pressing a skip control", () => {
+		const { video, tick, addButton } = setup({ skipDelaySeconds: 1 })
+		addButton("intro", 185)
+		tick()
+		expect(video.currentTime).toBe(100)
+		vi.advanceTimersByTime(999)
+		tick()
+		expect(video.currentTime).toBe(100)
+		vi.advanceTimersByTime(2)
+		tick()
+		expect(video.currentTime).toBe(185)
+	})
+	it("restarts the wait when the skip control disappears", () => {
+		const { video, tick, addButton, buttons } = setup({ skipDelaySeconds: 1 })
+		addButton("intro", 185)
+		tick()
+		buttons.intro!.remove()
+		vi.advanceTimersByTime(1500)
+		tick()
+		addButton("intro", 185)
+		tick()
+		expect(video.currentTime).toBe(100)
+		vi.advanceTimersByTime(1001)
+		tick()
+		expect(video.currentTime).toBe(185)
+	})
+	it("keeps a recap on the first episode of a season when asked", () => {
+		const { video, tick, addButton, state } = setup({ keepSeasonRecaps: true })
+		state.episodeNumber = 1
+		addButton("recap", 185)
+		tick()
+		expect(video.currentTime).toBe(100)
+		// the number goes with the player controls; it's still episode 1
+		state.episodeNumber = null
+		tick()
+		expect(video.currentTime).toBe(100)
+		state.episode = "e2"
+		state.episodeNumber = 2
+		tick()
+		expect(video.currentTime).toBe(185)
+	})
 	it("leaves a show's intro alone after “Not for this show”", async () => {
 		const { video, tick, addButton } = setup()
 		addButton("intro", 185)

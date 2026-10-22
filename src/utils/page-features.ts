@@ -265,6 +265,11 @@ export class EpisodeRatings {
 				}
 				const now = readDetailContext(site)
 				if (this.active !== active || !now || now.target !== context.target || now.title !== context.title) return
+				// One episode is the best of the season only when it is the unique highest score. Ties and
+				// single-rated seasons say nothing useful, so they get no marker.
+				const rated = ratings.filter((episode) => episode.rating > 0)
+				const top = rated.length > 1 ? Math.max(...rated.map((episode) => episode.rating)) : null
+				const best = top !== null && rated.filter((episode) => episode.rating === top).length === 1 ? top : null
 				for (const entry of readEpisodeCards(site, context.root).filter((card) => card.season === season)) {
 					const rating = ratings.find((r) => r.season === entry.season && r.episode === entry.episode)
 					const old = entry.target.querySelector<HTMLElement>(".sb-episode-rating")
@@ -285,12 +290,24 @@ export class EpisodeRatings {
 					const source = document.createElement("span")
 					source.className = "sb-episode-source"
 					source.textContent = "IMDb"
+					const isBest = best !== null && rating.rating === best
+					if (isBest) {
+						const star = document.createElement("span")
+						star.className = "sb-episode-best"
+						star.textContent = "★"
+						star.setAttribute("aria-hidden", "true")
+						chip.append(star)
+					}
 					chip.append(score, source)
+					if (isBest) chip.dataset.best = "true"
 					look.apply(chip)
+					// the glass look sets its shadow inline, over the stylesheet's ring, so the ring joins it there
+					if (isBest && chip.style.boxShadow)
+						chip.style.boxShadow = `0 0 0 2px var(--sb-accent),${chip.style.boxShadow}`
 					const radius = episodeCornerRadius(entry.target)
 					chip.style.setProperty("--sb-badge-r", `${Math.max(radius - 3, 2)}px`)
 					chip.style.setProperty("--sb-pill-r", `${Math.max(radius - 6, 2)}px`)
-					chip.title = `S${season} E${entry.episode}: ${rating.title} · ${rating.votes.toLocaleString()} ratings`
+					chip.title = `S${season} E${entry.episode}: ${rating.title} · ${rating.votes.toLocaleString()} ratings${isBest ? " · Best rated episode of the season" : ""}`
 					chip.setAttribute("aria-label", `IMDb ${rating.rating.toFixed(1)}, ${chip.title}`)
 					chip.addEventListener("click", (event) => event.stopPropagation())
 					entry.target.append(chip)
