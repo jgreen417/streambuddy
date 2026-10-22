@@ -153,6 +153,7 @@ const updateMode = (event: Event) => {
 		</div>
 		<div class="sb-label">Badge look</div>
 		<div class="sb-group sb-badge-look">
+			<p class="sb-help">Applies to card and episode ratings.</p>
 			<div
 				class="sb-mode sb-look-picker"
 				role="radiogroup"
@@ -195,8 +196,53 @@ const updateMode = (event: Event) => {
 					:aria-valuetext="`${settings.General.glassFrost}% frosted`"
 				/>
 			</label>
-			<p class="sb-help">Applies to card and episode ratings.</p>
+			<label class="sb-cutoff">
+				Badge detail
+				<select v-model="settings.General.badgeDetail">
+					<option value="full">Full</option>
+					<option value="score">Score only</option>
+				</select>
+			</label>
+			<p class="sb-help">Score only keeps the score and its source; friends and your status stay in the tooltip.</p>
 		</div>
+		<details
+			class="sb-disclosure"
+			:open="expanded"
+		>
+			<summary>
+				<span>
+					Browsing
+					<small>{{ settings.General.quietPreviews ? "Previews muted" : "Preview sound on" }}</small>
+				</span>
+			</summary>
+			<div class="sb-disclosure-body">
+				<PopupToggle
+					v-model="settings.General.quietPreviews"
+					label="Quiet browsing"
+					description="Mutes autoplay previews and trailers while you browse."
+				/>
+				<template v-if="targets.includes('Netflix')">
+					<PopupToggle
+						v-model="settings.Netflix.hideTop10"
+						label="Hide Netflix’s Top 10 row"
+						description="The ranked row on the home page."
+					/>
+					<PopupToggle
+						v-model="settings.Netflix.hideGames"
+						label="Hide Netflix games rows"
+						description="Mobile games on the home page and in search."
+					/>
+				</template>
+				<template v-if="targets.includes('Amazon')">
+					<PopupToggle
+						v-model="settings.Amazon.hidePaid"
+						label="Hide Prime Video paid titles"
+						description="Titles that need a rental, purchase or add-on."
+					/>
+				</template>
+				<p class="sb-help">Page cleanups only run on the selected service; quiet browsing applies everywhere.</p>
+			</div>
+		</details>
 		<details
 			class="sb-disclosure"
 			:open="expanded"
