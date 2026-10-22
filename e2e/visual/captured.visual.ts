@@ -100,7 +100,7 @@ for (const { name } of states) {
 		// still moves; it's left out of the screenshot instead
 		await page
 			.locator("[data-streambuddy] .time")
-			.evaluateAll((pills) => pills.forEach((pill) => pill.setAttribute("hidden", "")))
+			.evaluateAll((pills) => pills.forEach((pill) => pill.setAttribute("style", "visibility: hidden")))
 		await expect.soft(page).toHaveScreenshot(`${name}.png`)
 	})
 }
