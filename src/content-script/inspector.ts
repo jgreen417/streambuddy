@@ -60,9 +60,13 @@ export function parseProviders(json: unknown, region: string): Availability | nu
 	}
 }
 
+// the first of the browser's languages that names a country; the panel says which one it used
 function region(): string {
-	const part = navigator.language?.split("-")[1]
-	return part ? part.toUpperCase() : "US"
+	for (const language of navigator.languages ?? [navigator.language]) {
+		const country = /-([a-z]{2})$/i.exec(language)?.[1]
+		if (country) return country.toUpperCase()
+	}
+	return "US"
 }
 
 function loadProviders(data: MovieInfo): Promise<Availability | null> {
@@ -154,9 +158,7 @@ export function renderInspector(
 		el(
 			"span",
 			"",
-			rating
-				? `${rating.toFixed(data.source === "letterboxd" ? 1 : 1)} / ${RATING_SOURCES[data.source].max} · ${count(votes)} ratings`
-				: "No rating yet",
+			rating ? `${rating.toFixed(1)} / ${RATING_SOURCES[data.source].max} · ${count(votes)} ratings` : "No rating yet",
 		),
 	)
 	score.append(big, copy)
@@ -203,11 +205,12 @@ export function renderInspector(
 
 	root.append(el("div", "rule"))
 	const where = el("div", "label")
-	where.append(el("span", "", "Where to watch"))
+	where.append(el("span", "", `Where to watch in ${region()}`))
 	root.append(where)
 	const providers = el("div", "providers")
 	if (availability === undefined) providers.append(el("div", "providers-state", "Checking availability…"))
-	else if (availability === null) providers.append(el("div", "providers-state", "Availability unavailable."))
+	else if (availability === null)
+		providers.append(el("div", "providers-state", "Couldn’t check where else it’s streaming."))
 	else {
 		const serviceName = SERVICES[service].name
 		const here = el("div", "provider")
@@ -305,6 +308,11 @@ const STYLE = `
 @media (prefers-reduced-motion: reduce) { .sb-inspector * { animation: none !important; transition: none !important; } }
 `
 
+const near = (element: Element, { clientX: x, clientY: y }: PointerEvent, pad: number) => {
+	const box = element.getBoundingClientRect()
+	return x >= box.left - pad && x <= box.right + pad && y >= box.top - pad && y <= box.bottom + pad
+}
+
 const HOVER_OPEN_MS = 450
 const HOVER_CLOSE_MS = 220
 
@@ -353,6 +361,7 @@ export function attachInspector(
 	const close = () => {
 		clearTimeout(openTimer)
 		clearTimeout(closeTimer)
+		closeTimer = undefined
 		cleanup.forEach((fn) => fn())
 		cleanup = []
 		host?.remove()
@@ -389,14 +398,15 @@ export function attachInspector(
 		}
 		requestAnimationFrame(position)
 
-		const keep = () => clearTimeout(closeTimer)
-		const hide = () => {
-			clearTimeout(closeTimer)
-			closeTimer = setTimeout(close, HOVER_CLOSE_MS)
+		// Closes by distance, not pointerleave: Netflix and Prime grow a hover card over the one under the pointer, which
+		// would count as leaving the badge while the pointer hasn't moved.
+		const away = (event: PointerEvent) => {
+			if (!host) return
+			if (near(badge, event, 24) || near(host, event, 8)) {
+				clearTimeout(closeTimer)
+				closeTimer = undefined
+			} else closeTimer ??= setTimeout(close, HOVER_CLOSE_MS)
 		}
-		host.addEventListener("pointerenter", keep)
-		host.addEventListener("pointerleave", hide)
-		host.addEventListener("focusin", keep)
 		const outside = (event: PointerEvent) => {
 			if (!host) return
 			const path = event.composedPath()
@@ -411,12 +421,14 @@ export function attachInspector(
 		const observer = new MutationObserver(() => {
 			if (!badge.isConnected) close()
 		})
+		document.addEventListener("pointermove", away, true)
 		document.addEventListener("pointerdown", outside, true)
 		document.addEventListener("keydown", escape)
 		globalThis.addEventListener("scroll", onScroll, true)
 		globalThis.addEventListener("resize", onResize)
 		observer.observe(document.body, { childList: true, subtree: true })
 		cleanup = [
+			() => document.removeEventListener("pointermove", away, true),
 			() => document.removeEventListener("pointerdown", outside, true),
 			() => document.removeEventListener("keydown", escape),
 			() => globalThis.removeEventListener("scroll", onScroll, true),
@@ -440,14 +452,7 @@ export function attachInspector(
 		clearTimeout(openTimer)
 		openTimer = setTimeout(open, HOVER_OPEN_MS)
 	})
-	badge.addEventListener("pointerleave", () => {
-		clearTimeout(openTimer)
-		clearTimeout(closeTimer)
-		closeTimer = setTimeout(() => {
-			if (!host) return
-			close()
-		}, HOVER_CLOSE_MS)
-	})
+	badge.addEventListener("pointerleave", () => clearTimeout(openTimer))
 	badge.addEventListener("focus", open)
 	badge.addEventListener("click", (event) => {
 		// On touch there is no hover: the first tap opens the inspector instead of a new Letterboxd tab.
