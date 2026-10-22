@@ -10,13 +10,14 @@ import { deleteCached, type MovieInfo } from "./cache"
 import { saveOverride } from "./overrides"
 import { letterboxdUsername, type PersonalStatus } from "./profile"
 
-export type ProviderKind = "flatrate" | "ads" | "rent" | "buy"
+export type ProviderKind = "flatrate" | "free" | "ads" | "rent" | "buy"
 export type ProviderRow = { name: string; kind: ProviderKind }
 export type Availability = { rows: ProviderRow[]; link?: string }
 
-const KIND_ORDER: Record<ProviderKind, number> = { flatrate: 0, ads: 1, rent: 2, buy: 3 }
+const KIND_ORDER: Record<ProviderKind, number> = { flatrate: 0, free: 1, ads: 2, rent: 3, buy: 4 }
 const KIND_LABEL: Record<ProviderKind, string> = {
 	flatrate: "Included",
+	free: "Free",
 	ads: "Free with ads",
 	rent: "Rent",
 	buy: "Buy",
@@ -49,6 +50,7 @@ export function parseProviders(json: unknown, region: string): Availability | nu
 		}
 	}
 	add(entry.flatrate, "flatrate")
+	add(entry.free, "free")
 	add(entry.ads, "ads")
 	add(entry.rent, "rent")
 	add(entry.buy, "buy")
@@ -85,6 +87,11 @@ function loadProviders(data: MovieInfo): Promise<Availability | null> {
 		)
 			.then((json) => parseProviders(json, region()))
 			.catch(() => null)
+			.then((result) => {
+				// a failed lookup is tried again next time rather than remembered
+				if (!result) providerCache.delete(key)
+				return result
+			})
 		providerCache.set(key, pending)
 	}
 	return pending
@@ -242,17 +249,14 @@ export function renderInspector(
 	}
 
 	const actions = el("div", "actions")
-	const filmUrl = data.rating_url?.startsWith("https://letterboxd.com/film/")
+	const onLetterboxd = data.rating_url?.startsWith("https://letterboxd.com/film/")
+	const filmUrl = onLetterboxd
 		? data.rating_url
 		: data.media_type && data.id
 			? `https://www.themoviedb.org/${data.media_type}/${data.id}`
 			: ""
 	if (filmUrl) {
-		const open = el(
-			"a",
-			"btn primary",
-			filmUrl.startsWith("https://letterboxd.com") ? "Open on Letterboxd" : "Open on TMDb",
-		)
+		const open = el("a", "btn primary", onLetterboxd ? "Open on Letterboxd" : "Open on TMDb")
 		open.href = filmUrl
 		open.target = "_blank"
 		open.rel = "noopener noreferrer"
@@ -435,6 +439,8 @@ const near = (element: Element, { clientX: x, clientY: y }: PointerEvent, pad: n
 
 const HOVER_OPEN_MS = 450
 const HOVER_CLOSE_MS = 220
+// tabbing from one badge to the next shouldn't leave the first one's inspector open
+let closeOpenInspector: (() => void) | null = null
 
 // Wire the hover/focus behaviour onto one badge. Every badge gets its own listeners; only one popover is ever open.
 export function attachInspector(
@@ -458,6 +464,8 @@ export function attachInspector(
 	let fixSelected: number | undefined
 	let fixSearching = false
 	let fixError = ""
+	let pointerType = ""
+	let refocusing = false
 
 	const position = () => {
 		if (!host) return
@@ -585,6 +593,7 @@ export function attachInspector(
 		fixSelected = undefined
 		fixSearching = false
 		fixError = ""
+		if (closeOpenInspector === close) closeOpenInspector = null
 		const title = badge.dataset.inspectorTitle
 		if (title) {
 			badge.setAttribute("title", title)
@@ -594,6 +603,8 @@ export function attachInspector(
 	const open = () => {
 		if (host || !badge.isConnected) return
 		clearTimeout(openTimer)
+		closeOpenInspector?.()
+		closeOpenInspector = close
 		installPageFont()
 		host = document.createElement("div")
 		host.setAttribute("data-sb-inspector", "")
@@ -633,7 +644,13 @@ export function attachInspector(
 			close()
 		}
 		const escape = (event: KeyboardEvent) => {
-			if (event.key === "Escape") close()
+			if (event.key !== "Escape") return
+			const hadFocus = host?.matches(":focus-within")
+			close()
+			if (!hadFocus) return
+			refocusing = true
+			badge.focus()
+			refocusing = false
 		}
 		const onScroll = () => close()
 		const onResize = () => position()
@@ -672,10 +689,20 @@ export function attachInspector(
 		openTimer = setTimeout(open, HOVER_OPEN_MS)
 	})
 	badge.addEventListener("pointerleave", () => clearTimeout(openTimer))
-	badge.addEventListener("focus", open)
+	badge.addEventListener("focus", () => {
+		if (!refocusing) open()
+	})
+	// the inspector sits at the end of the page, so Tab from the badge goes into it rather than past it
+	badge.addEventListener("keydown", (event) => {
+		const first = shadow?.querySelector<HTMLElement>("button, a[href]")
+		if (event.key !== "Tab" || event.shiftKey || !first) return
+		event.preventDefault()
+		first.focus()
+	})
+	badge.addEventListener("pointerdown", (event) => (pointerType = event.pointerType))
 	badge.addEventListener("click", (event) => {
 		// On touch there is no hover: the first tap opens the inspector instead of a new Letterboxd tab.
-		if (!globalThis.matchMedia?.("(hover: none)")?.matches) return
+		if (pointerType !== "touch") return
 		event.preventDefault()
 		open()
 	})

@@ -25,9 +25,9 @@ Removing streamBuddy opens a short, optional form asking why, and "Request a ser
 
 ## What streamBuddy sends, and to whom
 
-streamBuddy contacts these services directly from your browser, only to show ratings:
+streamBuddy contacts these services directly from your browser, only to show ratings and where a title is streaming:
 
-- **The Movie Database (api.themoviedb.org):** the titles shown on the streaming page, with streamBuddy's built-in TMDb key or your own, to identify each film or show; and, when you open a badge's card inspector, that title's TMDb ID and your region, to list where else it's streaming, and anything you search for under "Not this title?".
+- **The Movie Database (api.themoviedb.org):** the titles shown on the streaming page, with streamBuddy's built-in TMDb key or your own, to identify each film or show; when you open a badge's card inspector, that title's TMDb ID, to list where else it's streaming (TMDb returns every country's list; streamBuddy picks your region's from your browser language without sending it); and anything you search for under "Not this title?".
 - **Letterboxd (letterboxd.com):** requests for film pages, and for your public profile, diary, watchlist and friends' ratings if you've entered a username.
 - **IMDb (caching.graphql.imdb.com):** IMDb IDs, to fetch series and episode ratings.
 
