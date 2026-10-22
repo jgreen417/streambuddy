@@ -9,6 +9,8 @@ type ServicePlayback = {
 	showRating: boolean
 }
 export type BadgeStyle = "classic" | "glass"
+// how much the badge says: score plus friends/you, or just the score
+export type BadgeDetail = "full" | "score"
 export type FriendsStyle = "labels" | "dots" | "trio"
 // where badge scores come from; TMDb is always the last fallback
 export type RatingSources = "both" | "letterboxd" | "imdb" | "tmdb"
@@ -37,6 +39,7 @@ export type settingsType = {
 		// how the badge shows friends' score (and yours): labelled lines beside the score, a dot per friend, or always the same three dots
 		friendsStyle: FriendsStyle
 		badgeStyle: BadgeStyle
+		badgeDetail: BadgeDetail
 		// Liquid Glass frost, 0 (clear) to 100 (frosted)
 		glassFrost: number
 		// with dimLowRatings on, dim titles in a colour band below this one (1 = below orange ... 4 = below green)
@@ -84,6 +87,7 @@ export const defaultSettings: settingsType = {
 		ratingSources: "both",
 		friendsStyle: "labels",
 		badgeStyle: "classic",
+		badgeDetail: "full",
 		glassFrost: 60,
 		dimBelowBand: 1,
 		markWatched: true,
