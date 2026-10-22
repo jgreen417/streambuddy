@@ -126,7 +126,7 @@ const hash = computed(() => router.currentRoute.value.path)
 		</div>
 		<div class="content flex flex-col overflow-y-auto w-full">
 			<div class="page">
-				<div class="p-4 prose">
+				<div class="p-4">
 					<ServiceRequestBanner />
 					<RouterView />
 				</div>
@@ -258,17 +258,6 @@ body {
 }
 .content hr {
 	border-color: var(--sb-hairline);
-}
-.content .btn {
-	font-size: 14px;
-	background: var(--sb-hairline);
-	border: 1px solid var(--sb-line-raised);
-	color: var(--sb-text);
-	box-shadow: none;
-	font-weight: 500;
-}
-.content .btn:hover {
-	background: var(--sb-surface-hover);
 }
 .content input:not([type="checkbox"]),
 .content select {

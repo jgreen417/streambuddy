@@ -1,4 +1,4 @@
-@layer globalCss, base, utilities, higher;
+@layer globalCss, base, utilities;
 /* required for vue-devtools
  @use "/node_modules/vite-plugin-vue-devtools/src/overlay/devtools-overlay.css"; */
 @import "tailwindcss";
@@ -6,18 +6,6 @@
 @tailwind utilities;
 
 @plugin "daisyui";
-@plugin "daisyui/theme" {
-	name: "light";
-	default: false;
-	prefersdark: false;
-	color-scheme: light;
-
-	--color-primary: #fff;
-	--color-primary-content: #000;
-	--color-secondary: #0082fc;
-	--color-secondary-content: #fff;
-}
-
 @plugin "daisyui/theme" {
 	name: "dark";
 	default: true;
@@ -61,11 +49,6 @@ h2 {
 }
 h3 {
 	@apply text-lg;
-}
-@layer higher {
-	.btn {
-		@apply text-xl h-12 leading-9;
-	}
 }
 
 @layer globalCss {

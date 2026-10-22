@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { readDetailContext, readEpisodeCards, EpisodeRatings, SearchRatingSort } from "../../utils/page-features"
+import {
+	readDetailContext,
+	readEpisodeCards,
+	EpisodeRatings,
+	SearchRatingSort,
+	type FeatureRating,
+} from "../../utils/page-features"
 import { badgeLook } from "../../utils/page-feature-styles"
 
 describe("page adapters", () => {
@@ -79,7 +85,7 @@ describe("episode ratings", () => {
 	})
 	it("does not render an old title's episodes after navigation", async () => {
 		document.body.innerHTML = `<div data-uia="modal-motion-container-DETAIL_MODAL"><div data-uia="about-container"><h3>About Old</h3></div><div data-uia="previewModal--detailsMetadata"><span class="duration">2 seasons</span></div><button data-uia="dropdown-toggle">Season 1</button><div data-uia="episode-selector"><div data-uia="titleCard--container"><span class="titleCard-title_index">1</span></div></div></div>`
-		let resolve!: (value: any) => void
+		let resolve!: (value: FeatureRating) => void
 		const features = new EpisodeRatings(
 			() =>
 				new Promise((r) => {
