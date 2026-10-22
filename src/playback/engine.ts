@@ -23,6 +23,10 @@ export class PlaybackEngine {
 	// per episode: kinds the viewer undid, and when each button was last pressed
 	private suppressed = new Set<SkipKind>()
 	private lastPress = new Map<SkipKind, number>()
+	// when each skip control first appeared, for the optional wait before pressing it
+	private firstSeen = new Map<SkipKind, number>()
+	// the player only shows the episode number with its controls, so remember an episode 1 once seen
+	private premiere = false
 	// speed the viewer wants; null until loaded from storage
 	private rate: number | null = null
 	private renderedRate: number | null = null
@@ -115,6 +119,7 @@ export class PlaybackEngine {
 	private leavePlayer() {
 		this.video = null
 		this.timeLabel = ""
+		this.firstSeen.clear()
 		this.overlay.removeSpeed()
 		this.overlay.removeTime()
 		this.overlay.detach()
@@ -133,6 +138,8 @@ export class PlaybackEngine {
 		}
 		this.suppressed.clear()
 		this.lastPress.clear()
+		this.firstSeen.clear()
+		this.premiere = false
 		this.autoplayRun = first || this.touched ? 1 : this.autoplayRun + 1
 		this.touched = false
 		const limit = this.settings().pauseAfter
@@ -172,14 +179,26 @@ export class PlaybackEngine {
 				return
 			}
 		}
+		this.premiere ||= this.site.episodeNumber() === 1
 		for (const kind of SKIP_ORDER) {
 			if (!settings.skip[kind] || this.suppressed.has(kind) || isExcepted(this.rules, show, kind)) continue
-			if (kind === "intro" && settings.keepFirstIntro && this.site.episodeNumber() === 1) continue
+			if (kind === "intro" && settings.keepFirstIntro && this.premiere) continue
+			if (kind === "recap" && settings.keepSeasonRecaps && this.premiere) continue
 			const button = this.site.skipButton(kind)
-			if (!button || !isShown(button)) continue
+			// a control that comes and goes (ads, the end screen) starts its wait again next time it appears
+			if (!button || !isShown(button)) {
+				this.firstSeen.delete(kind)
+				continue
+			}
 			const now = Date.now()
+			if (settings.skipDelaySeconds > 0) {
+				const first = this.firstSeen.get(kind) ?? now
+				this.firstSeen.set(kind, first)
+				if (now - first < settings.skipDelaySeconds * 1000) continue
+			}
 			if (now - (this.lastPress.get(kind) ?? 0) < 2000) continue
 			this.lastPress.set(kind, now)
+			this.firstSeen.delete(kind)
 			this.press(kind, button, video, show, settings)
 			return
 		}

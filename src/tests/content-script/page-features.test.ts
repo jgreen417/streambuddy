@@ -119,6 +119,35 @@ describe("episode ratings", () => {
 		await features.tick("netflix", { episodes: false })
 		expect(document.querySelector(".sb-episode-rating")).toBeNull()
 	})
+	it("marks the unique best-rated episode of a season", async () => {
+		document.body.innerHTML = `<div data-uia="modal-motion-container-DETAIL_MODAL"><div data-uia="about-container"><h3>About Show</h3></div><div data-uia="previewModal--detailsMetadata"><span class="duration">2 seasons</span></div><button data-uia="dropdown-toggle">Season 1</button><div data-uia="episode-selector"><div data-uia="titleCard--container"><span class="titleCard-title_index">1</span></div><div data-uia="titleCard--container"><span class="titleCard-title_index">2</span></div><div data-uia="titleCard--container"><span class="titleCard-title_index">3</span></div></div></div>`
+		const features = new EpisodeRatings(
+			async () => ({ id: 1, title: "Show", media_type: "tv", source: "imdb", rating: 8 }),
+			async () => [
+				{ id: "tt1", season: 1, episode: 1, title: "One", rating: 8.1, votes: 100 },
+				{ id: "tt2", season: 1, episode: 2, title: "Two", rating: 9.2, votes: 100 },
+				{ id: "tt3", season: 1, episode: 3, title: "Three", rating: 8.4, votes: 100 },
+			],
+		)
+		await features.tick("netflix", { episodes: true })
+		const best = document.querySelectorAll<HTMLElement>('.sb-episode-rating[data-best="true"]')
+		expect(best).toHaveLength(1)
+		expect(best[0].querySelector(".sb-episode-best")?.textContent).toBe("★")
+		expect(best[0].querySelector(".sb-episode-score")?.textContent).toBe("9.2")
+		expect(best[0].title).toContain("Best rated episode of the season")
+	})
+	it("does not mark a tie", async () => {
+		document.body.innerHTML = `<div data-uia="modal-motion-container-DETAIL_MODAL"><div data-uia="about-container"><h3>About Show</h3></div><div data-uia="previewModal--detailsMetadata"><span class="duration">2 seasons</span></div><button data-uia="dropdown-toggle">Season 1</button><div data-uia="episode-selector"><div data-uia="titleCard--container"><span class="titleCard-title_index">1</span></div><div data-uia="titleCard--container"><span class="titleCard-title_index">2</span></div></div></div>`
+		const features = new EpisodeRatings(
+			async () => ({ id: 1, title: "Show", media_type: "tv", source: "imdb", rating: 8 }),
+			async () => [
+				{ id: "tt1", season: 1, episode: 1, title: "One", rating: 8.4, votes: 100 },
+				{ id: "tt2", season: 1, episode: 2, title: "Two", rating: 8.4, votes: 100 },
+			],
+		)
+		await features.tick("netflix", { episodes: true })
+		expect(document.querySelector('.sb-episode-rating[data-best="true"]')).toBeNull()
+	})
 	it("draws episode chips like the card badge, in glass when badges are", async () => {
 		document.body.innerHTML = `<div data-uia="modal-motion-container-DETAIL_MODAL"><div data-uia="about-container"><h3>About Show</h3></div><div data-uia="previewModal--detailsMetadata"><span class="duration">2 seasons</span></div><button data-uia="dropdown-toggle">Season 1</button><div data-uia="episode-selector"><div data-uia="titleCard--container"><span class="titleCard-title_index">1</span></div></div></div>`
 		const features = new EpisodeRatings(
