@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest"
 import { quietPreviews, tidyNetflix } from "../../playback/tidy"
 
 describe("Netflix's games", () => {
@@ -54,6 +54,13 @@ describe("Netflix's Top 10 row", () => {
 		tidyNetflix(false, false)
 		expect(document.getElementById("row")!.style.display).toBe("")
 	})
+	it("brings a row back when Netflix reuses it for something else", () => {
+		document.body.innerHTML = `<section id="row"><a data-uia="ranked-card"></a></section>`
+		tidyNetflix(false, true)
+		document.getElementById("row")!.innerHTML = `<a data-uia="standard-card"></a>`
+		tidyNetflix(false, true)
+		expect(document.getElementById("row")!.style.display).toBe("")
+	})
 	it("still restores games when only the Top 10 row is asked for", () => {
 		document.body.innerHTML = `<section id="games"><a data-uia="cloud-game-card"></a></section>`
 		tidyNetflix(true, false)
@@ -64,6 +71,12 @@ describe("Netflix's Top 10 row", () => {
 })
 
 describe("quiet previews", () => {
+	beforeAll(() => {
+		vi.useFakeTimers()
+	})
+	afterAll(() => {
+		vi.useRealTimers()
+	})
 	afterEach(() => {
 		document.body.innerHTML = ""
 		quietPreviews(false)
@@ -80,19 +93,32 @@ describe("quiet previews", () => {
 		expect(preview.muted).toBe(false)
 		expect(alreadyMuted.muted).toBe(true)
 	})
+	function unmute(video: HTMLVideoElement, byViewer: boolean) {
+		vi.advanceTimersByTime(5000)
+		if (byViewer) document.dispatchEvent(new Event("pointerdown"))
+		video.muted = false
+		video.dispatchEvent(new Event("volumechange"))
+	}
 	it("doesn't mute a preview again after the viewer unmutes it", () => {
 		document.body.innerHTML = `<video id="preview"></video>`
 		const preview = document.getElementById("preview") as HTMLVideoElement
 		quietPreviews(true)
-		preview.muted = false
+		unmute(preview, true)
 		quietPreviews(true)
 		expect(preview.muted).toBe(false)
+	})
+	it("mutes a preview again when the service unmutes it", () => {
+		document.body.innerHTML = `<video id="preview"></video>`
+		const preview = document.getElementById("preview") as HTMLVideoElement
+		quietPreviews(true)
+		unmute(preview, false)
+		expect(preview.muted).toBe(true)
 	})
 	it("leaves a preview the viewer unmuted alone when switched off", () => {
 		document.body.innerHTML = `<video id="preview"></video>`
 		const preview = document.getElementById("preview") as HTMLVideoElement
 		quietPreviews(true)
-		preview.muted = false
+		unmute(preview, true)
 		quietPreviews(false)
 		expect(preview.muted).toBe(false)
 	})

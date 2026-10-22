@@ -45,28 +45,49 @@ export function tidyNetflix(hideGames: boolean, hideTop10 = false) {
 			)
 		for (const row of Array.from(document.querySelectorAll(".mobile-games-row"))) hide(row.closest(ROW) ?? row, "games")
 	}
-	if (!hideTop10) restore("top10")
-	else for (const card of Array.from(document.querySelectorAll(TOP10_CARDS))) hide(card.closest(ROW), "top10")
+	if (!hideTop10) return restore("top10")
+	// a row Netflix reuses for something else comes back, as with games
+	for (const row of hidden("top10")) if (!row.querySelector(TOP10_CARDS)) show(row)
+	for (const card of Array.from(document.querySelectorAll(TOP10_CARDS))) hide(card.closest(ROW), "top10")
 }
 
-// each preview is muted once, when it first appears, so one the viewer unmutes keeps its sound; turning quiet
-// browsing off only unmutes the videos streamBuddy muted itself
-let seen = new WeakSet<HTMLVideoElement>()
+// a preview the viewer unmutes keeps its sound, while one the service unmutes on its own is muted again; turning
+// quiet browsing off only unmutes the videos streamBuddy muted itself
+let quiet = false
+let listening = false
+let lastInput = 0
+const heard = new WeakSet<HTMLVideoElement>()
 const mutedByUs = new Set<HTMLVideoElement>()
+function quieten(video: HTMLVideoElement) {
+	if (!quiet || video.muted || heard.has(video)) return
+	video.muted = true
+	mutedByUs.add(video)
+}
+function listen() {
+	listening = true
+	const input = () => (lastInput = Date.now())
+	document.addEventListener("pointerdown", input, true)
+	document.addEventListener("keydown", input, true)
+	// volumechange doesn't bubble, so it's caught on the way down
+	document.addEventListener(
+		"volumechange",
+		({ target }) => {
+			if (!(target instanceof HTMLVideoElement)) return
+			if (!target.muted && Date.now() - lastInput < 1000) heard.add(target)
+			else quieten(target)
+		},
+		true,
+	)
+}
 export function quietPreviews(on: boolean) {
+	quiet = on
 	if (!on) {
 		for (const video of mutedByUs) if (video.isConnected && video.muted) video.muted = false
 		mutedByUs.clear()
-		seen = new WeakSet()
 		return
 	}
-	for (const video of Array.from(document.querySelectorAll("video"))) {
-		if (seen.has(video)) continue
-		seen.add(video)
-		if (video.muted) continue
-		video.muted = true
-		mutedByUs.add(video)
-	}
+	if (!listening) listen()
+	for (const video of Array.from(document.querySelectorAll("video"))) quieten(video)
 	for (const video of mutedByUs) if (!video.isConnected) mutedByUs.delete(video)
 }
 
