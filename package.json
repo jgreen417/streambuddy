@@ -2,7 +2,7 @@
 	"displayName": "streamBuddy",
 	"description": "Your friends' Letterboxd ratings on every poster, plus Letterboxd and IMDb scores on Netflix, Prime Video and HBO Max. Skips intros.",
 	"name": "streambuddy",
-	"version": "1.0.5",
+	"version": "1.0.6",
 	"scripts": {
 		"web-ext": "web-ext run",
 		"firefox": "web-ext run --keep-profile-changes --firefox-profile=test2",

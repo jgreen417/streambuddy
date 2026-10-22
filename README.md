@@ -12,16 +12,19 @@ streamBuddy puts a small score on every title card. Films show their Letterboxd 
 ## Features
 
 - **Ratings on every card.** Letterboxd for films and IMDb for series, on home rows and search results.
+- **The card inspector.** Hover or focus a badge for friends' stars, the number of ratings, and where else the title is streaming. “Not this title?” fixes a wrong match and remembers it.
 - **Friends' ratings.** Your Letterboxd friends' average, and who rated it, on each film.
 - **Your diary.** Films you've logged show your stars, and watchlisted films are marked. Watched films can fade back.
-- **Episode ratings.** IMDb ratings for every episode of the season you're viewing.
+- **Episode ratings.** IMDb ratings for every episode of the season you're viewing, with the best of the season marked and the next episode's score at the credits.
 - **Find the good stuff.** An optional cut-off that hides low-rated titles, and sort-by-rating on search pages.
 - **Stats.** Weekly watch time by service, plus watchlist films that are streaming now.
-- **Skips you can trust.** Intros, recaps, credits, ads and "Still watching?" are handled for you, each with a small notice and one-tap Undo.
+- **Bedtime.** See when the title ends, set a sleep timer, or stop after this episode or film.
+- **Skips you can trust.** Intros, recaps, credits, ads and "Still watching?" are handled for you, each with a small notice and one-tap Undo. Skips can wait a beat, and season premieres can keep their recap.
 - **Your rules.** Choose "Not for this show" to keep a theme song you love, or let the first episode of a season play its intro.
 - **Speed that sticks.** Remembered per service and kept through ads and new episodes, with Shift + < and > shortcuts. Prime Video, HBO Max and Disney+, which have no speed menu, get a speed pill.
 - **Autoplay limit.** Optionally pause after a few episodes play in a row without you touching anything.
-- **Cleaner pages.** Hide Netflix's mobile-games rows and, optionally, Prime Video titles you'd have to pay extra for.
+- **Cleaner pages.** Quiet browsing mutes autoplay previews; hide Netflix's Top 10 and mobile-games rows, and optionally Prime Video titles you'd have to pay extra for.
+- **A score-only badge** for dense rows, and **local diagnostics** with cache controls, no telemetry.
 
 ## Setup
 
