@@ -13,8 +13,14 @@ async function resetAddon() {
 		location.reload()
 	}
 }
-const file = new Blob([JSON.stringify(settings.value)], { type: "text/json" })
-const href = URL.createObjectURL(file)
+// the file is made as Save is clicked, so it holds the settings as they are now, not as they were (maybe still loading)
+// when the page opened
+let download = ""
+function refreshDownload(event: MouseEvent) {
+	URL.revokeObjectURL(download)
+	download = URL.createObjectURL(new Blob([JSON.stringify(settings.value)], { type: "application/json" }))
+	;(event.currentTarget as HTMLAnchorElement).href = download
+}
 
 function replaceSettings(event: Event) {
 	const input = event.target as HTMLInputElement
@@ -40,8 +46,9 @@ function replaceSettings(event: Event) {
 		<li>
 			<span>{{ $t("saveSettings") }}</span>
 			<a
-				:href="href"
+				href="#"
 				download="settings.json"
+				@click="refreshDownload"
 			>
 				{{ $t("save") }}
 			</a>
