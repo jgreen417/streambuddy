@@ -1,7 +1,7 @@
-import { PlayerOverlay, formatRate, formatSaved, type NoticeAction } from "./overlay"
+import { PlayerOverlay, formatClock, formatRate, formatSaved, type NoticeAction } from "./overlay"
 import { isExcepted, loadRules, onRulesChanged, saveRules, withException } from "./rules"
 import { SKIP_LABELS, type PlaybackSettings, type SiteAdapter, type SkipKind, type SkipRules } from "./types"
-import { addSavedSeconds, type SavedLog } from "@/utils/stats"
+import { addSavedSeconds, formatDuration, type SavedLog } from "@/utils/stats"
 import { filmOver } from "@/utils/film-over"
 
 const TICK_MS = 250
@@ -40,6 +40,15 @@ export class PlaybackEngine {
 	private pendingPause = false
 	private pendingSaved: Record<string, number> = {}
 	private savedFlush: ReturnType<typeof setTimeout> | undefined
+	// bedtime: a wall-clock sleep timer, or a one-off stop at the end of this title
+	private sleepAt: number | null = null
+	private sleepMinutes: number | null = null
+	private stopAtEnd = false
+	// a fired timer or stop holds the skips and ad handling until the title plays again
+	private resting = false
+	// seconds left in the title at the last tick, to tell autoplay moving on from the viewer picking another title
+	private lastRemaining = Infinity
+	private timeLabel = ""
 
 	constructor(
 		private site: SiteAdapter,
@@ -59,12 +68,20 @@ export class PlaybackEngine {
 		document.addEventListener("keydown", touch, true)
 		// on window, in the capture phase, so players that swallow keystrokes don't see these first
 		window.addEventListener("keydown", (event) => this.onKey(event), true)
-		document.addEventListener("pointermove", () => this.overlay.flashSpeed(), { passive: true })
+		document.addEventListener(
+			"pointermove",
+			() => {
+				this.overlay.flashSpeed()
+				this.overlay.flashTime()
+			},
+			{ passive: true },
+		)
 		document.addEventListener("fullscreenchange", () => this.overlay.attach())
 		this.timer = setInterval(() => this.tick(), TICK_MS)
 	}
 	stop() {
 		clearInterval(this.timer)
+		this.overlay.removeTime()
 		this.overlay.detach()
 	}
 
@@ -72,6 +89,8 @@ export class PlaybackEngine {
 	private tick() {
 		const video = this.site.video()
 		if (!video) {
+			// a timer that runs out away from the player is spent, not kept for the next title
+			if (this.sleepAt !== null && Date.now() >= this.sleepAt) this.sleepAt = this.sleepMinutes = null
 			if (this.video) this.leavePlayer()
 			return
 		}
@@ -79,9 +98,11 @@ export class PlaybackEngine {
 		this.overlay.attach()
 		this.checkEpisode(video)
 		const settings = this.settings()
+		if (this.checkSleep(video)) return
 		this.handleAds(video, settings)
 		if (!this.adRestore) this.handleSkips(video, settings)
 		this.handleSpeed(settings)
+		this.updateTime(video)
 	}
 
 	private enterVideo(video: HTMLVideoElement) {
@@ -97,8 +118,10 @@ export class PlaybackEngine {
 	// it would restart the autoplay run on every episode
 	private leavePlayer() {
 		this.video = null
+		this.timeLabel = ""
 		this.firstSeen.clear()
 		this.overlay.removeSpeed()
+		this.overlay.removeTime()
 		this.overlay.detach()
 	}
 
@@ -108,6 +131,11 @@ export class PlaybackEngine {
 		if (!key || key === this.episode) return
 		const first = this.episode === null
 		this.episode = key
+		// the stop was for the title that just ended: if autoplay got past it, stop here; if the viewer left it early, drop it
+		if (this.stopAtEnd && !first) {
+			if (this.lastRemaining < 120) this.fireStop(video)
+			else this.stopAtEnd = false
+		}
 		this.suppressed.clear()
 		this.lastPress.clear()
 		this.firstSeen.clear()
@@ -143,6 +171,14 @@ export class PlaybackEngine {
 	// #region skips
 	private handleSkips(video: HTMLVideoElement, settings: PlaybackSettings) {
 		const show = this.site.showTitle()
+		// stopping after this title is independent of whether credits would otherwise have been skipped
+		if (this.stopAtEnd) {
+			const credits = this.site.skipButton("credits")
+			if (credits && isShown(credits)) {
+				this.fireStop(video)
+				return
+			}
+		}
 		this.premiere ||= this.site.episodeNumber() === 1
 		for (const kind of SKIP_ORDER) {
 			if (!settings.skip[kind] || this.suppressed.has(kind) || isExcepted(this.rules, show, kind)) continue
@@ -233,6 +269,106 @@ export class PlaybackEngine {
 				undo?.()
 			},
 		}
+	}
+	// #endregion
+
+	// #region bedtime
+	// The time pill only appears with the player's own controls (pointer movement). Its menu is the sleep timer.
+	private updateTime(video: HTMLVideoElement) {
+		const clock = this.site.clock?.() ?? video
+		// during a fast-forwarded ad the rate (and on some sites the clock) is the ad's, not the title's
+		if (this.adRestore || this.filmOver() || !Number.isFinite(clock.duration) || clock.duration <= 0) {
+			if (this.timeLabel) {
+				this.timeLabel = ""
+				this.overlay.removeTime()
+			}
+			return
+		}
+		const remaining = Math.max(0, clock.duration - clock.currentTime) / (video.playbackRate || 1)
+		const sleep = this.sleepAt ? ` · sleep ${formatClock(this.sleepAt)}` : ""
+		const label = `Ends ${formatClock(Date.now() + remaining * 1000)} · ${formatDuration(remaining)} left${sleep}`
+		if (label === this.timeLabel) return
+		this.timeLabel = label
+		this.overlay.renderTime(label, () => this.showTimeMenu())
+	}
+	private showTimeMenu() {
+		const isEpisode = this.site.episodeNumber() !== null
+		this.overlay.openTimeMenu(
+			{
+				isEpisode,
+				endsAt: this.timeLabel,
+				sleepAt: this.sleepAt ? formatClock(this.sleepAt) : undefined,
+				sleepMinutes: this.sleepMinutes ?? undefined,
+				stopAtEnd: this.stopAtEnd,
+			},
+			{
+				setSleep: (minutes) => {
+					this.sleepMinutes = minutes
+					this.sleepAt = Date.now() + minutes * 60_000
+					this.stopAtEnd = false
+					this.timeLabel = ""
+					this.overlay.showNotice(`Sleep timer set · pausing at ${formatClock(this.sleepAt)}`, [
+						{ label: "Cancel", run: () => this.cancelSleep() },
+					])
+				},
+				setEnd: () => {
+					this.stopAtEnd = true
+					this.sleepAt = null
+					this.sleepMinutes = null
+					this.overlay.showNotice(`Stopping after this ${isEpisode ? "episode" : "film"}`, [], 4000)
+				},
+				cancel: () => this.cancelSleep(),
+			},
+		)
+	}
+	private cancelSleep() {
+		const wasSleeping = this.sleepAt !== null
+		this.sleepAt = null
+		this.sleepMinutes = null
+		this.stopAtEnd = false
+		this.timeLabel = ""
+		this.overlay.closeTimeMenu()
+		this.overlay.showNotice(wasSleeping ? "Sleep timer cancelled" : "Stop cancelled", [], 3000)
+	}
+	private checkSleep(video: HTMLVideoElement) {
+		if (this.resting && video.paused) return true
+		this.resting = false
+		if (this.sleepAt !== null && Date.now() >= this.sleepAt) {
+			this.fireSleep(video)
+			return true
+		}
+		const clock = this.site.clock?.() ?? video
+		if (Number.isFinite(clock.duration)) this.lastRemaining = clock.duration - clock.currentTime
+		const atEnd =
+			video.ended || (Number.isFinite(clock.duration) && clock.duration > 1 && clock.currentTime >= clock.duration - 1)
+		if (this.stopAtEnd && atEnd) {
+			this.fireStop(video)
+			return true
+		}
+		return false
+	}
+	private fireSleep(video: HTMLVideoElement) {
+		this.sleepAt = null
+		this.sleepMinutes = null
+		this.timeLabel = ""
+		this.resting = true
+		video.pause()
+		this.overlay.showNotice(
+			`Slept · paused at ${formatClock(Date.now())}`,
+			[{ label: "Keep watching", run: () => video.play().catch(() => {}) }],
+			60_000,
+		)
+	}
+	private fireStop(video: HTMLVideoElement) {
+		const isEpisode = this.site.episodeNumber() !== null
+		this.stopAtEnd = false
+		this.resting = true
+		video.pause()
+		this.overlay.showNotice(
+			`Stopped after this ${isEpisode ? "episode" : "film"}`,
+			[{ label: "Keep watching", run: () => video.play().catch(() => {}) }],
+			60_000,
+		)
 	}
 	// #endregion
 
