@@ -6,7 +6,8 @@ import { color, cssDeclarations, friendColors, palette, serviceColors } from "@/
 import { installPageFont } from "@/utils/page-feature-styles"
 import { RATING_SOURCES, getScoreColor } from "@/utils/rating-sources"
 import { getLetterboxdSlug } from "@/utils/ratings"
-import type { MovieInfo } from "./cache"
+import { deleteCached, type MovieInfo } from "./cache"
+import { saveOverride } from "./overrides"
 import { letterboxdUsername, type PersonalStatus } from "./profile"
 
 export type ProviderKind = "flatrate" | "free" | "ads" | "rent" | "buy"
@@ -127,6 +128,16 @@ const providerColor = (name: string) =>
 		Object.values(SERVICES).find((service) => service.name.toLowerCase() === name.toLowerCase())?.statsKey ?? ""
 	] ?? color.surfaceRaised
 
+function head() {
+	const bar = el("div", "head")
+	const logo = el("span", "logo")
+	logo.innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="${palette.tangerine}"/><circle cx="24" cy="32" r="14" fill="${palette.couch}"/><circle cx="40" cy="32" r="14" fill="${palette.popcorn}"/><path d="M32 20.51 A14 14 0 0 1 32 43.49 A14 14 0 0 1 32 20.51 Z" fill="${palette.tangerine}"/></svg>`
+	const close = el("button", "close", "×")
+	close.setAttribute("aria-label", "Close")
+	bar.append(logo, el("span", "brand", "streamBuddy"), close)
+	return bar
+}
+
 // The popover's content, without the hover/positioning shell, so it can be rendered again when availability arrives.
 export function renderInspector(
 	data: MovieInfo,
@@ -139,13 +150,7 @@ export function renderInspector(
 	root.setAttribute("role", "dialog")
 	root.setAttribute("aria-label", `${data.title} details`)
 
-	const head = el("div", "head")
-	const logo = el("span", "logo")
-	logo.innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="${palette.tangerine}"/><circle cx="24" cy="32" r="14" fill="${palette.couch}"/><circle cx="40" cy="32" r="14" fill="${palette.popcorn}"/><path d="M32 20.51 A14 14 0 0 1 32 43.49 A14 14 0 0 1 32 20.51 Z" fill="${palette.tangerine}"/></svg>`
-	const close = el("button", "close", "×")
-	close.setAttribute("aria-label", "Close")
-	head.append(logo, el("span", "brand", "streamBuddy"), close)
-	root.append(head)
+	root.append(head())
 
 	root.append(el("h2", "title", data.title))
 	const year = data.release_date?.slice(0, 4)
@@ -257,7 +262,98 @@ export function renderInspector(
 		open.rel = "noopener noreferrer"
 		actions.append(open)
 	}
+	const fix = el("button", "btn secondary fix", "Not this title?")
+	fix.type = "button"
+	actions.append(fix)
 	root.append(actions)
+	return root
+}
+
+export type FixResult = {
+	id: number
+	media_type: "movie" | "tv"
+	title: string
+	year?: string
+}
+// TMDb ids are per media type: film 1399 and series 1399 are different titles
+export const resultKey = (result: { id?: number; media_type?: string }) => `${result.media_type}/${result.id}`
+export type FixState = {
+	query: string
+	results: FixResult[]
+	selected?: string
+	current: string
+	searching: boolean
+	error: string
+}
+export type FixActions = {
+	search: (query: string) => void
+	pick: (key: string) => void
+	apply: () => void
+	cancel: () => void
+}
+
+// The correction view: search TMDb, pick the right title, save it for this card title.
+export function renderFix(cardTitle: string, state: FixState, actions: FixActions): HTMLElement {
+	const root = el("div", "sb-inspector")
+	root.setAttribute("role", "dialog")
+	root.setAttribute("aria-label", "Fix the title match")
+	root.append(head())
+	root.append(el("h2", "title", "Which title is this?"))
+	root.append(
+		el("p", "note", `The card says “${cardTitle}”. Search TMDb; the fix applies wherever that title appears.`),
+	)
+	const form = el("form", "search")
+	const input = document.createElement("input")
+	input.type = "search"
+	input.value = state.query
+	input.placeholder = "Search TMDb"
+	input.setAttribute("aria-label", "Search TMDb")
+	const submit = el("button", "btn secondary", "Search")
+	submit.type = "submit"
+	form.append(input, submit)
+	form.addEventListener("submit", (event) => {
+		event.preventDefault()
+		actions.search(input.value)
+	})
+	root.append(form)
+
+	const results = el("div", "results")
+	if (state.searching) results.append(el("div", "providers-state", "Searching…"))
+	else if (state.error) results.append(el("div", "providers-state", state.error))
+	else if (!state.results.length)
+		results.append(el("div", "providers-state", "No matches yet. Search by the title as it appears on the card."))
+	else
+		for (const result of state.results) {
+			const key = resultKey(result)
+			const selected = state.selected === key
+			const row = el("button", `result${selected ? " on" : ""}`)
+			row.type = "button"
+			row.setAttribute("aria-label", `${result.title}${result.year ? ` (${result.year})` : ""}`)
+			row.setAttribute("aria-pressed", String(selected))
+			const mini = el("span", "mini", result.title.slice(0, 1).toUpperCase())
+			const copy = el("span", "rt")
+			copy.append(el("b", "", result.title))
+			copy.append(
+				el("span", "", [result.year, result.media_type === "tv" ? "Series" : "Film"].filter(Boolean).join(" · ")),
+			)
+			const pick = el("span", "pick", key === state.current ? "Current" : selected ? "Selected" : "Choose")
+			row.append(mini, copy, pick)
+			row.addEventListener("click", () => actions.pick(key))
+			results.append(row)
+		}
+	root.append(results)
+	root.append(el("p", "foot", "Stored on this device. The override applies wherever this card title appears."))
+
+	const buttons = el("div", "actions")
+	const cancel = el("button", "btn secondary", "Cancel")
+	cancel.type = "button"
+	cancel.addEventListener("click", actions.cancel)
+	const apply = el("button", "btn primary", "Use this title")
+	apply.type = "button"
+	apply.disabled = !state.selected || state.selected === state.current
+	apply.addEventListener("click", actions.apply)
+	buttons.append(cancel, apply)
+	root.append(buttons)
 	return root
 }
 
@@ -309,8 +405,36 @@ const STYLE = `
 .sb-inspector .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 13px; border-radius: 11px; font-size: 12px; font-weight: 700; text-decoration: none; }
 .sb-inspector .btn.primary { flex: 1; background: var(--sb-accent); color: var(--sb-text-on-accent); }
 .sb-inspector .btn.primary:hover { background: var(--sb-accent); filter: brightness(1.06); }
+.sb-inspector .note { margin: 8px 0 10px; color: var(--sb-text-muted); font-size: 12px; line-height: 1.45; }
+.sb-inspector .search { display: flex; gap: 6px; }
+.sb-inspector .search input { flex: 1; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--sb-line-field); border-radius: 9px; background: var(--sb-field); color: var(--sb-text); font: inherit; }
+.sb-inspector .search .btn { min-height: 36px; padding: 0 12px; }
+.sb-inspector .results { margin-top: 2px; }
+.sb-inspector .result { display: flex; width: 100%; align-items: center; gap: 9px; padding: 8px; margin-top: 6px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--sb-text); text-align: left; cursor: pointer; }
+.sb-inspector .result:hover { background: var(--sb-surface); }
+.sb-inspector .result.on { border-color: var(--sb-accent); background: var(--sb-accent-wash); }
+.sb-inspector .result .mini { display: flex; align-items: center; justify-content: center; width: 28px; height: 40px; border-radius: 5px; background: var(--sb-surface-raised); color: var(--sb-text-muted); font-size: 13px; font-weight: 700; flex: none; }
+.sb-inspector .result .rt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sb-inspector .result .rt b { font-size: 13px; font-weight: 600; }
+.sb-inspector .result .rt span { color: var(--sb-text-muted); font-size: 11px; }
+.sb-inspector .result .pick { margin-left: auto; color: var(--sb-accent); font-size: 11px; font-weight: 700; }
+.sb-inspector .foot { margin: 10px 0 0; color: var(--sb-text-muted); font-size: 10px; line-height: 1.4; }
+.sb-inspector .btn.secondary { border: 1px solid var(--sb-line-solid); background: transparent; color: var(--sb-text); font-weight: 500; }
+.sb-inspector .btn:disabled { opacity: .45; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .sb-inspector * { animation: none !important; transition: none !important; } }
 `
+
+type FixSearchResult = {
+	id?: number
+	media_type?: string
+	title?: string
+	name?: string
+	original_title?: string
+	original_name?: string
+	release_date?: string
+	first_air_date?: string
+	vote_count?: number
+}
 
 const near = (element: Element, { clientX: x, clientY: y }: PointerEvent, pad: number) => {
 	const box = element.getBoundingClientRect()
@@ -329,6 +453,7 @@ export function attachInspector(
 	personal: PersonalStatus,
 	service: StreamingService,
 	showFriends: boolean,
+	cardTitle: string,
 ) {
 	let host: HTMLElement | null = null
 	let shadow: ShadowRoot | null = null
@@ -337,6 +462,14 @@ export function attachInspector(
 	let availability: Availability | null | undefined
 	let started = false
 	let cleanup: (() => void)[] = []
+	let mode: "detail" | "fix" = "detail"
+	let fixQuery = cardTitle
+	let fixResults: FixResult[] = []
+	let fixSelected: string | undefined
+	// a newer search, or closing, makes an older search's answer stale
+	let searchRun = 0
+	let fixSearching = false
+	let fixError = ""
 	let pointerType = ""
 	let refocusing = false
 
@@ -355,14 +488,108 @@ export function attachInspector(
 		host.style.left = `${Math.round(left)}px`
 		host.style.top = `${Math.round(top)}px`
 	}
+	const runSearch = async (query: string) => {
+		const wanted = query.trim()
+		if (!wanted) return
+		const run = ++searchRun
+		fixQuery = wanted
+		fixResults = []
+		fixSelected = undefined
+		fixSearching = true
+		fixError = ""
+		paint()
+		let results: FixResult[] = []
+		let error = ""
+		try {
+			const response = (await sendMessage(
+				"fetch",
+				{
+					url: `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(wanted)}&include_adult=false&language=${document.documentElement.lang || navigator.language || "en-US"}&page=1`,
+					type: "tmdb",
+				},
+				"background",
+			)) as { results?: FixSearchResult[]; error?: string } | null
+			if (!response || response.error) throw new Error(response?.error ?? "unavailable")
+			results = (response.results ?? [])
+				.flatMap((item): FixResult[] => {
+					const type = item.media_type
+					const title = item.title || item.name || item.original_title || item.original_name
+					if ((type !== "movie" && type !== "tv") || !title || typeof item.id !== "number") return []
+					// a title nobody has rated would leave the card with no badge, and so no way back to this view
+					if (!item.vote_count) return []
+					const year = (item.release_date || item.first_air_date || "").slice(0, 4) || undefined
+					return [{ id: item.id, media_type: type, title, year }]
+				})
+				.slice(0, 5)
+		} catch {
+			error = "TMDb could not be searched. Try again."
+		}
+		if (run !== searchRun) return
+		fixResults = results
+		fixError = error
+		fixSearching = false
+		if (host) paint()
+	}
+	const applyFix = async () => {
+		const picked = fixResults.find((result) => resultKey(result) === fixSelected)
+		if (!picked) return
+		try {
+			await saveOverride(cardTitle, {
+				id: picked.id,
+				media_type: picked.media_type,
+				title: picked.title,
+				year: picked.year,
+			})
+			deleteCached(cardTitle)
+			close()
+		} catch {
+			fixError = "The fix could not be saved."
+			paint()
+		}
+	}
 	const paint = () => {
 		if (!shadow) return
 		shadow.querySelector(".sb-inspector")?.remove()
-		const content = renderInspector(data, personal, service, showFriends, availability)
+		const content =
+			mode === "fix"
+				? renderFix(
+						cardTitle,
+						{
+							query: fixQuery,
+							results: fixResults,
+							selected: fixSelected,
+							current: resultKey(data),
+							searching: fixSearching,
+							error: fixError,
+						},
+						{
+							search: (query) => void runSearch(query),
+							pick: (key) => {
+								fixSelected = key
+								paint()
+							},
+							apply: () => void applyFix(),
+							cancel: () => {
+								mode = "detail"
+								paint()
+							},
+						},
+					)
+				: renderInspector(data, personal, service, showFriends, availability)
 		content.querySelector<HTMLButtonElement>(".close")?.addEventListener("click", (event) => {
 			event.stopPropagation()
 			close()
 		})
+		if (mode === "detail")
+			content.querySelector<HTMLButtonElement>(".fix")?.addEventListener("click", () => {
+				mode = "fix"
+				fixQuery = cardTitle
+				fixResults = []
+				fixSelected = undefined
+				fixError = ""
+				paint()
+				void runSearch(cardTitle)
+			})
 		shadow.append(content)
 		requestAnimationFrame(position)
 	}
@@ -375,6 +602,13 @@ export function attachInspector(
 		host?.remove()
 		host = null
 		shadow = null
+		mode = "detail"
+		fixQuery = cardTitle
+		fixResults = []
+		fixSelected = undefined
+		fixSearching = false
+		fixError = ""
+		searchRun++
 		if (closeOpenInspector === close) closeOpenInspector = null
 		const title = badge.dataset.inspectorTitle
 		if (title) {
@@ -413,7 +647,8 @@ export function attachInspector(
 		// would count as leaving the badge while the pointer hasn't moved.
 		const away = (event: PointerEvent) => {
 			if (!host) return
-			if (near(badge, event, 24) || near(host, event, 8)) {
+			// typing a search in the fix view keeps it open wherever the pointer drifts
+			if (near(badge, event, 24) || near(host, event, 8) || host.matches(":focus-within")) {
 				clearTimeout(closeTimer)
 				closeTimer = undefined
 			} else closeTimer ??= setTimeout(close, HOVER_CLOSE_MS)
