@@ -120,6 +120,13 @@ function setup(overrides: Partial<PlaybackSettings> = {}) {
 }
 const noticeText = () =>
 	document.querySelector("[data-streambuddy]")?.shadowRoot?.querySelector(".notice")?.textContent ?? ""
+const shadow = () => document.querySelector("[data-streambuddy]")?.shadowRoot
+const timeText = () => shadow()?.querySelector(".time")?.textContent ?? ""
+const timeButton = () => shadow()!.querySelector<HTMLButtonElement>(".time .value")!
+const menuButton = (label: string) =>
+	Array.from(shadow()!.querySelectorAll<HTMLButtonElement>(".time-menu button")).find((button) =>
+		button.textContent?.includes(label),
+	)
 const noticeButton = (label: string) =>
 	Array.from(
 		document.querySelector("[data-streambuddy]")?.shadowRoot?.querySelectorAll<HTMLButtonElement>(".notice button") ??
@@ -205,6 +212,52 @@ describe("playback engine", () => {
 		tick()
 		expect(noticeText()).toContain("Next S3 E3")
 		expect(noticeText()).toContain("IMDb 8.7")
+	})
+	it("shows when the title ends", () => {
+		const { tick } = setup()
+		tick()
+		expect(timeText()).toContain("Ends")
+		expect(timeText()).toContain("left")
+	})
+	it("pauses when the sleep timer runs out", () => {
+		const { video, tick } = setup()
+		tick()
+		timeButton().click()
+		menuButton("15 minutes")!.click()
+		vi.advanceTimersByTime(15 * 60 * 1000)
+		tick()
+		expect(video.paused).toBe(true)
+		expect(noticeText()).toContain("Slept")
+	})
+	it("stops at the credits instead of advancing when asked", () => {
+		const { video, tick, addButton } = setup()
+		tick()
+		timeButton().click()
+		menuButton("End of the episode")!.click()
+		addButton("credits", 2_900)
+		tick()
+		expect(video.paused).toBe(true)
+		expect(noticeText()).toContain("Stopped after this episode")
+		const before = video.currentTime
+		tick()
+		expect(video.currentTime).toBe(before)
+	})
+	it("stops when autoplay moves on before the stop fired, but not after the viewer picks another episode", () => {
+		const { video, tick, state } = setup()
+		tick()
+		timeButton().click()
+		menuButton("End of the episode")!.click()
+		state.episode = "ep2"
+		tick()
+		expect(video.paused).toBe(false)
+		timeButton().click()
+		menuButton("End of the episode")!.click()
+		video.currentTime = 2_950
+		tick()
+		state.episode = "ep3"
+		video.currentTime = 0
+		tick()
+		expect(video.paused).toBe(true)
 	})
 	it("leaves a show's intro alone after “Not for this show”", async () => {
 		const { video, tick, addButton } = setup()
