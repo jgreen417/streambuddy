@@ -13,8 +13,16 @@ async function resetAddon() {
 		location.reload()
 	}
 }
-const file = new Blob([JSON.stringify(settings.value)], { type: "text/json" })
-const href = URL.createObjectURL(file)
+// remade whenever the settings change, so Save never holds the defaults the page started with while they loaded
+const href = ref("")
+watch(
+	settings,
+	(value) => {
+		URL.revokeObjectURL(href.value)
+		href.value = URL.createObjectURL(new Blob([JSON.stringify(value)], { type: "application/json" }))
+	},
+	{ deep: true, immediate: true },
+)
 
 function replaceSettings(event: Event) {
 	const input = event.target as HTMLInputElement

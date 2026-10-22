@@ -16,8 +16,10 @@ All of the following stays in your browser's extension storage. "Synced" items t
 | A copy of your public Letterboxd diary and watchlist | This device | To mark films you've seen or watchlisted |
 | Watch time per day and service, and estimated time saved by skipping | This device, last 120 days | For the Stats tab |
 | Recently displayed titles and their streaming-page URLs | This device, last 7 days, up to 25 titles | For the Stats tab |
-| Titles you choose to hide | This device | To hide them |
 | Titles you corrected with "Not this title?" (the card's title and the TMDb title you picked) | This device | To keep showing the right rating |
+| Your playback speed for each service | This device | To keep the speed you chose |
+| Shows you've told not to skip ("Not for this show") | Synced | So those shows keep their intros or credits |
+| Small interface notes: your language and theme, which notices you've dismissed or opened, the last version's "what's new", whether TMDb turned a key away, and when a ratings site last asked streamBuddy to slow down | This device | So the settings pages and popup remember them |
 
 Uninstalling streamBuddy deletes all of it. You can also erase it with "Reset" on the Backup page in settings.
 
