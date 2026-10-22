@@ -13,14 +13,16 @@ async function resetAddon() {
 		location.reload()
 	}
 }
-// the file is made as Save is clicked, so it holds the settings as they are now, not as they were (maybe still loading)
-// when the page opened
-let download = ""
-function refreshDownload(event: MouseEvent) {
-	URL.revokeObjectURL(download)
-	download = URL.createObjectURL(new Blob([JSON.stringify(settings.value)], { type: "application/json" }))
-	;(event.currentTarget as HTMLAnchorElement).href = download
-}
+// remade whenever the settings change, so Save never holds the defaults the page started with while they loaded
+const href = ref("")
+watch(
+	settings,
+	(value) => {
+		URL.revokeObjectURL(href.value)
+		href.value = URL.createObjectURL(new Blob([JSON.stringify(value)], { type: "application/json" }))
+	},
+	{ deep: true, immediate: true },
+)
 
 function replaceSettings(event: Event) {
 	const input = event.target as HTMLInputElement
@@ -46,9 +48,8 @@ function replaceSettings(event: Event) {
 		<li>
 			<span>{{ $t("saveSettings") }}</span>
 			<a
-				href="#"
+				:href="href"
 				download="settings.json"
-				@click="refreshDownload"
 			>
 				{{ $t("save") }}
 			</a>
