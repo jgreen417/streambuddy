@@ -16,6 +16,7 @@ async function load() {
 onMounted(load)
 
 async function copyReport() {
+	await load()
 	if (!summary.value) return
 	try {
 		await navigator.clipboard.writeText(diagnosticsReport(summary.value, { version, browser: browserName }))

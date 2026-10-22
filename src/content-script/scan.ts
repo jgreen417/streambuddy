@@ -29,12 +29,6 @@ import { queueSeenTitle } from "./watch-stats"
 let site: RatingsSite | null = null
 export function startCards(service: RatingsSite) {
 	site = service
-	// a corrected match, or the cache or fixes cleared from settings, here or in another tab: drop the badges and
-	// let the next pass look the titles up again
-	browser.storage.onChanged.addListener((changes, area) => {
-		if (area !== "local") return
-		if ((changes.DBCache && !changes.DBCache.newValue) || changes.titleOverrides) refreshRowPresentation(true)
-	})
 	if (ratingsEnabled()) startShowRatingInterval()
 }
 
@@ -86,6 +80,11 @@ const rowCardDecorations = new WeakMap<HTMLElement, HTMLElement[]>()
 function releaseCard(card: HTMLElement) {
 	card.classList.remove("imdb")
 	card.closest("li")?.classList.remove("imdb")
+}
+// after the cache or a title fix changes: unrated cards are looked up again too, not just the badged ones
+export function forgetCards() {
+	checkedCards.clear()
+	refreshRowPresentation(true)
 }
 // redrawAll: drop every card badge so the next pass draws it again (after a setting that changes how badges look)
 export function refreshRowPresentation(redrawAll = false) {

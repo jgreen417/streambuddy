@@ -109,7 +109,10 @@ export function readDetailContext(site: FeatureSite, path = location.pathname): 
 		}
 	}
 	const target = document.querySelector<HTMLElement>('[data-testid="atf-component-next-gen"]')
-	const title = headingText(target?.querySelector("h1") ?? null).replace(/\s*-\s*(?:Season|Staffel|Saison|Temporada|Stagione|सीज़न)\s+\d+.*$/i, "")
+	const title = headingText(target?.querySelector("h1") ?? null).replace(
+		/\s*-\s*(?:Season|Staffel|Saison|Temporada|Stagione|सीज़न)\s+\d+.*$/i,
+		"",
+	)
 	if (!target || !title) return null
 	return {
 		root: document.body,
@@ -154,7 +157,9 @@ export function readEpisodeCards(site: FeatureSite, root: HTMLElement) {
 		if (!season) return cards
 		root.querySelectorAll<HTMLElement>('[data-testid="episode-list-item"]').forEach((card) => {
 			const label = card.getAttribute("title") || text(card.querySelector("h2,h3")) || text(card)
-			const episode = Number(label.match(/^\s*(\d+)\./)?.[1] ?? label.match(/(?:Episode|Folge|Épisode|Episodio|एपिसोड)\s+(\d+)/i)?.[1])
+			const episode = Number(
+				label.match(/^\s*(\d+)\./)?.[1] ?? label.match(/(?:Episode|Folge|Épisode|Episodio|एपिसोड)\s+(\d+)/i)?.[1],
+			)
 			if (episode > 0)
 				cards.push({
 					card,
@@ -182,6 +187,12 @@ export class EpisodeRatings {
 	private episodes = new Map<string, Promise<EpisodeRating[]>>()
 	private nextRetry = new Map<string, number>()
 	private active = ""
+	// after the rating cache is cleared: look the open page's title up again and redraw its chips
+	forget() {
+		this.info.clear()
+		this.nextRetry.clear()
+		this.active = ""
+	}
 	constructor(
 		private lookup: (title: string, type: "movie" | "tv" | null, year: string | null) => Promise<FeatureRating | null>,
 		private lookupEpisodes: (data: FeatureRating, season: number) => Promise<EpisodeRating[]>,
