@@ -27,6 +27,8 @@ export type SiteAdapter = {
 	// identifies the episode being played, so per-episode state resets when it changes
 	episodeKey(): string | null
 	episodeNumber(): number | null
+	// the season the playing episode belongs to, where the player labels it
+	episodeSeason?(): number | null
 	// the series (or film) title, used for per-show rules
 	showTitle(): string | null
 	// true when the player already has its own speed menu: streamBuddy then only remembers the speed and
@@ -39,6 +41,10 @@ export type PlaybackSettings = {
 	skipAds: boolean
 	speedControl: boolean
 	keepFirstIntro: boolean
+	// hear the recap when a season starts
+	keepSeasonRecaps: boolean
+	// wait this many seconds after a skip control appears before pressing it; 0 = press at once
+	skipDelaySeconds: number
 	notices: boolean
 	// pause after this many episodes play back to back without the viewer touching anything; 0 = off
 	pauseAfter: number

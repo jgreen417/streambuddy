@@ -96,6 +96,11 @@ for (const { name } of states) {
 		// the saved pages are a signed-in account's rows and this log is public, so cards go by number, not title
 		const measured = (await measure(page)).map((m, i) => ({ ...m, card: `card ${i + 1}` }))
 		expect.soft(specProblems(measured), "badge placement").toEqual([])
+		// the player's time pill reads the wall clock ("Ends 21:40") and its width follows the digits, so a mask's box
+		// still moves; it's left out of the screenshot instead
+		await page
+			.locator("[data-streambuddy] .time")
+			.evaluateAll((pills) => pills.forEach((pill) => pill.setAttribute("style", "visibility: hidden")))
 		await expect.soft(page).toHaveScreenshot(`${name}.png`)
 	})
 }

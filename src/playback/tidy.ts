@@ -1,5 +1,6 @@
-// Page clean-ups a viewer would want: no rows of mobile games on Netflix, and optionally no Prime Video
-// titles that need renting, buying or an extra subscription. Hidden items are marked so they can come back.
+// Page clean-ups a viewer would want: no rows of mobile games or the ranked Top 10 on Netflix, optionally no
+// Prime Video titles that need renting, buying or an extra subscription, and no autoplay previews with sound.
+// Hidden items are marked so they can come back; videos are only unmuted if streamBuddy muted them.
 const HIDDEN_ATTR = "data-streambuddy-hidden"
 
 function hide(element: Element | null | undefined, reason: string) {
@@ -20,26 +21,74 @@ function restore(reason: string) {
 
 const GAME_CARDS = 'a[data-uia="cloud-game-card"], [data-uia*="game-card"]'
 
-export function tidyNetflix(hideGames: boolean) {
-	if (!hideGames) return restore("games")
-	// Netflix reuses a search cell for another result, so one that no longer holds a game comes back
-	for (const element of hidden("games"))
-		if (
-			!element.matches(`${GAME_CARDS}, .mobile-games-row`) &&
-			!element.querySelector(`${GAME_CARDS}, .mobile-games-row`)
-		)
-			show(element)
-	for (const card of Array.from(document.querySelectorAll(GAME_CARDS)))
-		// search results put games in the same grid as everything else, so there only the game's own cell goes (or
-		// the card, should Netflix lay the grid out differently), never the section holding every result
-		hide(
-			card.closest('[data-uia="search-page"]')
-				? (card.closest('[data-uia="gallery"] > * > *') ?? card)
-				: card.closest("section, .lolomoRow"),
-			"games",
-		)
-	for (const row of Array.from(document.querySelectorAll(".mobile-games-row")))
-		hide(row.closest("section, .lolomoRow") ?? row, "games")
+const TOP10_CARDS = 'a[data-uia="ranked-card"]'
+const ROW = "section, .lolomoRow"
+
+export function tidyNetflix(hideGames: boolean, hideTop10 = false) {
+	if (!hideGames) restore("games")
+	else {
+		// Netflix reuses a search cell for another result, so one that no longer holds a game comes back
+		for (const element of hidden("games"))
+			if (
+				!element.matches(`${GAME_CARDS}, .mobile-games-row`) &&
+				!element.querySelector(`${GAME_CARDS}, .mobile-games-row`)
+			)
+				show(element)
+		for (const card of Array.from(document.querySelectorAll(GAME_CARDS)))
+			// search results put games in the same grid as everything else, so there only the game's own cell goes (or
+			// the card, should Netflix lay the grid out differently), never the section holding every result
+			hide(
+				card.closest('[data-uia="search-page"]')
+					? (card.closest('[data-uia="gallery"] > * > *') ?? card)
+					: card.closest(ROW),
+				"games",
+			)
+		for (const row of Array.from(document.querySelectorAll(".mobile-games-row"))) hide(row.closest(ROW) ?? row, "games")
+	}
+	if (!hideTop10) return restore("top10")
+	// a row Netflix reuses for something else comes back, as with games
+	for (const row of hidden("top10")) if (!row.querySelector(TOP10_CARDS)) show(row)
+	for (const card of Array.from(document.querySelectorAll(TOP10_CARDS))) hide(card.closest(ROW), "top10")
+}
+
+// a preview the viewer unmutes keeps its sound, while one the service unmutes on its own is muted again; turning
+// quiet browsing off only unmutes the videos streamBuddy muted itself
+let quiet = false
+let listening = false
+let lastInput = 0
+const heard = new WeakSet<HTMLVideoElement>()
+const mutedByUs = new Set<HTMLVideoElement>()
+function quieten(video: HTMLVideoElement) {
+	if (!quiet || video.muted || heard.has(video)) return
+	video.muted = true
+	mutedByUs.add(video)
+}
+function listen() {
+	listening = true
+	const input = () => (lastInput = Date.now())
+	document.addEventListener("pointerdown", input, true)
+	document.addEventListener("keydown", input, true)
+	// volumechange doesn't bubble, so it's caught on the way down
+	document.addEventListener(
+		"volumechange",
+		({ target }) => {
+			if (!(target instanceof HTMLVideoElement)) return
+			if (!target.muted && Date.now() - lastInput < 1000) heard.add(target)
+			else quieten(target)
+		},
+		true,
+	)
+}
+export function quietPreviews(on: boolean) {
+	quiet = on
+	if (!on) {
+		for (const video of mutedByUs) if (video.isConnected && video.muted) video.muted = false
+		mutedByUs.clear()
+		return
+	}
+	if (!listening) listen()
+	for (const video of Array.from(document.querySelectorAll("video"))) quieten(video)
+	for (const video of mutedByUs) if (!video.isConnected) mutedByUs.delete(video)
 }
 
 export function tidyPrime(hidePaid: boolean) {
