@@ -49,15 +49,20 @@ export function tidyNetflix(hideGames: boolean, hideTop10 = false) {
 	else for (const card of Array.from(document.querySelectorAll(TOP10_CARDS))) hide(card.closest(ROW), "top10")
 }
 
-// videos streamBuddy muted itself, so turning quiet browsing off doesn't unmute a preview the site (or the viewer) muted
+// each preview is muted once, when it first appears, so one the viewer unmutes keeps its sound; turning quiet
+// browsing off only unmutes the videos streamBuddy muted itself
+let seen = new WeakSet<HTMLVideoElement>()
 const mutedByUs = new Set<HTMLVideoElement>()
 export function quietPreviews(on: boolean) {
 	if (!on) {
 		for (const video of mutedByUs) if (video.isConnected && video.muted) video.muted = false
 		mutedByUs.clear()
+		seen = new WeakSet()
 		return
 	}
 	for (const video of Array.from(document.querySelectorAll("video"))) {
+		if (seen.has(video)) continue
+		seen.add(video)
 		if (video.muted) continue
 		video.muted = true
 		mutedByUs.add(video)

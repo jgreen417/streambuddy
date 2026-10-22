@@ -80,6 +80,14 @@ describe("quiet previews", () => {
 		expect(preview.muted).toBe(false)
 		expect(alreadyMuted.muted).toBe(true)
 	})
+	it("doesn't mute a preview again after the viewer unmutes it", () => {
+		document.body.innerHTML = `<video id="preview"></video>`
+		const preview = document.getElementById("preview") as HTMLVideoElement
+		quietPreviews(true)
+		preview.muted = false
+		quietPreviews(true)
+		expect(preview.muted).toBe(false)
+	})
 	it("leaves a preview the viewer unmuted alone when switched off", () => {
 		document.body.innerHTML = `<video id="preview"></video>`
 		const preview = document.getElementById("preview") as HTMLVideoElement

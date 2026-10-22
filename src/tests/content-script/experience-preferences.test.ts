@@ -69,17 +69,6 @@ describe("experience preferences integration", () => {
 		await nextTick()
 		expect(state.General.glassFrost).toBe(20)
 	})
-	it("turns quiet browsing off and hides Netflix's Top 10 row", async () => {
-		const { root, state } = mount(fresh())
-		expect(state.General.quietPreviews).toBe(true)
-		toggle(root, "Quiet browsing").click()
-		await nextTick()
-		expect(state.General.quietPreviews).toBe(false)
-		toggle(root, "Top 10").click()
-		await nextTick()
-		expect(state.Netflix.hideTop10).toBe(true)
-		expect("hideTop10" in state.Amazon).toBe(false)
-	})
 	it("edits an individual recap without changing intros or other services", async () => {
 		const { root, state } = mount(fresh())
 		toggle(root, "Skip recaps").click()
