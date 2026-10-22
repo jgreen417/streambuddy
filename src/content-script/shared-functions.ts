@@ -6,6 +6,7 @@ import { badgeLook } from "@/utils/page-feature-styles"
 import { cached, getDiffInDays, isCacheCurrent, loadCache, lookupMovieInfo } from "./cache"
 import { updateCreditsPrompt } from "./credits"
 import { watchLetterboxdProfile } from "./profile"
+import { loadOverrides } from "./overrides"
 import { refreshRowPresentation, startCards, updateSearchSorting } from "./scan"
 import { settings, settingsReady } from "@/stores/settings"
 import { ratingSources } from "./settings"
@@ -18,6 +19,7 @@ export async function startSharedFunctions(site: RatingsSite) {
 	watchLetterboxdProfile(refreshRowPresentation)
 
 	await settingsReady
+	await loadOverrides()
 	await loadCache()
 	startCards(site)
 	startPageFeatures(site)

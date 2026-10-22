@@ -19,6 +19,7 @@ import {
 	type MovieInfo,
 } from "./cache"
 import { getPersonalStatus, loggedRating } from "./profile"
+import { overrideFor } from "./overrides"
 import { settings } from "@/stores/settings"
 import { ratingSources } from "./settings"
 import type { RatingsSite } from "./sites/types"
@@ -28,7 +29,8 @@ import { queueSeenTitle } from "./watch-stats"
 let site: RatingsSite | null = null
 export function startCards(service: RatingsSite) {
 	site = service
-	// clearing the cache or the fixed titles from settings should show up without a reload
+	// a corrected match, or the cache or fixes cleared from settings, here or in another tab: drop the badges and
+	// let the next pass look the titles up again
 	browser.storage.onChanged.addListener((changes, area) => {
 		if (area !== "local") return
 		if ((changes.DBCache && !changes.DBCache.newValue) || changes.titleOverrides) refreshRowPresentation(true)
@@ -254,9 +256,12 @@ async function addRating() {
 			if (lastTitle == title || title.includes("Netflix") || title.includes("Prime Video")) continue
 			lastTitle = title
 			const entry = cached(title)
+			const override = overrideFor(title)
 			if (
 				entry &&
 				isCacheCurrent(entry) &&
+				// a corrected title must not reuse the wrong match still sitting in the cache
+				(!override || entry.id === override.id) &&
 				// a Letterboxd/IMDb rating counts even when TMDb has no votes; unrated titles are retried after a week
 				(entry.rating || entry.score || getDiffInDays(entry.date, new Date()) <= 7) &&
 				(!media_type || entry.media_type == media_type)
@@ -297,6 +302,7 @@ async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string
 		look: badgeLook(settings.value.General),
 		personal,
 		position: site.badge,
+		service: site.service,
 		cardTitle: title,
 	})
 	if (data.source !== "tmdb" && data.rating) {
