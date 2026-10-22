@@ -187,6 +187,12 @@ export class EpisodeRatings {
 	private episodes = new Map<string, Promise<EpisodeRating[]>>()
 	private nextRetry = new Map<string, number>()
 	private active = ""
+	// after the rating cache is cleared: look the open page's title up again and redraw its chips
+	forget() {
+		this.info.clear()
+		this.nextRetry.clear()
+		this.active = ""
+	}
 	constructor(
 		private lookup: (title: string, type: "movie" | "tv" | null, year: string | null) => Promise<FeatureRating | null>,
 		private lookupEpisodes: (data: FeatureRating, season: number) => Promise<EpisodeRating[]>,
