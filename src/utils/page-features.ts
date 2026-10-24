@@ -181,6 +181,12 @@ function episodeCornerRadius(target: HTMLElement) {
 	return Math.max(radius(target), radius(target.querySelector("img")))
 }
 
+// how far a watched episode's progress bar reaches up from the thumbnail's bottom edge (Max), for the chip to sit above
+function progressBarHeight(target: HTMLElement) {
+	const bar = target.querySelector('[data-testid="progress-bar"]')
+	return bar ? Math.max(target.getBoundingClientRect().bottom - bar.getBoundingClientRect().top, 0) : 0
+}
+
 // IMDb scores beside each episode on a series' title page
 export class EpisodeRatings {
 	private info = new Map<string, Promise<FeatureRating | null>>()
@@ -307,6 +313,8 @@ export class EpisodeRatings {
 					const radius = episodeCornerRadius(entry.target)
 					chip.style.setProperty("--sb-badge-r", `${Math.max(radius - 3, 2)}px`)
 					chip.style.setProperty("--sb-pill-r", `${Math.max(radius - 6, 2)}px`)
+					const bar = progressBarHeight(entry.target)
+					if (bar) chip.style.bottom = `${bar + 3}px`
 					chip.title = `S${season} E${entry.episode}: ${rating.title} · ${rating.votes.toLocaleString()} ratings${isBest ? " · Best rated episode of the season" : ""}`
 					chip.setAttribute("aria-label", `IMDb ${rating.rating.toFixed(1)}, ${chip.title}`)
 					chip.addEventListener("click", (event) => event.stopPropagation())
