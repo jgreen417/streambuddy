@@ -9,7 +9,11 @@
 set -euo pipefail
 [ -n "$TOKEN" ] || exit 0
 remote="https://x-access-token:$TOKEN@github.com/jgreen417/streambuddy-sites.git"
-git ls-remote --exit-code --heads "$remote" "$BRANCH" > /dev/null || exit 0
+# no branch (exit 2) means the pull request accepted no saved-page screenshots; any other failure is an error
+status=0
+git ls-remote --exit-code --heads "$remote" "$BRANCH" > /dev/null || status=$?
+[ "$status" = 2 ] && exit 0
+[ "$status" = 0 ] || exit "$status"
 work=$(mktemp -d)
 if [ "$MERGED" = true ]; then
 	target=main
