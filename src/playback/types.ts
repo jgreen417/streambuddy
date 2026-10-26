@@ -16,6 +16,8 @@ export type SiteAdapter = {
 	clock?(): PlayerClock | null
 	// the element that fills the screen while playing, so overlays stay visible in fullscreen
 	playerRoot(): HTMLElement | null
+	// a button in the player's own top bar (its back button), for streamBuddy's pills to sit level with
+	topBarButton?(): HTMLElement | null
 	skipButton(kind: SkipKind): HTMLElement | null
 	// seconds of ad left, or null when no ad is playing
 	adRemaining?(): number | null

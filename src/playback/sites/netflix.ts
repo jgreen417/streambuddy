@@ -27,6 +27,7 @@ export const netflix: SiteAdapter = {
 	service: "Netflix",
 	video: () => (location.pathname.startsWith("/watch") ? mainVideo($(".watch-video") ?? document) : null),
 	playerRoot: () => $('[data-uia="watch-video"]') ?? $(".watch-video"),
+	topBarButton: () => $('[data-uia="control-nav-back"]'),
 	skipButton: (kind) => $(SKIP_SELECTORS[kind]),
 	// ad tiers show a countdown in the top corner of the player
 	adRemaining: () => parseClock($('[data-uia="ads-info-time-remaining"], span[class*="mmvz9h"]')?.textContent),

@@ -53,6 +53,7 @@ export class PlaybackEngine {
 	// seconds left in the title at the last tick, to tell autoplay moving on from the viewer picking another title
 	private lastRemaining = Infinity
 	private timeLabel = ""
+	private topBarButton: HTMLElement | null = null
 
 	constructor(
 		private site: SiteAdapter,
@@ -75,6 +76,7 @@ export class PlaybackEngine {
 		document.addEventListener(
 			"pointermove",
 			() => {
+				this.alignToTopBar()
 				this.overlay.flashSpeed()
 				this.overlay.flashTime()
 			},
@@ -274,6 +276,13 @@ export class PlaybackEngine {
 		}
 	}
 	// #endregion
+
+	// the player's top bar shows with its controls, as the pills do; a button kept in the page is measured again,
+	// one the site redraws is looked up again
+	private alignToTopBar() {
+		if (!this.topBarButton?.isConnected) this.topBarButton = this.site.topBarButton?.() ?? null
+		this.overlay.alignTo(this.topBarButton)
+	}
 
 	// #region bedtime
 	// The time pill only appears with the player's own controls (pointer movement). Its menu is the sleep timer.

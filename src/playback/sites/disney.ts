@@ -67,6 +67,7 @@ export const disney: SiteAdapter = {
 	video: () => (disneyPath().startsWith("/play/") ? mainVideo(player() ?? document) : null),
 	clock,
 	playerRoot: player,
+	topBarButton: () => playerQuery('[data-qa~="title-bug.backArrow"]'),
 	skipButton,
 	// a seek on the <video> only moves within the stretch the player has loaded, so skips press its own buttons
 	seekBlocked: true,
