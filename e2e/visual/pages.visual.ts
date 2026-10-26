@@ -150,7 +150,7 @@ for (const width of [900, 1440, 3440]) {
 			expect(badge.y).toBeGreaterThanOrEqual(synopsis.y + synopsis.height + 7)
 		}
 		const chip = page.locator(".sb-episode-rating").first()
-		await expect(chip).toHaveAttribute("href", /https:\/\/www.imdb.com\/title\/tt\d+\//)
+		await expect(chip).toHaveAttribute("href", /^https:\/\/www\.imdb\.com\/title\/tt\d+\/$/)
 		await page.screenshot({ path: `e2e/.results/netflix-aligned-${width}.png` })
 	})
 }
