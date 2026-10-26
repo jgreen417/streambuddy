@@ -5,6 +5,8 @@
 Crunchyroll is here.
 
 - Crunchyroll: rating badges on posters, New Episodes and search results, IMDb scores beside each episode, the review pill when a film's end credits start, intros and end credits skipped, and a speed pill above 1x.
+- Clearer wording across settings and the player: skip notices just say what was skipped, "Keep intros" and "Keep credits" replace "Don't skip for this show", and the request-a-service prompt shows up in fewer places.
+- HBO Max episode ratings sit above the watched-episode progress bar instead of covering it.
 
 # streamBuddy 1.0.6
 
