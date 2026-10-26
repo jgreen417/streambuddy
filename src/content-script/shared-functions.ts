@@ -16,7 +16,6 @@ import { startWatchTimer } from "./watch-stats"
 
 export async function startSharedFunctions(site: RatingsSite) {
 	watchSettings()
-	listenForRatingsShortcut(site.service)
 	startWatchTimer(site)
 	watchLetterboxdProfile(refreshRowPresentation)
 
@@ -24,6 +23,7 @@ export async function startSharedFunctions(site: RatingsSite) {
 	await loadOverrides()
 	await loadCache()
 	startCards(site)
+	listenForRatingsShortcut(site.service)
 	startPageFeatures(site)
 	// a corrected match, or the cache or fixes cleared from settings, here or in another tab: look everything up again
 	browser.storage.onChanged.addListener((changes, area) => {

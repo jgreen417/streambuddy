@@ -297,7 +297,8 @@ async function addRating() {
 }
 async function setRatingOnCard(card: HTMLElement, data: MovieInfo, title: string) {
 	if (!card.isConnected || !site) return
-	if (site.cleanTitle(card, card.dataset.cardTitle ? 0 : 1) !== title) {
+	// a lookup that finishes after ratings were switched off; released so switching back on rates the card
+	if (!ratingsEnabled() || site.cleanTitle(card, card.dataset.cardTitle ? 0 : 1) !== title) {
 		releaseCard(card)
 		return
 	}

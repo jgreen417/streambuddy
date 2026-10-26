@@ -1,5 +1,4 @@
-// The hide/show ratings shortcut (Alt+Shift+B unless changed in the browser): flips card ratings for this tab's
-// service, the same setting as the popup's "Ratings on title cards", and says so for a moment
+// The hide/show ratings shortcut: flips the popup's "Ratings on title cards" for this tab's service
 import { onMessage } from "webext-bridge/content-script"
 import type { StreamingService } from "@/constants/streamingServices"
 import { settings } from "@/stores/settings"
@@ -19,7 +18,9 @@ export function listenForRatingsShortcut(service: StreamingService) {
 		notice.setAttribute("role", "status")
 		notice.textContent = prefs.showRating ? "Ratings shown" : "Ratings hidden"
 		if (data.shortcut) notice.append(` · ${data.shortcut} to ${prefs.showRating ? "hide" : "show"} them`)
-		document.body.append(notice)
+		// a fullscreen player hides everything outside it
+		const parent = document.fullscreenElement ?? document.body
+		parent.append(notice)
 		clearTimeout(timer)
 		timer = setTimeout(() => notice.remove(), NOTICE_MS)
 	})

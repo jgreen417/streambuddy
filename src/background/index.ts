@@ -36,7 +36,7 @@ browser.runtime.onInstalled.addListener(async ({ reason, previousVersion }) => {
 browser.commands.onCommand.addListener(async (command, tab) => {
 	if (command !== "toggle-ratings" || !tab?.id) return
 	const { shortcut = "" } = (await browser.commands.getAll()).find(({ name }) => name === command) ?? {}
-	// tabs without a content script (any other site) have no one to answer
+	// on any other site there's no content script to answer
 	sendMessage("toggleRatings", { shortcut }, `content-script@${tab.id}`).catch(() => {})
 })
 

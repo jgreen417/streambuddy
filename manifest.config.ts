@@ -47,7 +47,6 @@ export default {
 		{ resources: ["<dynamic_resource>"], matches: Object.values(SERVICES).flatMap(({ matches }) => [...matches]) },
 	],
 	options_page: "src/ui/options-page/index.html",
-	// people can change the keys in the browser's shortcuts page
 	commands: {
 		"toggle-ratings": {
 			suggested_key: { default: "Alt+Shift+B" },

@@ -38,7 +38,7 @@ const stillWatching = preference(["skipStillWatching"])
 const adServices = computed(() => targets.value.filter((service) => SERVICES[service].skipsAds))
 const ads = preference(["skipAd"], adServices)
 const speed = preference(["speedControl"])
-// the keys for the hide/show ratings shortcut, as the browser writes them; empty when the user removed it
+// empty when the user removed the shortcut
 const ratingsShortcut = ref("")
 browser.commands
 	.getAll()

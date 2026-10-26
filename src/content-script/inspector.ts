@@ -250,7 +250,6 @@ export function renderInspector(
 	}
 
 	const actions = el("div", "actions")
-	// the page the score came from, where it has one
 	const onSource = ["https://letterboxd.com/film/", "https://www.imdb.com/title/"].some((page) =>
 		data.rating_url?.startsWith(page),
 	)
