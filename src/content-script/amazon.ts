@@ -4,7 +4,7 @@ import { primeSite } from "@/content-script/sites/prime"
 import { prime } from "@/playback/sites/prime"
 import { startPlayback } from "@/playback/start"
 import { settings, settingsReady } from "@/stores/settings"
-import { keepTidy, quietPreviews, tidyPrime } from "@/playback/tidy"
+import { keepTidy, quietPreviews, tidyPrime } from "@/content-script/tidy"
 
 // Prime Video also lives on Amazon's shopping domains; only act on its pages
 const isPrimeVideo =

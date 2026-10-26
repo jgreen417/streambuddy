@@ -3,12 +3,12 @@ import { gridsAround } from "./dom"
 import type { MediaType, RatingsSite } from "./types"
 
 // Crunchyroll's class names are hashed per build, so cards are found by their data-t (some of which end in a space)
-const BROWSE = '[data-t^="series-card"]:not(.imdb)'
-const NEW_EPISODE = '[data-t="release-episode-card"]:not(.imdb)'
+const BROWSE = '[data-t^="series-card"]:not(.sb-seen)'
+const NEW_EPISODE = '[data-t="release-episode-card"]:not(.sb-seen)'
 const SEARCH_KINDS = ["series", "movie", "episode"].map((kind) => `[data-t="search-${kind}-card"]`)
 // every search card, rated or not, so the sortable grids are still found once their cards are rated
 const SEARCH_CARD = SEARCH_KINDS.join(", ")
-const SEARCH = SEARCH_KINDS.map((card) => `${card}:not(.imdb)`).join(", ")
+const SEARCH = SEARCH_KINDS.map((card) => `${card}:not(.sb-seen)`).join(", ")
 
 // "From Far Away Season 1" -> "From Far Away": the New Episodes row names the season after the series
 export const withoutSeason = (title: string | null | undefined) =>

@@ -1,12 +1,12 @@
 import type { SiteAdapter, SkipKind } from "../types"
-import { $, buttonWithText, mainVideo, parseClock, parseEpisodeNumber, parseSeason } from "./dom"
+import { $, RECAP_LABEL, buttonWithText, mainVideo, parseClock, parseEpisodeNumber, parseSeason } from "./dom"
 
 const player = () => $(".dv-player-fullscreen") ?? $("#dv-web-player")
-const episodeInfo = () =>
-	($(".atvwebplayersdk-episode-info") ?? $(".atvwebplayersdk-subtitle-text"))?.textContent?.trim() || null
-
-// "Skip recap" as Prime's Amazon sites word it (English, German, French, Italian, Spanish, Hindi)
-const recapLabel = /recap|rückblick|résumé|riassunto|riepilogo|resumen|रीकैप/i
+// "S5 E3 Every One of You Sons of Bitches": newer players label the episode in episode-info, older ones in the subtitle
+export const episodeInfo = () =>
+	$(".atvwebplayersdk-episode-info")?.textContent?.trim() ||
+	$(".atvwebplayersdk-subtitle-text")?.textContent?.trim() ||
+	null
 
 function skipButton(kind: SkipKind): HTMLElement | null {
 	switch (kind) {
@@ -14,7 +14,7 @@ function skipButton(kind: SkipKind): HTMLElement | null {
 		case "intro":
 			return buttonWithText("[class*=skipelement]", /intro|vorspann|générique/i) ?? $("[class*=skipelement]")
 		case "recap":
-			return buttonWithText("[class*=skipelement]", recapLabel)
+			return buttonWithText("[class*=skipelement]", RECAP_LABEL)
 		case "credits":
 			return $("[class*=nextupcard-button]")
 		case "stillWatching":
@@ -32,12 +32,11 @@ export const prime: SiteAdapter = {
 	skipButton: (kind) => {
 		const button = skipButton(kind)
 		// "Skip intro" detection falls back to any skip element, so it must not also claim a recap
-		if (kind === "intro" && button && recapLabel.test(button.textContent ?? "")) return null
+		if (kind === "intro" && button && RECAP_LABEL.test(button.textContent ?? "")) return null
 		return button
 	},
 	adRemaining: () => parseClock($(".atvwebplayersdk-ad-timer-remaining-time")?.textContent),
 	adStrategy: "seek",
-	// "S5 E3 Every One of You Sons of Bitches" (older players used a subtitle element)
 	episodeKey: () => {
 		const title = $(".atvwebplayersdk-title-text")?.textContent?.trim()
 		return title ? `${title}|${episodeInfo() ?? ""}` : null

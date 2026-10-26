@@ -1,8 +1,9 @@
 import type { settingsType } from "@/stores/storeTypes"
-import type { PlaybackSettings, ServiceKey } from "./types"
+import type { StreamingService } from "@/constants/streamingServices"
+import type { PlaybackSettings } from "./types"
 
 // the playback engine's view of the stored settings for one service
-export function playbackSettings(settings: settingsType, service: ServiceKey): PlaybackSettings {
+export function playbackSettings(settings: settingsType, service: StreamingService): PlaybackSettings {
 	const s = settings[service]
 	const g = settings.General
 	return {

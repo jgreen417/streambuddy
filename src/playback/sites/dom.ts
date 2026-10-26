@@ -9,6 +9,10 @@ export function buttonWithText(selector: string, pattern: RegExp): HTMLElement |
 	return null
 }
 
+// "Skip recap" as the players word it in the languages streamBuddy has met (English, German, French, Italian, Spanish,
+// Dutch, Portuguese, Hindi), for players that use one skip button for intros and recaps
+export const RECAP_LABEL = /recap|rückblick|résumé|récap|resumen|riassunto|riepilogo|samenvatting|resumo|रीकैप/i
+
 // "0:45", "1:02:03", "Ad 0:30" or ":25" -> seconds
 export function parseClock(text: string | null | undefined): number | null {
 	const match = /(\d*):(\d{2})(?::(\d{2}))?/.exec(text ?? "")

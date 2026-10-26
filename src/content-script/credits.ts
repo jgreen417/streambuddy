@@ -2,7 +2,6 @@
 import { sendMessage } from "webext-bridge/content-script"
 import { findSeriesFinale } from "@/utils/lookup"
 import { CreditsRatingPrompt, creditsLength, inCredits, playerTitle } from "@/utils/credits-review"
-import type { FeatureRating } from "@/utils/page-features"
 import { shareLookup, type PlayingEpisode } from "@/utils/series-finale"
 import { lookupMovieInfo, today, type MovieInfo } from "./cache"
 import { letterboxdUsername, loggedRating } from "./profile"
@@ -18,7 +17,7 @@ const creditsPrompt = new CreditsRatingPrompt(() => {
 let playerLookup: {
 	title: string
 	sources: RatingSources
-	data: FeatureRating | null
+	data: MovieInfo | null
 	pending?: Promise<unknown>
 	retry: number
 } | null = null
@@ -75,7 +74,7 @@ export function updateCreditsPrompt(site: RatingsSite) {
 	if (playerLookup?.title !== key || playerLookup.sources !== ratingSources())
 		playerLookup = { title: key, sources: ratingSources(), data: null, retry: 0 }
 	// a rating whose friends' scores failed to load is shown meanwhile and looked up again once it's due a retry
-	const due = (playerLookup.data as { retryAfter?: number } | null)?.retryAfter ?? Number.POSITIVE_INFINITY
+	const due = playerLookup.data?.retryAfter ?? Number.POSITIVE_INFINITY
 	if (!playerLookup.pending && (!playerLookup.data || due <= Date.now()) && playerLookup.retry <= Date.now()) {
 		const current = playerLookup
 		current.pending = (episode ? lookupSeriesFinale({ ...episode, show: title }) : lookupMovieInfo(title, null, null))

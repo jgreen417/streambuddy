@@ -28,7 +28,7 @@ export const netflixSite: RatingsSite = {
 	badge: { corner: "top", right: "calc(0.2vw + 3px)", zIndex: "2" },
 	titleCards: () => [
 		document.querySelectorAll(
-			'a[data-uia="standard-card"]:not(.imdb), a[data-uia="progress-card"]:not(.imdb), a[data-uia="ranked-card"]:not(.imdb), a[data-uia="episodic-card"]:not(.imdb)',
+			'a[data-uia="standard-card"]:not(.sb-seen), a[data-uia="progress-card"]:not(.sb-seen), a[data-uia="ranked-card"]:not(.sb-seen), a[data-uia="episodic-card"]:not(.sb-seen)',
 		),
 	],
 	seenMarker: (card) => card,

@@ -1,8 +1,8 @@
-import { prime } from "@/playback/sites/prime"
+import { episodeInfo, prime } from "@/playback/sites/prime"
 import { isSeasonOnlyTitle } from "@/utils/tmdb"
 import { raiseBadges } from "@/content-script/badge"
 import { markedCreditsFromEnd } from "../credits-marker"
-import { episodeFromPlayer, gridsAround, text } from "./dom"
+import { episodeFromPlayer, gridsAround } from "./dom"
 import type { MediaType, RatingsSite } from "./types"
 
 // The card's own link to its title page. Not simply its first link: the badge is a link too, and once Prime re-renders a
@@ -68,9 +68,9 @@ export const primeSite: RatingsSite = {
 	titleCards: () => [
 		document.querySelectorAll(
 			// rows hold their cards in li; the search grid's cards are listitems themselves (article[data-testid=card])
-			":is(li article, article[data-testid='card'])[data-card-title]:not([data-card-entity-type='EVENT']):not([data-card-title='Live-TV']):not(:has(#rating))",
+			":is(li article, article[data-testid='card'])[data-card-title]:not([data-card-entity-type='EVENT']):not([data-card-title='Live-TV']):not(:has(.sb-card-rating))",
 		),
-		document.querySelectorAll("article[data-testid*='-card']:not(:has(#rating))"),
+		document.querySelectorAll("article[data-testid*='-card']:not(:has(.sb-card-rating))"),
 	],
 	seenMarker: (card, kind) => (kind === 0 ? card.closest("li") : card),
 	cleanTitle(card, kind) {
@@ -105,12 +105,7 @@ export const primeSite: RatingsSite = {
 	isPlayerPage: () => !!document.querySelector(".dv-player-fullscreen video, #dv-web-player video"),
 	creditsFromEnd: markedCreditsFromEnd,
 	playingTitle: () => document.title,
-	// newer players label the episode in episode-info
-	playingEpisode: () =>
-		episodeFromPlayer(
-			text(".atvwebplayersdk-episode-info") || text(".atvwebplayersdk-subtitle-text"),
-			prime.showTitle(),
-		),
+	playingEpisode: () => episodeFromPlayer(episodeInfo() ?? undefined, prime.showTitle()),
 	// the next-up row comes up within seconds of the end credits Prime marks in its own playback data. The player keeps
 	// hidden, zero-height next-up cards in the page all along, so only a card that takes up space counts.
 	endScreenShowing: (video) =>

@@ -15,7 +15,7 @@ function skipButton(kind: SkipKind): HTMLElement | null {
 	}
 }
 
-export const hbo: SiteAdapter = {
+export const max: SiteAdapter = {
 	service: "HBO",
 	video: () => (location.pathname.startsWith("/video/watch") ? mainVideo() : null),
 	playerRoot: () => {

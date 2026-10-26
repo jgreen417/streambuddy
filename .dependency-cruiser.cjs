@@ -40,7 +40,7 @@ module.exports = {
 				path: "^src/(content-script/(?!sites/|netflix\\.ts|amazon\\.ts|max\\.ts|disney\\.ts|crunchyroll\\.ts)|playback/(?!sites/)|utils/)",
 			},
 			to: {
-				path: "^src/(playback/sites/(netflix|prime|hbo|disney|crunchyroll)|content-script/sites/(netflix|prime|max|disney|crunchyroll))\\.ts$",
+				path: "^src/(playback/sites/(netflix|prime|max|disney|crunchyroll)|content-script/sites/(netflix|prime|max|disney|crunchyroll))\\.ts$",
 			},
 		},
 		{

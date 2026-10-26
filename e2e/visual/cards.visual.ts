@@ -70,7 +70,7 @@ test("prime: a card added to a row keeps its badges on one line", async ({ open 
 	await settle(page, prime.badges)
 	await page.locator('[data-shot="carousel"] ul').evaluate((row) => {
 		const card = row.querySelector("li")!.cloneNode(true) as HTMLElement
-		card.classList.remove("imdb")
+		card.classList.remove("sb-seen")
 		card.querySelector(".sb-card-rating")?.remove()
 		card.querySelector("img")!.src =
 			"https://art.test/art/boys._CLs|720,405|channels-logo-paramount|0,0,720,405+560,345,140,44_.svg?w=720&h=405&hue=0"
