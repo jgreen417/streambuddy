@@ -8,6 +8,7 @@ import { test, expect } from "./harness"
 const AFTERSUN = "https://www.netflix.com/watch/81572766"
 const GODLAND = "https://www.netflix.com/watch/81572767"
 const PAST_LIVES = "https://www.netflix.com/watch/81572765"
+const CRAZY_STUPID_LOVE = "https://www.netflix.com/watch/81572768"
 
 async function review(page: Page) {
 	await expect(page.locator("body[data-seeked]")).toBeAttached({ timeout: 10_000 })
@@ -54,6 +55,36 @@ test("after-credits pill: expanded", async ({ open }) => {
 	await expect.soft(page).toHaveScreenshot("credits-card.png")
 	await clearOfControls(page)
 })
+
+// a long title with friends' faces and a score beside it is wider than the pill: it's cut short there, and the card
+// keeps its width rather than spilling past its border, from a phone-sized window to an ultrawide one
+for (const width of [375, 1440, 3440]) {
+	test(`after-credits pill: long title at ${width}px`, async ({ open }) => {
+		const page = await open(CRAZY_STUPID_LOVE, { viewport: { width, height: 1440 } })
+		const root = await review(page)
+		await root.getByRole("button", { name: "Show details" }).click()
+		await expect(root.locator(".sb-review-card")).toContainText("You just finished Crazy, Stupid, Love.")
+		const shell = root.locator(".sb-review-shell")
+		// clipped content still has a box inside the shell, so its scroll width catches what the boxes below can't
+		expect(await shell.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1)
+		const edges = (await shell.boundingBox())!
+		for (const part of [
+			".sb-review-brand",
+			".sb-review-close",
+			".sb-review-more",
+			".sb-review-stars",
+			".sb-review-primary",
+			".sb-review-secondary",
+			".sb-review-chevron",
+		]) {
+			for (const item of await root.locator(part).all()) {
+				const box = (await item.boundingBox())!
+				expect(box.x, part).toBeGreaterThanOrEqual(edges.x)
+				expect(box.x + box.width, part).toBeLessThanOrEqual(edges.x + edges.width)
+			}
+		}
+	})
+}
 
 test("after-credits pill: nobody rated", async ({ open }) => {
 	const page = await open(GODLAND)

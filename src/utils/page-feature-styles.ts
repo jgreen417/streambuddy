@@ -48,7 +48,7 @@ export function installPageFeatureStyle() {
  .sb-review svg { display:block; flex:none; }
  :where(.sb-review) button { font:inherit; color:inherit; cursor:pointer; }
  .sb-review a { color:inherit; text-decoration:none; }
- .sb-review-shell { display:grid; grid-template-rows:0fr auto; overflow:hidden; border:1px solid var(--sb-line-solid); border-radius:var(--sb-radius-credits); background:var(--sb-bg); box-shadow:var(--sb-shadow-review); transition:grid-template-rows .38s var(--sb-ease-unfold),border-radius .38s var(--sb-ease-unfold),border-color .15s,box-shadow .15s; }
+ .sb-review-shell { display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:0fr auto; overflow:hidden; border:1px solid var(--sb-line-solid); border-radius:var(--sb-radius-credits); background:var(--sb-bg); box-shadow:var(--sb-shadow-review); transition:grid-template-rows .38s var(--sb-ease-unfold),border-radius .38s var(--sb-ease-unfold),border-color .15s,box-shadow .15s; }
  .sb-review-shell:hover, .sb-review-open .sb-review-shell { border-color:var(--sb-accent); box-shadow:0 0 0 3px var(--sb-accent-glow),var(--sb-shadow-review-lifted); }
  .sb-review-open .sb-review-shell { grid-template-rows:1fr auto; border-radius:var(--sb-radius-credits-open); }
  .sb-review-top .sb-review-shell { grid-template-rows:auto 0fr; }
