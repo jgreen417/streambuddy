@@ -9,6 +9,7 @@ describe("player text parsing", () => {
 	it.each([
 		["0:45", 45],
 		["Ad 1:30", 90],
+		[":25", 25],
 		["1:02:03", 3723],
 		["", null],
 		[null, null],
@@ -304,6 +305,13 @@ describe("playback engine", () => {
 		expect(video.currentTime).toBe(130)
 		tick()
 		expect(video.currentTime).toBe(130)
+		// a countdown still showing the skipped ad isn't seeked past again; the next ad in the break is
+		vi.advanceTimersByTime(5000)
+		tick()
+		expect(video.currentTime).toBe(130)
+		state.ad = 15
+		tick()
+		expect(video.currentTime).toBe(145)
 	})
 
 	it("fast-forwards ads muted where seeking isn't allowed, then restores the viewer's speed", async () => {

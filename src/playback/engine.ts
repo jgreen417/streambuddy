@@ -38,6 +38,8 @@ export class PlaybackEngine {
 	private adRestore: { muted: boolean } | null = null
 	private adAnnounced = false
 	private lastSeekedAd = 0
+	// the countdown the last seek went by, which a slow player may still show once the ad is behind it
+	private seekedAdRemaining: number | null = null
 	// autoplay run: episodes started in a row without the viewer touching the page
 	private autoplayRun = 0
 	private touched = true
@@ -53,6 +55,7 @@ export class PlaybackEngine {
 	// seconds left in the title at the last tick, to tell autoplay moving on from the viewer picking another title
 	private lastRemaining = Infinity
 	private timeLabel = ""
+	private topBarAnchor: HTMLElement | null = null
 
 	constructor(
 		private site: SiteAdapter,
@@ -100,6 +103,7 @@ export class PlaybackEngine {
 		}
 		if (video !== this.video) this.enterVideo(video)
 		this.overlay.attach()
+		this.alignToTopBar()
 		this.checkEpisode(video)
 		const settings = this.settings()
 		if (this.checkSleep(video)) return
@@ -275,6 +279,13 @@ export class PlaybackEngine {
 	}
 	// #endregion
 
+	// measured every tick, so the pills follow a resize or fullscreen; an anchor kept in the page is measured again,
+	// one the site redraws is looked up again
+	private alignToTopBar() {
+		if (!this.topBarAnchor?.isConnected) this.topBarAnchor = this.site.topBarAnchor?.() ?? null
+		this.overlay.alignTo(this.topBarAnchor)
+	}
+
 	// #region bedtime
 	// The time pill only appears with the player's own controls (pointer movement). Its menu is the sleep timer.
 	private updateTime(video: HTMLVideoElement) {
@@ -381,12 +392,14 @@ export class PlaybackEngine {
 		if (remaining === null || remaining <= 0) {
 			if (this.adRestore) this.endFastForward(video)
 			this.adAnnounced = false
+			this.seekedAdRemaining = null
 			return
 		}
 		if (this.site.adStrategy === "seek") {
 			// one jump per ad break; the player reports the same break for a moment after the seek
-			if (Date.now() - this.lastSeekedAd < 3000) return
+			if (Date.now() - this.lastSeekedAd < 3000 || remaining === this.seekedAdRemaining) return
 			this.lastSeekedAd = Date.now()
+			this.seekedAdRemaining = remaining
 			video.currentTime += remaining
 			this.recordSaved("ad", remaining)
 			if (settings.notices) this.overlay.showNotice("Skipped ad")

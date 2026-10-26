@@ -23,10 +23,10 @@ const targets = computed(() => (selection.value ? [selection.value] : [...stream
 const scope = computed(() => (selection.value ? SERVICES[selection.value].name : "All services"))
 const has = (key: string) =>
 	targets.value.some((service) => typeof (settings.value[service] as Record<string, unknown>)[key] === "boolean")
-function preference(keys: string[]) {
+function preference(keys: string[], services = targets) {
 	return computed({
-		get: () => getServiceState(settings.value, targets.value, keys),
-		set: (value) => setServiceState(settings.value, targets.value, keys, value === true),
+		get: () => getServiceState(settings.value, services.value, keys),
+		set: (value) => setServiceState(settings.value, services.value, keys, value === true),
 	})
 }
 const cards = preference(["showRating"])
@@ -35,7 +35,8 @@ const introOnly = preference(["skipIntro"])
 const recaps = preference(["skipRecap"])
 const credits = preference(["skipCredits"])
 const stillWatching = preference(["skipStillWatching"])
-const ads = preference(["skipAd"])
+const adServices = computed(() => targets.value.filter((service) => SERVICES[service].skipsAds))
+const ads = preference(["skipAd"], adServices)
 const speed = preference(["speedControl"])
 const skipDelayOptions = [
 	{ value: 0, label: "No wait" },
@@ -139,7 +140,7 @@ const updateMode = (event: Event) => {
 				@update:model-value="intros = $event"
 			/>
 			<PopupToggle
-				v-if="has('skipAd')"
+				v-if="adServices.length"
 				:model-value="ads === true"
 				:mixed="ads === 'mixed'"
 				label="Skip ads"

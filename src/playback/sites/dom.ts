@@ -13,9 +13,9 @@ export function buttonWithText(selector: string, pattern: RegExp): HTMLElement |
 // Dutch, Portuguese, Hindi), for players that use one skip button for intros and recaps
 export const RECAP_LABEL = /recap|rückblick|résumé|récap|resumen|riassunto|riepilogo|samenvatting|resumo|रीकैप/i
 
-// "0:45", "1:02:03" or "Ad 0:30" -> seconds
+// "0:45", "1:02:03", "Ad 0:30" or ":25" -> seconds
 export function parseClock(text: string | null | undefined): number | null {
-	const match = /(\d+):(\d{2})(?::(\d{2}))?/.exec(text ?? "")
+	const match = /(\d*):(\d{2})(?::(\d{2}))?/.exec(text ?? "")
 	if (!match) return null
 	const [a, b] = [Number(match[1]), Number(match[2])]
 	return match[3] === undefined ? a * 60 + b : a * 3600 + b * 60 + Number(match[3])
