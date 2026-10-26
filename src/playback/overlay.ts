@@ -129,9 +129,9 @@ export class PlayerOverlay {
 		}
 		return true
 	}
-	// the speed and time pills sit level with a button in the player's own top bar, where it has one
-	alignTo(button: HTMLElement | null) {
-		const box = button?.getBoundingClientRect()
+	// the speed and time pills sit level with the player's own top bar, where it has one
+	alignTo(anchor: HTMLElement | null) {
+		const box = anchor?.getBoundingClientRect()
 		if (!box?.height) return
 		const middle = box.top + box.height / 2 - this.host.getBoundingClientRect().top
 		this.layer.style.setProperty("--top-bar-y", `${Math.round(middle)}px`)

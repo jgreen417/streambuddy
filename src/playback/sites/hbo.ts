@@ -26,7 +26,7 @@ export const hbo: SiteAdapter = {
 			null
 		)
 	},
-	topBarButton: () => $('[data-testid="player-ux-back-button"]'),
+	topBarAnchor: () => $('[data-testid="player-ux-back-button"]'),
 	skipButton,
 	episodeKey: () => /\/video\/watch\/([^/?#]+(?:\/[^/?#]+)?)/.exec(location.pathname)?.[1] ?? null,
 	episodeNumber: () => parseEpisodeNumber($('[data-testid="player-ux-season-episode"]')?.textContent),

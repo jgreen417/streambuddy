@@ -53,7 +53,7 @@ export class PlaybackEngine {
 	// seconds left in the title at the last tick, to tell autoplay moving on from the viewer picking another title
 	private lastRemaining = Infinity
 	private timeLabel = ""
-	private topBarButton: HTMLElement | null = null
+	private topBarAnchor: HTMLElement | null = null
 
 	constructor(
 		private site: SiteAdapter,
@@ -277,11 +277,11 @@ export class PlaybackEngine {
 	}
 	// #endregion
 
-	// the player's top bar shows with its controls, as the pills do; a button kept in the page is measured again,
+	// the player's top bar shows with its controls, as the pills do; an anchor kept in the page is measured again,
 	// one the site redraws is looked up again
 	private alignToTopBar() {
-		if (!this.topBarButton?.isConnected) this.topBarButton = this.site.topBarButton?.() ?? null
-		this.overlay.alignTo(this.topBarButton)
+		if (!this.topBarAnchor?.isConnected) this.topBarAnchor = this.site.topBarAnchor?.() ?? null
+		this.overlay.alignTo(this.topBarAnchor)
 	}
 
 	// #region bedtime
