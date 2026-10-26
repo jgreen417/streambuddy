@@ -207,7 +207,7 @@ const messages: Record<string, Record<string, string>> = {
 }
 .sb-step {
 	padding: 18px;
-	border-radius: 12px;
+	border-radius: var(--sb-radius-xl);
 	background: var(--sb-surface-sunken);
 	border: 1px solid var(--sb-hairline);
 }
@@ -251,7 +251,7 @@ const messages: Record<string, Record<string, string>> = {
 	gap: 6px;
 	margin: 14px 0 0 36px;
 	padding: 4px;
-	border-radius: 8px;
+	border-radius: var(--sb-radius-md);
 	background: var(--sb-field);
 	border: 1px solid var(--sb-line-raised);
 }
@@ -276,7 +276,7 @@ const messages: Record<string, Record<string, string>> = {
 .sb-field button {
 	flex: none;
 	padding: 6px 14px;
-	border-radius: 6px;
+	border-radius: var(--sb-radius-sm);
 	border: 0;
 	background: var(--sb-accent);
 	color: var(--sb-text-on-accent);

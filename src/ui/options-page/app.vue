@@ -264,7 +264,7 @@ body {
 .content select {
 	background: var(--sb-field);
 	border: 1px solid var(--sb-line-raised);
-	border-radius: 6px;
+	border-radius: var(--sb-radius-sm);
 	color: var(--sb-text);
 }
 /* one select size on the settings pages, as in the popup */
