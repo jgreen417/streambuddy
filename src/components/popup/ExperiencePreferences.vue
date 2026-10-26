@@ -38,6 +38,11 @@ const stillWatching = preference(["skipStillWatching"])
 const adServices = computed(() => targets.value.filter((service) => SERVICES[service].skipsAds))
 const ads = preference(["skipAd"], adServices)
 const speed = preference(["speedControl"])
+// empty when the user removed the shortcut
+const ratingsShortcut = ref("")
+browser.commands
+	.getAll()
+	.then((commands) => (ratingsShortcut.value = commands.find(({ name }) => name === "toggle-ratings")?.shortcut ?? ""))
 const skipDelayOptions = [
 	{ value: 0, label: "No wait" },
 	{ value: 1, label: "1 second" },
@@ -151,6 +156,7 @@ const updateMode = (event: Event) => {
 				:model-value="cards === true"
 				:mixed="cards === 'mixed'"
 				label="Ratings on title cards"
+				:description="ratingsShortcut && `Hide or show on the page with ${ratingsShortcut}`"
 				@update:model-value="cards = $event"
 			/>
 		</div>
