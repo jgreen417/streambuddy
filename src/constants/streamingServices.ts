@@ -40,6 +40,13 @@ export const SERVICES = {
 		script: "src/content-script/disney.ts",
 		matches: ["*://*.disneyplus.com/*"],
 	},
+	Crunchyroll: {
+		name: "Crunchyroll",
+		statsKey: "crunchyroll",
+		feature: "crunchyroll",
+		script: "src/content-script/crunchyroll.ts",
+		matches: ["*://*.crunchyroll.com/*"],
+	},
 } as const
 
 export type StreamingService = keyof typeof SERVICES
@@ -75,7 +82,6 @@ export const OTHER_SERVICES = [
 	{ name: "Peacock", host: /(^|\.)peacocktv\.com$/i },
 	{ name: "Stan", host: /(^|\.)stan\.com\.au$/i },
 	{ name: "Binge", host: /(^|\.)binge\.com\.au$/i },
-	{ name: "Crunchyroll", host: /(^|\.)crunchyroll\.com$/i },
 	{ name: "Mubi", host: /(^|\.)mubi\.com$/i },
 	{ name: "the Criterion Channel", host: /(^|\.)criterionchannel\.com$/i },
 ]

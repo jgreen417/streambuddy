@@ -28,6 +28,7 @@ const SERVICE_PROVIDER: Record<StreamingService, RegExp> = {
 	Amazon: /^(Amazon )?Prime Video$/i,
 	HBO: /^(Max|HBO Max)$/i,
 	Disney: /^Disney(\+| Plus)$/i,
+	Crunchyroll: /^Crunchyroll$/i,
 }
 
 const providerCache = new Map<string, Promise<Availability | null>>()
