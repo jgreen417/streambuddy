@@ -84,3 +84,45 @@ test("after-credits pill: not connected", async ({ open }) => {
 	await settings
 	await expect(page.locator(".sb-review")).toHaveCount(0)
 })
+
+for (const width of [375, 1440, 3440]) {
+	test(`expanded credits content fits the shell at ${width}px`, async ({ open }) => {
+		const page = await open(AFTERSUN, { viewport: { width, height: 1440 } })
+		const root = await review(page)
+		await root.locator(".sb-review-text b").evaluate((el) => (el.textContent = "Review Crazy, Stupid, Love."))
+		await root
+			.locator(".sb-review-heading")
+			.evaluate((el) => (el.textContent = "You just finished Crazy, Stupid, Love."))
+		const names = ["ellalgraves", "Sethsreviews", "watchedbyadrien"]
+		await root
+			.locator(".sb-review-name")
+			.evaluateAll((els, names) => els.forEach((el, i) => (el.textContent = names[i])), names)
+		await root.getByRole("button", { name: "Show details" }).click()
+		await expect(root.locator(".sb-review-card")).toBeVisible()
+		// Geometry catches clipping even when the cropped content still counts as visible.
+		await expect
+			.poll(() =>
+				root.evaluate((el) => {
+					const shell = el.querySelector(".sb-review-shell")!
+					return shell.scrollWidth - shell.clientWidth
+				}),
+			)
+			.toBeLessThanOrEqual(1)
+		const shell = (await root.locator(".sb-review-shell").boundingBox())!
+		for (const selector of [
+			".sb-review-card-inner",
+			".sb-review-pill",
+			".sb-review-close",
+			".sb-review-stars",
+			".sb-review-primary",
+			".sb-review-secondary",
+		]) {
+			for (const item of await root.locator(selector).all()) {
+				const box = (await item.boundingBox())!
+				expect(box.x).toBeGreaterThanOrEqual(shell.x)
+				expect(box.x + box.width).toBeLessThanOrEqual(shell.x + shell.width)
+			}
+		}
+		await page.screenshot({ path: `e2e/.results/credits-contained-${width}.png` })
+	})
+}
