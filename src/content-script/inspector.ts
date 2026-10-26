@@ -250,14 +250,17 @@ export function renderInspector(
 	}
 
 	const actions = el("div", "actions")
-	const onLetterboxd = data.rating_url?.startsWith("https://letterboxd.com/film/")
-	const filmUrl = onLetterboxd
+	// the page the score came from, where it has one
+	const onSource = ["https://letterboxd.com/film/", "https://www.imdb.com/title/"].some((page) =>
+		data.rating_url?.startsWith(page),
+	)
+	const filmUrl = onSource
 		? data.rating_url
 		: data.media_type && data.id
 			? `https://www.themoviedb.org/${data.media_type}/${data.id}`
 			: ""
 	if (filmUrl) {
-		const open = el("a", "btn primary", onLetterboxd ? "Open on Letterboxd" : "Open on TMDb")
+		const open = el("a", "btn primary", onSource ? `Open on ${RATING_SOURCES[data.source].name}` : "Open on TMDb")
 		open.href = filmUrl
 		open.target = "_blank"
 		open.rel = "noopener noreferrer"

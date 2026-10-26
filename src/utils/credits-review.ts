@@ -258,7 +258,9 @@ export class CreditsRatingPrompt {
 			friends.slice(0, 3).forEach((friend) => faces.append(face(friend.name)))
 			toggle.append(faces)
 		}
-		const pillScore = state === "friends" ? data.friends_rating : state === "logged" ? undefined : score
+		// logged and unlinked pills need the room for their button; the card shows the score
+		const pillScore =
+			state === "friends" ? data.friends_rating : state === "logged" || state === "unlinked" ? undefined : score
 		if (pillScore) toggle.append(scorePill(state === "friends" ? "letterboxd" : data.source, pillScore))
 		pill.append(toggle)
 		if (state === "logged") pill.append(link("sb-review-action", filmUrl, "Log again"))
