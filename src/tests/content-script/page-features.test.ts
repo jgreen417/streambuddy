@@ -47,6 +47,13 @@ describe("page adapters", () => {
 		document.body.innerHTML = `<div data-testid="atf-component-next-gen"><h1>फ़ॉलआउट</h1></div><div data-testid="episode-list-item" title="एपिसोड 3"><div data-testid="episode-packshot"></div></div>`
 		expect(readEpisodeCards("prime", document.body)[0]).toMatchObject({ season: 2, episode: 3 })
 	})
+	it("maps Crunchyroll episodes by the season picker and the E-number in each title", () => {
+		document.body.innerHTML = `<h1 class="hero-body__seo-title--x1">Frieren: Beyond Journey's End</h1><div class="erc-seasons-select"><div role="button" aria-label="Staffeln"><span>Staffel 2</span></div></div><div class="erc-playable-collection"><div data-t="episode-card "><a href="/watch/G7PU4MZ1G"><figure></figure></a><h3><a>E3 - Killing Magic</a></h3></div></div>`
+		const context = readDetailContext("crunchyroll")!
+		expect(context.title).toBe("Frieren: Beyond Journey's End")
+		expect(context.mediaType).toBe("tv")
+		expect(readEpisodeCards("crunchyroll", context.root)[0]).toMatchObject({ season: 2, episode: 3 })
+	})
 	it("finds the Netflix title when the About heading sits outside the about container", () => {
 		document.body.innerHTML = `<div data-uia="modal-motion-container-DETAIL_MODAL"><h3>About The Irishman</h3><div data-uia="about-container"><div>Cast</div></div><div data-uia="previewModal--detailsMetadata"><span class="year">2019</span></div></div>`
 		expect(readDetailContext("netflix")?.title).toBe("The Irishman")

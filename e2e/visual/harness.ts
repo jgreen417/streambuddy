@@ -72,12 +72,21 @@ const TMDB_RESULTS: Record<string, object> = {
 		vote_count: 300,
 		release_date: "2022-12-02",
 	},
+	"Crazy, Stupid, Love.": {
+		id: 50646,
+		media_type: "movie",
+		title: "Crazy, Stupid, Love.",
+		vote_average: 7.2,
+		vote_count: 9800,
+		release_date: "2011-07-29",
+	},
 }
 // the film each player URL is playing (netflix-player.html shows this title)
 export const PLAYER_FILMS: Record<string, string> = {
 	"81572765": "Past Lives",
 	"81572766": "Aftersun",
 	"81572767": "Godland",
+	"81572768": "Crazy, Stupid, Love.",
 }
 // Letterboxd pages for the player's films only (card badges come from the seeded cache): the film page with its
 // average and TMDb id, /tmdb/{id}/ redirecting to it, and which of PROFILE's friends rated it
@@ -102,6 +111,16 @@ const LETTERBOXD_FILMS: Record<string, { tmdb: number; rating: number; friends: 
 			],
 		},
 		godland: { tmdb: 900667, rating: 3.8, friends: [] },
+		"crazy-stupid-love": {
+			tmdb: 50646,
+			rating: 3.6,
+			friends: [
+				{ name: "ellalgraves", rating: 3.5 },
+				{ name: "sethsreviews", rating: 3.5 },
+				{ name: "watchedbyadrien", rating: 3.5 },
+				{ name: "jo", rating: 3.5 },
+			],
+		},
 	}
 function letterboxdPage(url: URL) {
 	const tmdb = /^\/tmdb\/(\d+)\/$/.exec(url.pathname)?.[1]

@@ -5,8 +5,6 @@ import { parseClock, parseEpisodeNumber, parseSeason } from "../../playback/site
 import type { PlaybackSettings, SiteAdapter, SkipKind } from "../../playback/types"
 import { setFilmEnded } from "../../utils/film-over"
 
-vi.mock("../../utils/next-episode", () => ({ nextEpisodeRating: vi.fn(async () => "IMDb 8.7") }))
-
 describe("player text parsing", () => {
 	it.each([
 		["0:45", 45],
@@ -146,14 +144,14 @@ describe("playback engine", () => {
 		vi.useRealTimers()
 	})
 
-	it("skips an intro, announces the time saved, and can undo it", async () => {
+	it("skips an intro, announces it without the time saved, and can undo it", async () => {
 		const { video, tick, addButton } = setup()
 		addButton("intro", 185)
 		tick()
 		expect(video.currentTime).toBe(185)
 		vi.advanceTimersByTime(800)
 		expect(noticeText()).toContain("Skipped intro")
-		expect(noticeText()).toContain("1:25 saved")
+		expect(noticeText()).not.toContain("saved")
 		noticeButton("Undo")!.click()
 		expect(video.currentTime).toBe(100)
 		// undone for this episode: a fresh button is left alone
@@ -162,16 +160,6 @@ describe("playback engine", () => {
 		expect(video.currentTime).toBe(100)
 	})
 
-	it("puts the next episode's rating in the credits notice", async () => {
-		const { tick, addButton } = setup()
-		tick()
-		await Promise.resolve()
-		await Promise.resolve()
-		addButton("credits", 2_900)
-		tick()
-		expect(noticeText()).toContain("Next S3 E3")
-		expect(noticeText()).toContain("IMDb 8.7")
-	})
 	it("shows when the title ends", () => {
 		const { tick } = setup()
 		tick()
@@ -186,7 +174,7 @@ describe("playback engine", () => {
 		vi.advanceTimersByTime(15 * 60 * 1000)
 		tick()
 		expect(video.paused).toBe(true)
-		expect(noticeText()).toContain("Slept")
+		expect(noticeText()).toContain("Sleep timer · paused at")
 	})
 	it("stops at the credits instead of advancing when asked", () => {
 		const { video, tick, addButton } = setup()
@@ -259,12 +247,12 @@ describe("playback engine", () => {
 		tick()
 		expect(video.currentTime).toBe(185)
 	})
-	it("leaves a show's intro alone after “Not for this show”", async () => {
+	it("leaves a show's intro alone after “Keep intros”", async () => {
 		const { video, tick, addButton } = setup()
 		addButton("intro", 185)
 		tick()
 		vi.advanceTimersByTime(800)
-		noticeButton("Not for this show")!.click()
+		noticeButton("Keep intros")!.click()
 		expect(video.currentTime).toBe(100)
 		expect(browser.storage.sync.set).toHaveBeenCalledWith({ skipRules: { "the bear": ["intro"] } })
 	})
@@ -277,7 +265,7 @@ describe("playback engine", () => {
 		vi.advanceTimersByTime(800)
 		expect(noticeText()).toContain("Skipped intro")
 		expect(noticeButton("Undo")).toBeUndefined()
-		noticeButton("Not for this show")!.click()
+		noticeButton("Keep intros")!.click()
 		expect(video.currentTime).toBe(185)
 		expect(browser.storage.sync.set).toHaveBeenCalledWith({ skipRules: { "the bear": ["intro"] } })
 	})
@@ -289,7 +277,7 @@ describe("playback engine", () => {
 		// the site swaps in the next episode's player straight away
 		state.episode = "ep2"
 		expect(noticeText()).toContain("Skipped credits")
-		expect(noticeText()).toContain("48:20 saved")
+		expect(noticeText()).not.toContain("saved")
 	})
 
 	it("plays the intro on episode 1 when asked to", () => {

@@ -58,6 +58,8 @@ function differences(a: unknown, b: unknown, at = ""): string[] {
 const SLACK: [RegExp, number][] = [
 	[/\.player\.video\.at$/, 60],
 	[/\.player\.video\.duration$/, 1],
+	// measured from that duration
+	[/\.player\.creditsFromEnd$/, 1],
 	[/\.badge\.size\.\d$/, 2],
 ]
 

@@ -4,11 +4,13 @@
 // two reports can be diffed to see exactly where a site has changed under us.
 import { SERVICES, type StreamingService } from "@/constants/streamingServices"
 import { addCreditsMarker } from "@/content-script/credits-marker"
+import { crunchyrollSite } from "@/content-script/sites/crunchyroll"
 import { disneySite } from "@/content-script/sites/disney"
 import { maxSite } from "@/content-script/sites/max"
 import { netflixSite } from "@/content-script/sites/netflix"
 import { primeSite } from "@/content-script/sites/prime"
 import type { RatingsSite } from "@/content-script/sites/types"
+import { crunchyroll } from "@/playback/sites/crunchyroll"
 import { disney } from "@/playback/sites/disney"
 import { max } from "@/playback/sites/max"
 import { netflix } from "@/playback/sites/netflix"
@@ -23,6 +25,7 @@ const SITES: Record<StreamingService, { ratings: RatingsSite; playback: SiteAdap
 	Amazon: { ratings: primeSite, playback: prime },
 	HBO: { ratings: maxSite, playback: max },
 	Disney: { ratings: disneySite, playback: disney },
+	Crunchyroll: { ratings: crunchyrollSite, playback: crunchyroll },
 }
 const SKIPS: SkipKind[] = ["intro", "recap", "credits", "stillWatching"]
 

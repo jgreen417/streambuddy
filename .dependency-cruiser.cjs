@@ -37,17 +37,17 @@ module.exports = {
 			comment: "only a service's own entry script may pick its site adapter; shared code receives it as a parameter",
 			severity: "error",
 			from: {
-				path: "^src/(content-script/(?!sites/|netflix\\.ts|amazon\\.ts|max\\.ts|disney\\.ts)|playback/(?!sites/)|utils/)",
+				path: "^src/(content-script/(?!sites/|netflix\\.ts|amazon\\.ts|max\\.ts|disney\\.ts|crunchyroll\\.ts)|playback/(?!sites/)|utils/)",
 			},
 			to: {
-				path: "^src/(playback/sites/(netflix|prime|max|disney)|content-script/sites/(netflix|prime|max|disney))\\.ts$",
+				path: "^src/(playback/sites/(netflix|prime|max|disney|crunchyroll)|content-script/sites/(netflix|prime|max|disney|crunchyroll))\\.ts$",
 			},
 		},
 		{
 			name: "entries-not-imported",
 			severity: "error",
 			from: {},
-			to: { path: "^src/(content-script/(netflix|amazon|max|disney)|background/index)\\.ts$" },
+			to: { path: "^src/(content-script/(netflix|amazon|max|disney|crunchyroll)|background/index)\\.ts$" },
 		},
 		{
 			name: "no-orphans",

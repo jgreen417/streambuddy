@@ -12,7 +12,8 @@ const [major, minor, patch] = version
 	.split(/[.-]/)
 
 export default {
-	name: env.mode === "staging" ? `[INTERNAL] ${name}` : displayName || name,
+	name: env.mode === "staging" ? `[INTERNAL] ${name}` : `${displayName} - Letterboxd & IMDb Ratings`,
+	short_name: displayName,
 	description,
 	// up to four numbers separated by dots
 	version: `${major}.${minor}.${patch}`,

@@ -19,7 +19,9 @@ export async function bundleProbe(): Promise<string> {
 		write: false,
 		sourcemap: "inline",
 		sourceRoot: ROOT,
-		alias: { "@": path.join(ROOT, "src") },
+		// the extension API, which pages don't have (see extension-stub.ts); the bare `browser` is Vite's auto-import
+		alias: { "@": path.join(ROOT, "src"), "webextension-polyfill": path.join(ROOT, "e2e/sites/extension-stub.ts") },
+		inject: [path.join(ROOT, "e2e/sites/extension-stub.ts")],
 		// the build-time constants Vite fills in; the probe never logs or looks anything up, so any value will do
 		define: { __SIDELOAD__: "false", __TMDB_TOKEN__: '""', __LETTERBOXD_USERNAME__: '""' },
 		logLevel: "error",

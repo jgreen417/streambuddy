@@ -108,6 +108,19 @@ export function readDetailContext(site: FeatureSite, path = location.pathname): 
 			mediaType: seasons.test(masthead) || disneyEpisodeCards(document).length ? "tv" : "movie",
 		}
 	}
+	if (site === "crunchyroll") {
+		// a film is a series page too, with one video and no episode list
+		const target = document.querySelector<HTMLElement>('[class*="hero-body__seo-title"]')
+		const title = text(target)
+		if (!target || !title) return null
+		return {
+			root: document.body,
+			target,
+			title,
+			year: null,
+			mediaType: crunchyrollEpisodeCards(document).length ? "tv" : null,
+		}
+	}
 	const target = document.querySelector<HTMLElement>('[data-testid="atf-component-next-gen"]')
 	const title = headingText(target?.querySelector("h1") ?? null).replace(
 		/\s*-\s*(?:Season|Staffel|Saison|Temporada|Stagione|सीज़न)\s+\d+.*$/i,
@@ -152,6 +165,8 @@ export function readEpisodeCards(site: FeatureSite, root: HTMLElement) {
 			})
 	} else if (site === "disney") {
 		cards.push(...disneyEpisodeCards(root))
+	} else if (site === "crunchyroll") {
+		cards.push(...crunchyrollEpisodeCards(root))
 	} else {
 		const season = Number(document.title.match(primeSeason)?.[1])
 		if (!season) return cards
@@ -185,6 +200,24 @@ function episodeCornerRadius(target: HTMLElement) {
 function progressBarHeight(target: HTMLElement) {
 	const bar = target.querySelector('[data-testid="progress-bar"]')
 	return bar ? Math.max(target.getBoundingClientRect().bottom - bar.getBoundingClientRect().top, 0) : 0
+}
+
+// Netflix lists an episode's length at the right of its title row: the chip lines its left edge up with that text,
+// kept inside the card. The rects are scaled while Netflix's modal animates, so the offset is converted back.
+function alignWithDuration(chip: HTMLElement, target: HTMLElement) {
+	const duration = target.querySelector(".titleCard-duration .duration")?.getBoundingClientRect()
+	const card = target.getBoundingClientRect()
+	if (!duration?.width || !target.offsetWidth) {
+		chip.style.removeProperty("left")
+		chip.style.removeProperty("right")
+		return
+	}
+	const offset = (duration.left - card.left) / (card.width / target.offsetWidth) - target.clientLeft
+	const left = `${Math.max(3, Math.min(offset, target.clientWidth - chip.offsetWidth - 3))}px`
+	if (chip.style.left !== left) {
+		chip.style.left = left
+		chip.style.right = "auto"
+	}
 }
 
 // IMDb scores beside each episode on a series' title page
@@ -279,7 +312,10 @@ export class EpisodeRatings {
 				for (const entry of readEpisodeCards(site, context.root).filter((card) => card.season === season)) {
 					const rating = ratings.find((r) => r.season === entry.season && r.episode === entry.episode)
 					const old = entry.target.querySelector<HTMLElement>(".sb-episode-rating")
-					if (old?.dataset.episodeKey === `${data.id}|${season}|${entry.episode}`) continue
+					if (old?.dataset.episodeKey === `${data.id}|${season}|${entry.episode}`) {
+						alignWithDuration(old, entry.target)
+						continue
+					}
 					old?.remove()
 					if (!rating?.rating) continue
 					entry.target.classList.add("sb-episode-host")
@@ -307,9 +343,6 @@ export class EpisodeRatings {
 					chip.append(score, source)
 					if (isBest) chip.dataset.best = "true"
 					look.apply(chip)
-					// the glass look sets its shadow inline, over the stylesheet's ring, so the ring joins it there
-					if (isBest && chip.style.boxShadow)
-						chip.style.boxShadow = `0 0 0 2px var(--sb-accent),${chip.style.boxShadow}`
 					const radius = episodeCornerRadius(entry.target)
 					chip.style.setProperty("--sb-badge-r", `${Math.max(radius - 3, 2)}px`)
 					chip.style.setProperty("--sb-pill-r", `${Math.max(radius - 6, 2)}px`)
@@ -319,6 +352,7 @@ export class EpisodeRatings {
 					chip.setAttribute("aria-label", `IMDb ${rating.rating.toFixed(1)}, ${chip.title}`)
 					chip.addEventListener("click", (event) => event.stopPropagation())
 					entry.target.append(chip)
+					alignWithDuration(chip, entry.target)
 				}
 			}),
 		)
@@ -398,4 +432,15 @@ function disneyEpisodeCards(root: ParentNode) {
 			return place && { card, target, ...place }
 		},
 	).filter((card) => card !== null)
+}
+
+// a Crunchyroll series' episode cards, titled "E3 - Killing Magic", under its season picker ("Season 2")
+function crunchyrollEpisodeCards(root: ParentNode) {
+	// the picker reads "Season 2" in the profile's language, or "Season 1 Part 2"
+	const season = Number(text(document.querySelector('.erc-seasons-select [role="button"]')).match(/\d+/)?.[0] ?? 1)
+	return Array.from(root.querySelectorAll<HTMLElement>('.erc-playable-collection [data-t^="episode-card"]'), (card) => {
+		const episode = Number(text(card.querySelector("h3")).match(/^E(\d+)\b/)?.[1])
+		const target = card.querySelector<HTMLElement>("a:has(figure)") ?? card
+		return episode > 0 ? { card, target, season, episode } : null
+	}).filter((card) => card !== null)
 }

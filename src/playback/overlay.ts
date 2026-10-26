@@ -24,7 +24,8 @@ button { all: unset; cursor: pointer; padding: 6px 12px; border-radius: var(--sb
 	color: var(--sb-text); background: var(--sb-surface-raised); white-space: nowrap; }
 button:hover { background: var(--sb-line-hover); }
 button:focus-visible { outline: 2px solid var(--sb-focus); outline-offset: 2px; }
-button.quiet { background: transparent; color: var(--sb-text-soft); }
+button.quiet { padding: 3px 9px; font-size: 12px; background: transparent; color: var(--sb-text);
+	box-shadow: inset 0 0 0 1px var(--sb-line-hover); }
 button.quiet:hover { color: var(--sb-text); background: var(--sb-hairline); }
 /* top centre: players keep their own buttons in the top corners */
 .speed { position: absolute; left: 50%; transform: translateX(-50%); top: 20px; padding: 4px; gap: 2px; opacity: 0;
@@ -34,7 +35,7 @@ button.quiet:hover { color: var(--sb-text); background: var(--sb-hairline); }
 .speed .value.fast { color: var(--sb-up); }
 .speed .presets { display: none; gap: 2px; }
 .speed.open .presets { display: flex; }
-.speed .presets button { padding: 6px 10px; }
+.speed .presets button { padding: 6px 10px; background: transparent; }
 .speed .presets button[aria-pressed="true"] { background: var(--sb-text); color: var(--sb-bg); }
 /* under the speed pill, for the same reason; shown with the player's controls, like the speed pill */
 .time { position: absolute; left: 50%; transform: translateX(-50%); top: 64px; padding: 4px; opacity: 0;

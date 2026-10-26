@@ -3,7 +3,7 @@
 
 # streamBuddy
 
-**Letterboxd and IMDb ratings, right on Netflix, Prime Video, HBO Max and Disney+.**
+**Letterboxd and IMDb ratings, right on Netflix, Prime Video, HBO Max, Disney+ and Crunchyroll.**
 
 </div>
 
@@ -20,8 +20,8 @@ streamBuddy puts a small score on every title card. Films show their Letterboxd 
 - **Stats.** Weekly watch time by service, plus watchlist films that are streaming now.
 - **Bedtime.** See when the title ends, set a sleep timer, or stop after this episode or film.
 - **Skips you can trust.** Intros, recaps, credits, ads and "Still watching?" are handled for you, each with a small notice and one-tap Undo. Skips can wait a beat, and season premieres can keep their recap.
-- **Your rules.** Choose "Not for this show" to keep a theme song you love, or let the first episode of a season play its intro.
-- **Speed that sticks.** Remembered per service and kept through ads and new episodes, with Shift + < and > shortcuts. Prime Video, HBO Max and Disney+, which have no speed menu, get a speed pill.
+- **Your rules.** Choose "Keep intros" to keep a theme song you love, or let the first episode of a season play its intro.
+- **Speed that sticks.** Remembered per service and kept through ads and new episodes, with Shift + < and > shortcuts. Prime Video, HBO Max, Disney+ and Crunchyroll, which have no speed menu above 1x, get a speed pill.
 - **Autoplay limit.** Optionally pause after a few episodes play in a row without you touching anything.
 - **Cleaner pages.** Quiet browsing mutes autoplay previews; hide Netflix's Top 10 and mobile-games rows, and optionally Prime Video titles you'd have to pay extra for.
 - **A score-only badge** for dense rows, and **local diagnostics** with cache controls, no telemetry.

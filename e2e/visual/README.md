@@ -1,6 +1,7 @@
 # Visual checks
 
-Checks the rating badges, the credits prompt, the episode chips, the toolbar popup and the settings pages without
+Checks the rating badges, the credits prompt, the episode chips, the player's skip notices and speed pill
+(`overlay.visual.ts`, which bundles `src/playback/overlay.ts` on its own), the toolbar popup and the settings pages without
 opening a streaming site or a real browser. CI runs them on every pull request (`.github/workflows/visual.yml`).
 
 ## What a run does

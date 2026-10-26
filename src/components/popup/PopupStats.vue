@@ -86,7 +86,7 @@ function openedRateLink() {
 	browser.storage.local.set({ rateLinkOpened: true })
 }
 const formatRating = (title: { source: string; rating: number }) =>
-	title.source === "letterboxd" ? `Letterboxd ${title.rating.toFixed(2)}/5` : `IMDb ${title.rating.toFixed(1)}/10`
+	title.source === "letterboxd" ? `Letterboxd ${title.rating.toFixed(1)}/5` : `IMDb ${title.rating.toFixed(1)}/10`
 </script>
 
 <template>
@@ -176,12 +176,14 @@ const formatRating = (title: { source: string; rating: number }) =>
 		<div class="sb-tiles">
 			<div class="sb-tile">
 				<div class="sb-tile-value">{{ formatDuration(timeSaved) }}</div>
-				<div class="sb-tile-label">saved by skipping this week</div>
+				<div class="sb-tile-label">saved by skipping in the last 7 days</div>
 			</div>
 			<div class="sb-tile">
 				<template v-if="summary.biggestNight">
 					<div class="sb-tile-value">{{ summary.biggestNight.weekday }}</div>
-					<div class="sb-tile-label">biggest night · {{ formatDuration(summary.biggestNight.averageSeconds) }}</div>
+					<div class="sb-tile-label">
+						your biggest night · {{ formatDuration(summary.biggestNight.averageSeconds) }} on average
+					</div>
 				</template>
 				<template v-else>
 					<div class="sb-tile-value">–</div>

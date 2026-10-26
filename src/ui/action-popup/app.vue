@@ -11,7 +11,6 @@ import {
 } from "@/constants/streamingServices"
 import { useAccount } from "@/components/popup/useAccount"
 import { SERVICE_REQUEST_URL } from "@/constants/links"
-import { serviceColors } from "@/design/tokens"
 import { releaseSummary } from "@/utils/changelog"
 
 const SITES = streamingServices.map((service) => ({
@@ -32,7 +31,7 @@ browser.tabs.query({ active: true, currentWindow: true }).then(([activeTab]) => 
 const context = computed(() => {
 	if (current.value) return current.value.name
 	if (unsupported.value) return `Not on ${unsupported.value.name} yet`
-	return "Choose your service below"
+	return "Not on a streaming site"
 })
 
 // shown after an update until it's opened or dismissed
@@ -203,21 +202,12 @@ function navigateTabs(event: KeyboardEvent) {
 				tabindex="0"
 			>
 				<PopupSettings :service="current?.service ?? null" />
-				<div class="sb-ask-card">
-					<div
-						class="sb-request-services"
-						aria-hidden="true"
-					>
-						<i
-							v-for="site in SITES"
-							:key="site.service"
-							:style="{ background: serviceColors[SERVICES[site.service].statsKey] }"
-						>
-							{{ site.name[0] }}
-						</i>
-					</div>
+				<div
+					v-if="!unsupported"
+					class="sb-ask-card"
+				>
 					<strong>Watching somewhere else?</strong>
-					<p>streamBuddy is still in development. Tell us which service to add next.</p>
+					<p>Tell us which service to add next.</p>
 					<a
 						:href="SERVICE_REQUEST_URL"
 						target="_blank"
@@ -242,16 +232,8 @@ function navigateTabs(event: KeyboardEvent) {
 				type="button"
 				@click="openSettings('/options-page/Playback')"
 			>
-				Playback & rules
+				Playback
 			</button>
-			<a
-				class="is-accent"
-				:href="SERVICE_REQUEST_URL"
-				target="_blank"
-				rel="noopener"
-			>
-				Request a service
-			</a>
 			<button
 				type="button"
 				class="is-primary"

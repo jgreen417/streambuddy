@@ -23,15 +23,16 @@ async function remove(show: string, kind: SkipKind) {
 <template>
 	<h1>Playback</h1>
 	<p class="description">
-		streamBuddy skips intros, recaps and credits, passes ads, keeps your speed and can pause long autoplay runs on
-		Netflix, Prime Video, HBO Max and Disney+. Switch each one on or off in
+		streamBuddy skips intros, recaps and credits, skips or fast-forwards ads, keeps your speed and can pause long
+		autoplay runs on Netflix, Prime Video, HBO Max, Disney+ and Crunchyroll.
 		<RouterLink to="/options-page/Experience">Viewing preferences</RouterLink>
-		.
+		has a switch for each one. To set a sleep timer, click the end time at the top of the player.
 	</p>
 
 	<h2>Shows you don’t skip</h2>
 	<p class="description">
-		When a skip notice appears, choose “Not for this show” to keep that part playing. Those exceptions are listed here.
+		When a skip notice appears, choose “Keep intros” or “Keep credits” to stop skipping that part of the show. Those
+		shows are listed here; choose Skip again to turn skipping back on.
 	</p>
 	<ul
 		v-if="entries.length"
@@ -58,7 +59,7 @@ async function remove(show: string, kind: SkipKind) {
 		v-else
 		class="sb-empty"
 	>
-		No exceptions yet.
+		No shows yet.
 	</p>
 
 	<h2>Keyboard</h2>
@@ -115,7 +116,7 @@ h2 {
 }
 .sb-rules button {
 	padding: 5px 12px;
-	border-radius: 999px;
+	border-radius: var(--sb-radius-md);
 	border: 1px solid var(--sb-line-raised);
 	background: var(--sb-surface);
 	color: var(--sb-text);

@@ -68,7 +68,7 @@ friend keeps their colour from card to credits. The first three are the fixed "t
 
 Bricolage Grotesque everywhere (`font.ui` on extension pages). On streaming sites the badge and credits pill load the
 bundled file under the family name `"streamBuddy Bricolage"` (`font.page`) so a site's own fonts can't clash. The
-player overlay uses the system font (`font.system`). Numbers in scores use tabular figures.
+player overlay loads the same bundled file into its shadow root. Numbers in scores use tabular figures.
 
 | Use            | Size / weight         |
 | -------------- | --------------------- |
@@ -113,7 +113,7 @@ There is no rating panel on title or detail pages, by design.
 ## Checking a change
 
 The visual checks (`e2e/visual`, run in CI on every pull request) screenshot every badge look, the episode chips, the
-credits pill, the popup and the settings pages. A token change that moves a pixel shows up there; if it's intended,
+credits pill, the player's skip notices and speed pill, the popup and the settings pages. A token change that moves a pixel shows up there; if it's intended,
 add the **accept-visuals** label to the pull request.
 
 ## Known gaps
