@@ -5,8 +5,10 @@ import type { MediaType, RatingsSite } from "./types"
 // Crunchyroll's class names are hashed per build, so cards are found by their data-t (some of which end in a space)
 const BROWSE = '[data-t^="series-card"]:not(.imdb)'
 const NEW_EPISODE = '[data-t="release-episode-card"]:not(.imdb)'
-const SEARCH =
-	'[data-t="search-series-card"]:not(.imdb), [data-t="search-movie-card"]:not(.imdb), [data-t="search-episode-card"]:not(.imdb)'
+const SEARCH_KINDS = ["series", "movie", "episode"].map((kind) => `[data-t="search-${kind}-card"]`)
+// every search card, rated or not, so the sortable grids are still found once their cards are rated
+const SEARCH_CARD = SEARCH_KINDS.join(", ")
+const SEARCH = SEARCH_KINDS.map((card) => `${card}:not(.imdb)`).join(", ")
 
 // "From Far Away Season 1" -> "From Far Away": the New Episodes row names the season after the series
 export const withoutSeason = (title: string | null | undefined) =>
@@ -58,7 +60,7 @@ export const crunchyrollSite: RatingsSite = {
 		return { host, corner: "top" }
 	},
 	rowItem: (card) => card.closest<HTMLElement>('[data-t="carousel-card-wrapper"]') ?? card,
-	searchGrids: () => (crunchyrollPath().startsWith("/search") ? gridsAround(SEARCH, SEARCH) : []),
+	searchGrids: () => (crunchyrollPath().startsWith("/search") ? gridsAround(SEARCH_CARD, SEARCH_CARD) : []),
 	isPlayerPage: () => crunchyrollPath().startsWith("/watch/"),
 	// where Crunchyroll's own skip times put the credits
 	creditsFromEnd(video) {
