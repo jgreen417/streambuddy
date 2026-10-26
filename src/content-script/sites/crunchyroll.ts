@@ -1,4 +1,4 @@
-import { crunchyroll, crunchyrollPath, episodeTitle, playingSkipEvents } from "@/playback/sites/crunchyroll"
+import { crunchyroll, crunchyrollPath, playingSkipEvents } from "@/playback/sites/crunchyroll"
 import { gridsAround } from "./dom"
 import type { MediaType, RatingsSite } from "./types"
 
@@ -63,9 +63,10 @@ export const crunchyrollSite: RatingsSite = {
 		return credits && Number.isFinite(video.duration) ? video.duration - credits.start : undefined
 	},
 	playingTitle: () => crunchyroll.showTitle(),
+	// a film's player page names no episode number
 	playingEpisode() {
 		const episode = crunchyroll.episodeNumber()
-		if (episode === null) return episodeTitle() ? undefined : null
+		if (episode === null) return undefined
 		const season = crunchyroll.episodeSeason?.()
 		const show = crunchyroll.showTitle()
 		return season && show ? { show, season, episode } : null
