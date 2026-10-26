@@ -35,7 +35,6 @@ export function installPageFeatureStyle() {
  .sb-episode-score { padding:.28em .6em; border-radius:var(--sb-pill-r,var(--sb-radius-xxs)); color:var(--sb-text-on-accent); font-size:1.15em; font-weight:800; letter-spacing:-.02em; text-shadow:none; }
  .sb-episode-source { padding:0 .5em 0 .45em; font-size:max(10px,.72em); font-weight:800; }
  .sb-episode-best { padding-left:.35em; color:var(--sb-accent); font-size:.95em; line-height:1; }
- .sb-episode-rating[data-best="true"] { box-shadow:0 0 0 2px var(--sb-accent),var(--sb-shadow-sticker); }
  .sb-hide-title { position:absolute; top:4px; right:4px; display:flex; align-items:center; justify-content:center; width:32px; height:32px; border:1px solid var(--sb-line-control); border-radius:var(--sb-radius-md); background:var(--sb-panel); color:var(--sb-text); font:22px/1 var(--sb-font-system); cursor:pointer; z-index:10; }
  .sb-hide-title:hover { background:var(--sb-button-hover); }
  .sb-search-sort { margin:12px 0; } .sb-search-sort[aria-pressed="true"] { border-color:var(--sb-focus); }
