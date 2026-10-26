@@ -203,12 +203,17 @@ function progressBarHeight(target: HTMLElement) {
 }
 
 // Netflix lists an episode's length at the right of its title row: the chip lines its left edge up with that text,
-// unless that would push it past the card's right edge
+// kept inside the card. The rects are scaled while Netflix's modal animates, so the offset is converted back.
 function alignWithDuration(chip: HTMLElement, target: HTMLElement) {
 	const duration = target.querySelector(".titleCard-duration .duration")?.getBoundingClientRect()
-	if (!duration?.width) return
-	const offset = duration.left - target.getBoundingClientRect().left - target.clientLeft
-	const left = `${Math.min(offset, target.clientWidth - chip.offsetWidth - 3)}px`
+	const card = target.getBoundingClientRect()
+	if (!duration?.width || !target.offsetWidth) {
+		chip.style.removeProperty("left")
+		chip.style.removeProperty("right")
+		return
+	}
+	const offset = (duration.left - card.left) / (card.width / target.offsetWidth) - target.clientLeft
+	const left = `${Math.max(3, Math.min(offset, target.clientWidth - chip.offsetWidth - 3))}px`
 	if (chip.style.left !== left) {
 		chip.style.left = left
 		chip.style.right = "auto"
