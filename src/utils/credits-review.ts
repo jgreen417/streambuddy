@@ -172,7 +172,6 @@ export class CreditsRatingPrompt {
 		const inner = el("div", "sb-review-card-inner")
 		card.append(inner)
 		const head = el("div", "sb-review-head")
-		head.insertAdjacentHTML("beforeend", LOGO)
 		head.append(el("span", "sb-review-brand", "streamBuddy"))
 		const close = el("button", "sb-review-close", "×")
 		close.type = "button"
@@ -230,15 +229,13 @@ export class CreditsRatingPrompt {
 			})
 			buttons.append(connect, link("sb-review-secondary", filmUrl, "Open on Letterboxd"))
 		} else {
-			buttons.append(
-				link("sb-review-primary", filmUrl, state === "logged" ? "Log on Letterboxd" : "Rate on Letterboxd"),
-			)
+			buttons.append(link("sb-review-primary", filmUrl, state === "logged" ? "Log again" : "Rate on Letterboxd"))
 			const later = el("button", "sb-review-secondary", "Not now")
 			later.type = "button"
 			later.addEventListener("click", dismiss)
 			buttons.append(later)
 		}
-		inner.append(buttons, el("p", "sb-review-footnote", "Films only. streamBuddy never logs anything for you."))
+		inner.append(buttons, el("p", "sb-review-footnote", "Opens the film on Letterboxd."))
 
 		// the pill
 		const pill = el("div", "sb-review-pill")
@@ -251,7 +248,7 @@ export class CreditsRatingPrompt {
 		if (state === "friends") sub.textContent = `${friendsCount} ${friendsCount == 1 ? "friend" : "friends"} rated it`
 		else if (state === "nobody") sub.textContent = "Be the first of your friends"
 		else if (state === "unlinked") sub.textContent = "No Letterboxd linked"
-		else if (state === "plain") sub.textContent = "Rate it on Letterboxd"
+		else if (state === "plain") sub.textContent = "Rate on Letterboxd"
 		else if (viewer.watched) sub.append("You rated it ", stars(viewer.watched))
 		else sub.textContent = "In your diary"
 		text.append(sub)
@@ -264,7 +261,7 @@ export class CreditsRatingPrompt {
 		const pillScore = state === "friends" ? data.friends_rating : state === "logged" ? undefined : score
 		if (pillScore) toggle.append(scorePill(state === "friends" ? "letterboxd" : data.source, pillScore))
 		pill.append(toggle)
-		if (state === "logged") pill.append(link("sb-review-action", filmUrl, "Log again?"))
+		if (state === "logged") pill.append(link("sb-review-action", filmUrl, "Log again"))
 		if (state === "unlinked") {
 			const connect = el("button", "sb-review-action sb-review-ghost", "Connect")
 			connect.type = "button"

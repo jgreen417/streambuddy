@@ -54,7 +54,7 @@ async function clearOverrides() {
 		})
 		await browser.storage.local.remove("titleOverrides")
 		await load()
-		status.value = "Fixed titles cleared."
+		status.value = "Fixed matches cleared."
 	} finally {
 		busy.value = false
 	}
@@ -101,7 +101,7 @@ async function clearOverrides() {
 				<div class="diag-row">
 					<span class="k">
 						Build
-						<small>No telemetry, no developer server</small>
+						<small>No tracking</small>
 					</span>
 					<span class="v">v{{ version }} · {{ browserName }}</span>
 				</div>
@@ -136,7 +136,7 @@ async function clearOverrides() {
 					:disabled="busy || !summary?.fixedTitles"
 					@click="clearOverrides"
 				>
-					Clear fixed titles
+					Clear fixed matches
 				</button>
 			</div>
 			<p
@@ -187,7 +187,7 @@ async function clearOverrides() {
 	min-height: 36px;
 	padding: 0 13px;
 	border: 1px solid var(--sb-line-solid);
-	border-radius: 10px;
+	border-radius: var(--sb-radius-md);
 	background: transparent;
 	color: var(--sb-text);
 	font: 600 12px/1 var(--sb-font-ui);

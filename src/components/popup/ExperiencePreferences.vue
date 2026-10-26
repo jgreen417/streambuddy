@@ -43,11 +43,11 @@ const skipDelayOptions = [
 	{ value: 2, label: "2 seconds" },
 ]
 const pauseOptions = [
-	{ value: 0, label: "Never" },
-	{ value: 2, label: "After 2 episodes" },
-	{ value: 3, label: "After 3 episodes" },
-	{ value: 4, label: "After 4 episodes" },
-	{ value: 6, label: "After 6 episodes" },
+	{ value: 0, label: "Don’t pause" },
+	{ value: 2, label: "2 episodes in a row" },
+	{ value: 3, label: "3 episodes in a row" },
+	{ value: 4, label: "4 episodes in a row" },
+	{ value: 6, label: "6 episodes in a row" },
 ]
 const sourceOptions: { value: RatingSources; label: string }[] = [
 	{ value: "both", label: "Letterboxd & IMDb" },
@@ -106,7 +106,7 @@ const updateMode = (event: Event) => {
 			class="sb-scope"
 			:for="`${id}-scope`"
 		>
-			<span>Service preferences</span>
+			<span>Editing settings for</span>
 			<select
 				:id="`${id}-scope`"
 				v-model="selection"
@@ -125,9 +125,11 @@ const updateMode = (event: Event) => {
 			v-if="fixedService"
 			class="sb-scope"
 		>
-			Service preferences: {{ scope }}
+			Editing settings for {{ scope }}
 		</p>
-		<p class="sb-help sb-scope-note">Playback &amp; cards: {{ scope }}. Others are global.</p>
+		<p class="sb-help sb-scope-note">
+			Playback and card settings can differ per service. Everything else applies everywhere.
+		</p>
 		<div class="sb-label">Quick controls</div>
 		<div class="sb-group">
 			<PopupToggle
@@ -203,7 +205,7 @@ const updateMode = (event: Event) => {
 					<option value="score">Score only</option>
 				</select>
 			</label>
-			<p class="sb-help">Score only keeps the score and its source; friends and your status stay in the tooltip.</p>
+			<p class="sb-help">Score only shows just the score and where it’s from. Hover the badge to see friends’ ratings.</p>
 		</div>
 		<details
 			class="sb-disclosure"
@@ -373,8 +375,8 @@ const updateMode = (event: Event) => {
 					/>
 					<PopupToggle
 						v-model="settings.General.rateOnCredits"
-						label="Rating prompt near the end"
-						description="Opens Letterboxd during a film’s final 90 seconds."
+						label="Rate on Letterboxd at the credits"
+						description="Shows a pill with friends’ ratings when a film’s credits start."
 					/>
 				</template>
 				<p
@@ -401,7 +403,7 @@ const updateMode = (event: Event) => {
 					Playback preferences
 					<small>
 						{{
-							credits === "mixed" ? "Episode advance: mixed" : credits ? "Episode advance on" : "Episode advance off"
+							credits === "mixed" ? "Credits skipped on some services" : credits ? "Credits skipped" : "Credits play"
 						}}
 					</small>
 				</span>
@@ -424,8 +426,8 @@ const updateMode = (event: Event) => {
 					v-if="has('skipCredits')"
 					:model-value="credits === true"
 					:mixed="credits === 'mixed'"
-					label="Advance to the next episode"
-					description="Uses the service’s next-episode control when it appears."
+					label="Skip credits"
+					description="Jumps to the next episode when the credits start."
 					@update:model-value="credits = $event"
 				/>
 				<PopupToggle
@@ -443,8 +445,8 @@ const updateMode = (event: Event) => {
 				/>
 				<PopupToggle
 					v-model="settings.General.keepFirstIntro"
-					label="Play intros on episode 1"
-					description="Hear the theme once, then skip it."
+					label="Keep intros on episode 1"
+					description="Watch the opening on episode 1 and skip it after that."
 				/>
 				<PopupToggle
 					v-if="has('skipRecap')"
@@ -457,7 +459,7 @@ const updateMode = (event: Event) => {
 					label="Skip notices"
 					description="A short notice with Undo each time something is skipped."
 				/>
-				<label class="sb-cutoff">
+				<label class="sb-cutoff sb-cutoff-divided">
 					Wait before skipping
 					<select v-model.number="settings.General.skipDelaySeconds">
 						<option
@@ -470,7 +472,7 @@ const updateMode = (event: Event) => {
 					</select>
 				</label>
 				<label class="sb-cutoff">
-					Pause autoplay
+					Pause autoplay after
 					<select v-model.number="settings.General.pauseAfter">
 						<option
 							v-for="option in pauseOptions"
@@ -481,7 +483,6 @@ const updateMode = (event: Event) => {
 						</option>
 					</select>
 				</label>
-				<p class="sb-help">Counts episodes that play in a row while you don’t touch anything.</p>
 			</div>
 		</details>
 	</div>

@@ -127,7 +127,8 @@ const hash = computed(() => router.currentRoute.value.path)
 		<div class="content flex flex-col overflow-y-auto w-full">
 			<div class="page">
 				<div class="p-4 prose">
-					<ServiceRequestBanner />
+					<!-- only where someone is setting streamBuddy up, not on every page -->
+					<ServiceRequestBanner v-if="['Account', 'install', 'Experience'].some((page) => hash.endsWith(page))" />
 					<RouterView />
 				</div>
 			</div>
@@ -265,6 +266,10 @@ body {
 	border: 1px solid var(--sb-line-raised);
 	border-radius: 6px;
 	color: var(--sb-text);
+}
+/* one select size on the settings pages, as in the popup */
+.content .sb select {
+	font-size: 14px;
 }
 .content {
 	@apply min-w-[200px] min-h-[450px];

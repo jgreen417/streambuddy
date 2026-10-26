@@ -66,7 +66,7 @@ test("after-credits pill: already logged", async ({ open }) => {
 	const page = await open(PAST_LIVES)
 	const root = await review(page)
 	await expect(root.locator(".sb-review-pill")).toContainText("You rated it")
-	await expect(root.getByRole("link", { name: "Log again?" })).toHaveAttribute(
+	await expect(root.getByRole("link", { name: "Log again", exact: true })).toHaveAttribute(
 		"href",
 		"https://letterboxd.com/film/past-lives/",
 	)
