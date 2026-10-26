@@ -7,6 +7,8 @@ export const SERVICES = {
 		feature: "netflix",
 		// whether streamBuddy can tell when an ad plays there; "Skip ads" only shows for those that can
 		skipsAds: true,
+		// a search for a title is appended to this
+		search: "https://www.netflix.com/search?q=",
 		script: "src/content-script/netflix.ts",
 		matches: ["*://*.netflix.com/*", "*://*.netflix.ca/*", "*://*.netflix.com.au/*"],
 	},
@@ -15,6 +17,7 @@ export const SERVICES = {
 		statsKey: "amazon",
 		feature: "prime",
 		skipsAds: true,
+		search: "https://www.primevideo.com/search/ref=atv_nb_sug?ie=UTF8&phrase=",
 		script: "src/content-script/amazon.ts",
 		matches: [
 			"*://*.primevideo.com/*",
@@ -34,6 +37,7 @@ export const SERVICES = {
 		statsKey: "hbo",
 		feature: "hbo",
 		skipsAds: true,
+		search: "https://play.hbomax.com/search?q=",
 		script: "src/content-script/max.ts",
 		matches: ["*://*.max.com/*", "*://*.hbomax.com/*"],
 	},
@@ -42,6 +46,8 @@ export const SERVICES = {
 		statsKey: "disney",
 		feature: "disney",
 		skipsAds: false,
+		// its search page takes no query from the address
+		search: null,
 		script: "src/content-script/disney.ts",
 		matches: ["*://*.disneyplus.com/*"],
 	},
@@ -50,6 +56,7 @@ export const SERVICES = {
 		statsKey: "crunchyroll",
 		feature: "crunchyroll",
 		skipsAds: false,
+		search: "https://www.crunchyroll.com/search?q=",
 		script: "src/content-script/crunchyroll.ts",
 		matches: ["*://*.crunchyroll.com/*"],
 	},
@@ -59,6 +66,12 @@ export type StreamingService = keyof typeof SERVICES
 export type FeatureSite = (typeof SERVICES)[StreamingService]["feature"]
 
 export const streamingServices = Object.keys(SERVICES) as StreamingService[]
+
+// a search on the service for the title, where the service's search page takes one from the address
+export function searchOn(service: StreamingService, title: string) {
+	const search = SERVICES[service].search
+	return search ? search + encodeURIComponent(title) : undefined
+}
 
 // display names by the key the stats are stored under
 export const SERVICE_NAMES_BY_STATS_KEY: Record<string, string> = Object.fromEntries(
