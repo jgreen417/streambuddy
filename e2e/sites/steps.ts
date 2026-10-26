@@ -65,15 +65,15 @@ const TIMELINE = '[role="slider"][aria-valuemax], input[type="range"][max]'
 
 async function seekFromEnd(page: Page, seconds: number) {
 	// a web-component player keeps its <video> and timeline in open shadow roots
-	await page.waitForFunction(() => {
+	await page.waitForFunction((timeline) => {
 		const roots: (Document | ShadowRoot)[] = [document]
 		for (let i = 0; i < roots.length; i++)
 			for (const el of Array.from(roots[i].querySelectorAll("*"))) {
 				if (el.shadowRoot) roots.push(el.shadowRoot)
-				if ((el instanceof HTMLVideoElement && el.duration > 0) || el.matches(TIMELINE)) return true
+				if ((el instanceof HTMLVideoElement && el.duration > 0) || el.matches(timeline)) return true
 			}
 		return false
-	})
+	}, TIMELINE)
 	// Netflix stops the player if its <video> is seeked directly; it has to go through Netflix's own player
 	const live = await page.evaluate((seconds) => {
 		// a stream with no end (Infinity) counts as the longest
