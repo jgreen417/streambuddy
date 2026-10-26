@@ -3,7 +3,6 @@ import { isExcepted, loadRules, onRulesChanged, saveRules, withException } from 
 import { SKIP_LABELS, type PlaybackSettings, type SiteAdapter, type SkipKind, type SkipRules } from "./types"
 import { addSavedSeconds, formatDuration, type SavedLog } from "@/utils/stats"
 import { filmOver } from "@/utils/film-over"
-import { nextEpisodeRating } from "@/utils/next-episode"
 
 const TICK_MS = 250
 // a jump shorter than this is the video playing on while a skip lands, not a skip
@@ -45,8 +44,6 @@ export class PlaybackEngine {
 	private pendingPause = false
 	private pendingSaved: Record<string, number> = {}
 	private savedFlush: ReturnType<typeof setTimeout> | undefined
-	// the next episode's score, looked up once per episode for the credits notice
-	private next: { key: string; season: number; episode: number; rating: string | null } | null = null
 	// bedtime: a wall-clock sleep timer, or a one-off stop at the end of this title
 	private sleepAt: number | null = null
 	private sleepMinutes: number | null = null
@@ -105,8 +102,6 @@ export class PlaybackEngine {
 		this.overlay.attach()
 		this.checkEpisode(video)
 		const settings = this.settings()
-		// the rating only shows in the notice after skipping the credits
-		if (settings.skip.credits && settings.notices) this.loadNextRating()
 		if (this.checkSleep(video)) return
 		this.handleAds(video, settings)
 		if (!this.adRestore) this.handleSkips(video, settings)
@@ -140,7 +135,6 @@ export class PlaybackEngine {
 		if (!key || key === this.episode) return
 		const first = this.episode === null
 		this.episode = key
-		this.next = null
 		// the stop was for the title that just ended: if autoplay got past it, stop here; if the viewer left it early, drop it
 		if (this.stopAtEnd && !first) {
 			if (this.lastRemaining < 120) this.fireStop(video)
@@ -228,15 +222,14 @@ export class PlaybackEngine {
 		const remaining = Number.isFinite(duration) ? duration - before : 0
 		button.click()
 		if (kind === "stillWatching") {
-			if (settings.notices) this.overlay.showNotice("Kept playing")
+			if (settings.notices) this.overlay.showNotice("Answered “Still watching?”")
 			return
 		}
 		const canSeek = !this.site.seekBlocked
 		if (kind === "credits") {
 			// announce now: the next episode replaces the player, so a notice after it would have nowhere to go
 			if (remaining > 1 && remaining < 30 * 60) this.recordSaved(kind, remaining)
-			if (settings.notices)
-				this.announceSkip(kind, remaining, show ? [this.notForShow(kind, show)] : [], this.nextExtra())
+			if (settings.notices) this.announceSkip(kind, show ? [this.notForShow(kind, show)] : [])
 			return
 		}
 		// the jump lands a moment after the click; measure it then (a page-read clock catches up a little later)
@@ -260,29 +253,13 @@ export class PlaybackEngine {
 							if (canSeek && this.video === video) video.currentTime = before
 						}),
 					)
-				this.announceSkip(kind, saved, actions)
+				this.announceSkip(kind, actions)
 			},
 			this.site.skipLandsMs ?? (this.site.clock ? 2500 : 700),
 		)
 	}
-	private announceSkip(kind: SkipKind, saved: number, actions: NoticeAction[], extra = "") {
-		const savedText = saved > MIN_SAVED ? ` · ${formatSaved(saved)} saved` : ""
-		this.overlay.showNotice(`Skipped ${SKIP_LABELS[kind]}${savedText}${extra}`, actions)
-	}
-	// " · Next S3 E5 · IMDb 8.7" when the season lookup found the following episode
-	private nextExtra() {
-		return this.next?.rating ? ` · Next S${this.next.season} E${this.next.episode + 1} · ${this.next.rating}` : ""
-	}
-	private loadNextRating() {
-		const show = this.site.showTitle()
-		const season = this.site.episodeSeason?.() ?? null
-		const episode = this.site.episodeNumber()
-		if (!show || !season || !episode) return
-		const key = `${show}|${season}|${episode}`
-		if (key === this.next?.key) return
-		const next = { key, season, episode, rating: null as string | null }
-		this.next = next
-		nextEpisodeRating(show, season, episode).then((rating) => (next.rating = rating))
+	private announceSkip(kind: SkipKind, actions: NoticeAction[]) {
+		this.overlay.showNotice(`Skipped ${SKIP_LABELS[kind]}`, actions)
 	}
 	private notForShow(kind: Exclude<SkipKind, "stillWatching">, show: string, undo?: () => void): NoticeAction {
 		return {
@@ -354,7 +331,7 @@ export class PlaybackEngine {
 		this.stopAtEnd = false
 		this.timeLabel = ""
 		this.overlay.closeTimeMenu()
-		this.overlay.showNotice(wasSleeping ? "Sleep timer cancelled" : "Stop cancelled", [], 3000)
+		this.overlay.showNotice(wasSleeping ? "Sleep timer cancelled" : "Won’t stop at the end", [], 3000)
 	}
 	private checkSleep(video: HTMLVideoElement) {
 		if (this.resting && video.paused) return true
@@ -380,7 +357,7 @@ export class PlaybackEngine {
 		this.resting = true
 		video.pause()
 		this.overlay.showNotice(
-			`Slept · paused at ${formatClock(Date.now())}`,
+			`Sleep timer · paused at ${formatClock(Date.now())}`,
 			[{ label: "Keep watching", run: () => video.play().catch(() => {}) }],
 			60_000,
 		)
@@ -412,7 +389,7 @@ export class PlaybackEngine {
 			this.lastSeekedAd = Date.now()
 			video.currentTime += remaining
 			this.recordSaved("ad", remaining)
-			if (settings.notices) this.overlay.showNotice(`Skipped ad · ${formatSaved(remaining)} saved`)
+			if (settings.notices) this.overlay.showNotice("Skipped ad")
 			return
 		}
 		if (!this.adRestore) {

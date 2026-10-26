@@ -29,7 +29,7 @@ const shown = computed(() => loaded.value && dismissedIn.value !== version)
 			target="_blank"
 			rel="noopener"
 		>
-			+ Request a service
+			Request a service
 		</a>
 		<button
 			type="button"

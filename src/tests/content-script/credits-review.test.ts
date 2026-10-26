@@ -82,7 +82,7 @@ describe("credits review", () => {
 		document.body.innerHTML = ""
 		new CreditsRatingPrompt().tick(video(), film, true, { ...signedIn, watched: 4.5 })
 		const again = document.querySelector<HTMLAnchorElement>(".sb-review-action")!
-		expect(again.textContent).toBe("Log again?")
+		expect(again.textContent).toBe("Log again")
 		expect(again.href).toBe(film.rating_url)
 		expect(review()?.textContent).toContain("You rated it")
 	})

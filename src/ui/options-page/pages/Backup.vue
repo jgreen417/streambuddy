@@ -112,7 +112,7 @@ function replaceSettings(event: Event) {
 .sb-backup button {
 	flex: none;
 	padding: 5px 12px;
-	border-radius: 999px;
+	border-radius: var(--sb-radius-md);
 	border: 1px solid var(--sb-line-raised);
 	background: var(--sb-surface);
 	color: var(--sb-text);

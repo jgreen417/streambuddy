@@ -31,17 +31,13 @@
 			and choose to create a key for a
 			<em>Developer</em>
 			(personal) app. TMDb asks a few questions: describe it as “Personal use with the streamBuddy browser extension”.
-			Any website field can be
+			For any website field you can use
 			<code>https://letterboxd.com</code>
-			.
+			as the answer.
 		</li>
 		<li>
 			<strong>Copy your key.</strong>
-			On the same page, copy the long
-			<em>API Read Access Token</em>
-			. The shorter
-			<em>API Key</em>
-			works too.
+			On the same page, copy the long “API Read Access Token”. The shorter “API Key” works too.
 		</li>
 		<li>
 			<strong>Paste it into streamBuddy.</strong>
@@ -62,7 +58,7 @@
 	</p>
 	<p class="description">
 		This product uses the TMDb API but is not endorsed or certified by TMDb. streamBuddy is not affiliated with
-		Letterboxd, IMDb, Netflix, Amazon or Warner Bros. Discovery.
+		Letterboxd, IMDb, Netflix, Amazon, Warner Bros. Discovery, Disney or Crunchyroll.
 	</p>
 </template>
 <style scoped>
@@ -72,12 +68,18 @@ h2 {
 h2 + p {
 	margin-top: 0;
 	max-width: 620px;
+	color: var(--sb-text-muted);
 }
 .sb-guide {
 	display: grid;
 	gap: 14px;
 	padding-left: 20px;
 	max-width: 620px;
+	list-style: decimal;
+}
+.sb-guide li::marker {
+	color: var(--sb-text-muted);
+	font-weight: 600;
 }
 .sb-guide li {
 	line-height: 1.55;

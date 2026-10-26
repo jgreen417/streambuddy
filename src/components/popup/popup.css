@@ -199,6 +199,7 @@ body {
 	background: var(--sb-field);
 	color: var(--sb-text);
 	font: inherit;
+	font-size: 13px;
 }
 .sb-profile {
 	padding: var(--sb-space-md) var(--sb-space-inset);
@@ -397,9 +398,14 @@ body {
 	font-size: 12px;
 	color: var(--sb-text-muted);
 }
+/* the skip timing and autoplay limit apply to all of playback, not to the notices toggle above them */
+.sb-cutoff-divided {
+	margin-top: var(--sb-space-xs);
+	padding-top: var(--sb-space-md);
+	border-top: 1px solid var(--sb-hairline);
+}
 .sb-cutoff select {
 	width: 100%;
-	font-size: 12px;
 }
 /* Badge look picker: each option shows a tiny badge drawn in that look */
 .sb-badge-look {
@@ -486,10 +492,14 @@ body {
 	display: none;
 }
 .sb-disclosure summary::after {
-	content: "›";
-	color: var(--sb-text-muted);
-	font-size: 20px;
-	line-height: 1;
+	content: "";
+	flex: none;
+	width: 16px;
+	height: 16px;
+	background: var(--sb-text-muted);
+	-webkit-mask: var(--sb-chevron) center / contain no-repeat;
+	mask: var(--sb-chevron) center / contain no-repeat;
+	--sb-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 4l4 4-4 4' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 .sb-disclosure[open] summary::after {
 	transform: rotate(90deg);
@@ -640,21 +650,15 @@ a.sb-title-row:hover {
 
 /* Footer */
 .sb-footer {
-	display: grid;
+	display: flex;
 	flex-shrink: 0;
-	grid-template-columns: 1fr auto 1fr;
+	justify-content: space-between;
 	align-items: center;
 	margin-top: var(--sb-space-sm);
 	padding: var(--sb-space-md) 0;
 	border-top: 1px solid var(--sb-hairline);
 	font-size: 12px;
 	color: var(--sb-text-muted);
-}
-.sb-footer > :first-child {
-	justify-self: start;
-}
-.sb-footer > :last-child {
-	justify-self: end;
 }
 .sb-footer button,
 .sb-footer a {
@@ -673,9 +677,6 @@ a.sb-title-row:hover {
 .sb-footer button:hover,
 .sb-footer a:hover {
 	color: var(--sb-text);
-}
-.sb-footer .is-accent {
-	color: var(--sb-accent);
 }
 .sb-footer .is-primary {
 	font-weight: 500;
@@ -774,22 +775,6 @@ a.sb-title-row:hover {
 	border: 1px dashed var(--sb-accent-line);
 	border-radius: var(--sb-radius-lg);
 	background: var(--sb-surface);
-}
-.sb-request-services {
-	display: flex;
-	gap: var(--sb-space-xs);
-	margin-bottom: var(--sb-space-md);
-}
-.sb-request-services i {
-	display: grid;
-	place-items: center;
-	width: 20px;
-	height: 20px;
-	border-radius: var(--sb-radius-xs);
-	color: var(--sb-text);
-	font-size: 11px;
-	font-style: normal;
-	font-weight: 800;
 }
 .sb-ask-card strong {
 	display: block;
