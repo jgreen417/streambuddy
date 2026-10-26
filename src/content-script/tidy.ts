@@ -63,16 +63,21 @@ function quieten(video: HTMLVideoElement) {
 	video.muted = true
 	mutedByUs.add(video)
 }
-// a preview that starts playing is paused straight away; once paused, the viewer can still play it with a click or key
-// (any input just before a preview's first start, like the click that opens a title, doesn't count)
+// A preview that starts playing is paused straight away. Once paused, the viewer can play it with a click or key and
+// it's left alone from then on; input just before a preview's first start, like the click that opens a title, doesn't
+// count. A video paused as a preview that turns out to be the player (it moved into it after starting) plays again.
 let stopping = false
 let isPreview: (video: HTMLVideoElement) => boolean = () => false
-const stopped = new WeakSet<HTMLVideoElement>()
+const stoppedByUs = new Set<HTMLVideoElement>()
+const allowed = new WeakSet<HTMLVideoElement>()
 function stop(video: HTMLVideoElement) {
-	if (!stopping || video.paused || !isPreview(video)) return
-	if (stopped.has(video) && Date.now() - lastInput < 1000) return
+	if (!stopping || video.paused || allowed.has(video) || !isPreview(video)) return
+	if (stoppedByUs.has(video) && Date.now() - lastInput < 1000) {
+		allowed.add(video)
+		return
+	}
 	video.pause()
-	stopped.add(video)
+	stoppedByUs.add(video)
 }
 function listen() {
 	listening = true
@@ -114,6 +119,14 @@ export function quietPreviews(on: boolean) {
 export function stopPreviews(on: boolean, preview: (video: HTMLVideoElement) => boolean) {
 	stopping = on
 	isPreview = preview
+	for (const video of stoppedByUs) {
+		if (!video.isConnected) stoppedByUs.delete(video)
+		else if (video.paused && !preview(video)) {
+			stoppedByUs.delete(video)
+			// the browser may refuse to start it without a click; then it waits for the viewer's
+			video.play().catch(() => {})
+		}
+	}
 	if (!on) return
 	if (!listening) listen()
 	for (const video of Array.from(document.querySelectorAll("video"))) stop(video)

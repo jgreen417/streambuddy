@@ -149,7 +149,7 @@ export function renderInspector(
 	service: StreamingService,
 	showFriends: boolean,
 	availability: Availability | null | undefined,
-	whereOpen: boolean,
+	showWhere: boolean,
 ): HTMLElement {
 	const root = el("div", "sb-inspector")
 	root.setAttribute("role", "dialog")
@@ -223,14 +223,14 @@ export function renderInspector(
 	root.append(el("div", "rule"))
 	const where = el("button", "label where-toggle")
 	where.type = "button"
-	where.setAttribute("aria-expanded", String(whereOpen))
+	where.setAttribute("aria-expanded", String(showWhere))
 	where.append(el("span", "", `Where to watch in ${region()}`))
 	where.insertAdjacentHTML(
 		"beforeend",
 		`<svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
 	)
 	root.append(where)
-	if (whereOpen) {
+	if (showWhere) {
 		const providers = el("div", "providers")
 		if (availability === undefined) providers.append(el("div", "providers-state", "Checking availability…"))
 		else if (availability === null)
@@ -245,8 +245,8 @@ export function renderInspector(
 			const others = availability.rows.filter((row) => !SERVICE_PROVIDER[service].test(row.name))
 			for (const row of others) {
 				// a search on that service, else TMDb's page with a link to every service
-				const service = providerService(row.name)
-				const url = (service && searchOn(service, data.title)) || availability.link
+				const provider = providerService(row.name)
+				const url = (provider && searchOn(provider, data.title)) || availability.link
 				const item = url
 					? Object.assign(el("a", "provider"), { href: url, target: "_blank", rel: "noopener noreferrer" })
 					: el("div", "provider")
@@ -624,10 +624,12 @@ export function attachInspector(
 		})
 		if (mode === "detail") {
 			const toggle = content.querySelector<HTMLButtonElement>(".where-toggle")
-			toggle?.addEventListener("click", () => {
+			toggle?.addEventListener("click", (event) => {
 				whereOpen = !whereOpen
 				if (whereOpen) loadAvailability()
 				paint()
+				// focus left by a mouse click would keep the card from closing when the pointer leaves
+				if (event.detail) shadow?.querySelector<HTMLButtonElement>(".where-toggle")?.blur()
 			})
 		}
 		if (mode === "detail")
