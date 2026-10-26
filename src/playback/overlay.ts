@@ -29,7 +29,7 @@ button.quiet { padding: 3px 9px; font-size: 12px; background: transparent; color
 button.quiet:hover { color: var(--sb-text); background: var(--sb-hairline); }
 /* top centre, level with the player's own top-bar buttons, which keep to the corners */
 .bar { position: absolute; left: 50%; top: var(--top-bar-y, 40px); transform: translate(-50%, -50%);
-	display: flex; align-items: center; gap: 8px; }
+	display: flex; align-items: stretch; gap: 8px; }
 .speed { padding: 4px; gap: 2px; opacity: 0; transition: opacity 0.2s ease; }
 .speed.show, .speed:hover, .speed:focus-within { opacity: 1; }
 .speed .value { min-width: 52px; text-align: center; font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
