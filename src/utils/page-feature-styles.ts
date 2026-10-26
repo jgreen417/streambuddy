@@ -32,6 +32,7 @@ export function installPageFeatureStyle() {
  /* the card badge on an episode: a cream sticker with the score in its colour band and the source beside it, its
     corners following the thumbnail's (set by page-features.ts) like the card badge's */
  .sb-episode-rating { position:absolute; right:3px; bottom:3px; z-index:4; display:flex; align-items:center; padding:3px; border-radius:var(--sb-badge-r,var(--sb-radius-xxs)); background:var(--sb-badge-bg); color:var(--sb-badge-label); box-shadow:var(--sb-shadow-sticker); font:700 clamp(13px,0.95vw,17px)/1 var(--sb-font-page); font-variant-numeric:tabular-nums; text-decoration:none; white-space:nowrap; }
+ .sb-episode-rating-inline { position:static; width:max-content; max-width:100%; margin:8px 0 0 auto; }
  .sb-episode-score { padding:.28em .6em; border-radius:var(--sb-pill-r,var(--sb-radius-xxs)); color:var(--sb-text-on-accent); font-size:1.15em; font-weight:800; letter-spacing:-.02em; text-shadow:none; }
  .sb-episode-source { padding:0 .5em 0 .45em; font-size:max(10px,.72em); font-weight:800; }
  .sb-episode-best { padding-left:.35em; color:var(--sb-accent); font-size:.95em; line-height:1; }

@@ -135,3 +135,22 @@ test("episode chips", async ({ open }) => {
 	await loaded(page)
 	await expect.soft(page.locator('[data-shot="episodes"]')).toHaveScreenshot("netflix-episodes.png")
 })
+
+for (const width of [900, 1440, 3440]) {
+	test(`Netflix episode ratings align with metadata at ${width}px`, async ({ open }) => {
+		const page = await open("https://www.netflix.com/title/80057281", { viewport: { width, height: 1000 } })
+		await expect(page.locator(".sb-episode-rating")).toHaveCount(3, { timeout: 15_000 })
+		await loaded(page)
+		for (const chip of await page.locator(".sb-episode-rating").all()) {
+			const row = chip.locator('xpath=ancestor::*[@data-uia="titleCard--container"]')
+			const metadata = (await row.locator(".titleCardList--metadataWrapper").boundingBox())!
+			const synopsis = (await row.locator(".titleCard-synopsis").boundingBox())!
+			const badge = (await chip.boundingBox())!
+			expect(Math.abs(badge.x + badge.width - metadata.x - metadata.width)).toBeLessThanOrEqual(1)
+			expect(badge.y).toBeGreaterThanOrEqual(synopsis.y + synopsis.height + 7)
+		}
+		const chip = page.locator(".sb-episode-rating").first()
+		await expect(chip).toHaveAttribute("href", /https:\/\/www.imdb.com\/title\/tt\d+\//)
+		await page.screenshot({ path: `e2e/.results/netflix-aligned-${width}.png` })
+	})
+}

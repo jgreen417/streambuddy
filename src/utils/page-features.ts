@@ -146,7 +146,13 @@ export function readEpisodeCards(site: FeatureSite, root: HTMLElement) {
 			.querySelectorAll<HTMLElement>('[data-uia="episode-selector"] [data-uia="titleCard--container"]')
 			.forEach((card) => {
 				const episode = Number(text(card.querySelector(".titleCard-title_index")))
-				if (episode > 0) cards.push({ card, target: card, season, episode })
+				if (episode > 0)
+					cards.push({
+						card,
+						target: card.querySelector<HTMLElement>(".titleCardList--metadataWrapper") ?? card,
+						season,
+						episode,
+					})
 			})
 	} else if (site === "hbo") {
 		root
@@ -299,7 +305,10 @@ export class EpisodeRatings {
 					if (!rating?.rating) continue
 					entry.target.classList.add("sb-episode-host")
 					const chip = document.createElement("a")
-					chip.className = "sb-episode-rating"
+					chip.className =
+						site === "netflix" && entry.target !== entry.card
+							? "sb-episode-rating sb-episode-rating-inline"
+							: "sb-episode-rating"
 					chip.dataset.episodeKey = `${data.id}|${season}|${entry.episode}`
 					chip.href = `https://www.imdb.com/title/${rating.id}/`
 					chip.target = "_blank"
