@@ -1,5 +1,6 @@
 // Finds the title cards on the page, gets each one's rating (from the cache or a lookup) and badges it. Also fades
 // and hides cards per the row settings and re-sorts search results by rating.
+import { watch } from "vue"
 import { debugLog } from "@/utils/log"
 import { CheckedCards } from "@/utils/tmdb"
 import { RowPresentation, isBelowRatingCutoff } from "@/utils/row-presentation"
@@ -30,6 +31,14 @@ let site: RatingsSite | null = null
 export function startCards(service: RatingsSite) {
 	site = service
 	if (ratingsEnabled()) startShowRatingInterval()
+	// switched on or off (popup, settings or the shortcut): draw or clear this tab's badges without a reload
+	watch(ratingsEnabled, (enabled) => {
+		if (enabled) startShowRatingInterval()
+		else {
+			stopRatingLoop?.()
+			forgetCards()
+		}
+	})
 }
 
 // The same title often sits in several rows; share one lookup between all of its cards
@@ -150,7 +159,9 @@ export function ratingsEnabled() {
 function showRating() {
 	return site?.ratesCards?.() ?? true
 }
+let stopRatingLoop: (() => void) | undefined
 function startShowRatingInterval() {
+	if (stopRatingLoop) return
 	if (showRating()) addRating()
 	// New cards get rated on the next frame after they appear instead of on the next 1s tick. Player pages mutate
 	// constantly and have no cards, so they're ignored; the interval stays as a safety net and to stop when switched off.
@@ -170,15 +181,19 @@ function startShowRatingInterval() {
 	const RatingInterval = setInterval(function () {
 		refreshRowPresentation()
 		if (!ratingsEnabled()) {
-			debugLog("stopped adding Rating")
-			clearInterval(RatingInterval)
-			stopped = true
-			observer.disconnect()
-			globalThis.removeEventListener("scroll", scheduleTick, { capture: true })
+			stopRatingLoop?.()
 			return
 		}
 		if (showRating()) addRating()
 	}, 1000)
+	stopRatingLoop = () => {
+		debugLog("stopped adding Rating")
+		clearInterval(RatingInterval)
+		stopped = true
+		observer.disconnect()
+		globalThis.removeEventListener("scroll", scheduleTick, { capture: true })
+		stopRatingLoop = undefined
+	}
 }
 // DBCache logic
 // 1. Condition No Cached Rating -> Fetch Rating

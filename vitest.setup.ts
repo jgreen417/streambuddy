@@ -17,6 +17,10 @@ vi.mock("webextension-polyfill", () => {
 			sendMessage: vi.fn(),
 			getURL: vi.fn((path: string) => `moz-extension://mock/${path}`),
 		},
+		commands: {
+			getAll: vi.fn(async () => []),
+			onCommand: { addListener: vi.fn() },
+		},
 		storage: {
 			local: {
 				get: vi.fn(),

@@ -10,11 +10,13 @@ import { loadOverrides } from "./overrides"
 import { forgetCards, refreshRowPresentation, startCards, updateSearchSorting } from "./scan"
 import { settings, settingsReady } from "@/stores/settings"
 import { ratingSources } from "./settings"
+import { listenForRatingsShortcut } from "./shortcut"
 import type { RatingsSite } from "./sites/types"
 import { startWatchTimer } from "./watch-stats"
 
 export async function startSharedFunctions(site: RatingsSite) {
 	watchSettings()
+	listenForRatingsShortcut(site.service)
 	startWatchTimer(site)
 	watchLetterboxdProfile(refreshRowPresentation)
 

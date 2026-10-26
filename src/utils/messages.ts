@@ -20,6 +20,8 @@ declare module "webext-bridge" {
 		imdbRating: ProtocolWithReturn<{ imdbId: string }, ExternalRating | null | LookupError>
 		imdbEpisodes: ProtocolWithReturn<{ imdbId: string; season: number }, ImdbEpisodeRating[] | LookupError>
 		openAccountSetup: ProtocolWithReturn<Record<string, never>, void>
+		// the hide/show ratings shortcut was pressed on the tab; shortcut is how the browser writes the keys, if any
+		toggleRatings: ProtocolWithReturn<{ shortcut: string }, void>
 		letterboxdProfile: ProtocolWithReturn<{ force?: boolean }, LetterboxdProfile | null | LookupError>
 		// the JSON at url, with the API key for type added by the background
 		fetch: ProtocolWithReturn<{ url: string; type: FetchRequestType }, unknown>

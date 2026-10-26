@@ -1,4 +1,4 @@
-import { test, expect, settle } from "./harness"
+import { test, expect, extensionId, settle } from "./harness"
 import { measure, specProblems } from "./geometry"
 import { SITES, site } from "./sites"
 
@@ -78,4 +78,22 @@ test("prime: a card added to a row keeps its badges on one line", async ({ open 
 	})
 	await settle(page, prime.badges + 1)
 	expect.soft(specProblems(await measure(page)), "badge placement").toEqual([])
+})
+
+// Card ratings switched off and on again (popup, settings or the shortcut) clear and redraw the tab's badges, no reload
+test("netflix: switching card ratings off and on", async ({ open }) => {
+	const netflix = site("netflix")
+	const page = await open(netflix.url)
+	await settle(page, netflix.badges)
+	const extension = await page.context().newPage()
+	await extension.goto(`chrome-extension://${extensionId(page.context())}/src/ui/action-popup/index.html`)
+	const showRating = (on: boolean) =>
+		extension.evaluate(async (on) => {
+			const { settings } = await chrome.storage.sync.get("settings")
+			await chrome.storage.sync.set({ settings: { ...settings, Netflix: { ...settings.Netflix, showRating: on } } })
+		}, on)
+	await showRating(false)
+	await expect(page.locator(".sb-card-rating")).toHaveCount(0)
+	await showRating(true)
+	await settle(page, netflix.badges)
 })

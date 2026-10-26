@@ -47,6 +47,13 @@ export default {
 		{ resources: ["<dynamic_resource>"], matches: Object.values(SERVICES).flatMap(({ matches }) => [...matches]) },
 	],
 	options_page: "src/ui/options-page/index.html",
+	// people can change the keys in the browser's shortcuts page
+	commands: {
+		"toggle-ratings": {
+			suggested_key: { default: "Alt+Shift+B" },
+			description: "Hide or show ratings on title cards",
+		},
+	},
 	// alarms only drives the sideloaded copy's reload-on-rebuild check; store builds don't need it
 	permissions: env.RELEASE ? ["storage", "activeTab"] : ["storage", "activeTab", "alarms"],
 	host_permissions: ["https://letterboxd.com/*", "https://caching.graphql.imdb.com/*"],

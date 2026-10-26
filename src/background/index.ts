@@ -2,7 +2,7 @@ import { request as networkRequest, readJson } from "@/utils/network"
 import { debugLog, logLookupFailure } from "@/utils/log"
 import { BUILT_IN_TMDB_TOKEN, getAccount, onAccountChanged, setBuiltInKeyRejected, tmdbRequest } from "@/utils/account"
 import { createProfileSync } from "@/utils/profile-sync"
-import { onMessage } from "webext-bridge/background"
+import { onMessage, sendMessage } from "webext-bridge/background"
 import { UNINSTALL_SURVEY_URL } from "@/constants/links"
 import type { FetchRequestType, LookupError } from "@/utils/messages"
 import {
@@ -30,6 +30,14 @@ browser.runtime.onInstalled.addListener(async ({ reason, previousVersion }) => {
 		active: true,
 		url: browser.runtime.getURL("src/ui/options-page/index.html#/options-page/install"),
 	})
+})
+
+// the hide/show ratings shortcut is the streaming tab's to act on, since it knows its service
+browser.commands.onCommand.addListener(async (command, tab) => {
+	if (command !== "toggle-ratings" || !tab?.id) return
+	const { shortcut = "" } = (await browser.commands.getAll()).find(({ name }) => name === command) ?? {}
+	// tabs without a content script (any other site) have no one to answer
+	sendMessage("toggleRatings", { shortcut }, `content-script@${tab.id}`).catch(() => {})
 })
 
 // an empty URL also clears one an earlier version registered
