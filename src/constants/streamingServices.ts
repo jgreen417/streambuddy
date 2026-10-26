@@ -5,7 +5,7 @@ export const SERVICES = {
 		name: "Netflix",
 		statsKey: "netflix",
 		feature: "netflix",
-		// whether its player tells streamBuddy when an ad is playing, so "Skip ads" can do something there
+		// whether streamBuddy can tell when an ad plays there; "Skip ads" only shows for those that can
 		skipsAds: true,
 		script: "src/content-script/netflix.ts",
 		matches: ["*://*.netflix.com/*", "*://*.netflix.ca/*", "*://*.netflix.com.au/*"],

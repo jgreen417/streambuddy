@@ -305,6 +305,13 @@ describe("playback engine", () => {
 		expect(video.currentTime).toBe(130)
 		tick()
 		expect(video.currentTime).toBe(130)
+		// a countdown still showing the skipped ad isn't seeked past again; the next ad in the break is
+		vi.advanceTimersByTime(5000)
+		tick()
+		expect(video.currentTime).toBe(130)
+		state.ad = 15
+		tick()
+		expect(video.currentTime).toBe(145)
 	})
 
 	it("fast-forwards ads muted where seeking isn't allowed, then restores the viewer's speed", async () => {

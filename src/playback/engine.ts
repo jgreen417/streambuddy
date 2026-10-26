@@ -38,6 +38,8 @@ export class PlaybackEngine {
 	private adRestore: { muted: boolean } | null = null
 	private adAnnounced = false
 	private lastSeekedAd = 0
+	// the countdown the last seek went by, which a slow player may still show once the ad is behind it
+	private seekedAdRemaining: number | null = null
 	// autoplay run: episodes started in a row without the viewer touching the page
 	private autoplayRun = 0
 	private touched = true
@@ -381,12 +383,14 @@ export class PlaybackEngine {
 		if (remaining === null || remaining <= 0) {
 			if (this.adRestore) this.endFastForward(video)
 			this.adAnnounced = false
+			this.seekedAdRemaining = null
 			return
 		}
 		if (this.site.adStrategy === "seek") {
 			// one jump per ad break; the player reports the same break for a moment after the seek
-			if (Date.now() - this.lastSeekedAd < 3000) return
+			if (Date.now() - this.lastSeekedAd < 3000 || remaining === this.seekedAdRemaining) return
 			this.lastSeekedAd = Date.now()
+			this.seekedAdRemaining = remaining
 			video.currentTime += remaining
 			this.recordSaved("ad", remaining)
 			if (settings.notices) this.overlay.showNotice("Skipped ad")
