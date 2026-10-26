@@ -19,7 +19,7 @@ streamBuddy puts a small score on every title card. Films show their Letterboxd 
 - **Find the good stuff.** An optional cut-off that hides low-rated titles, and sort-by-rating on search pages.
 - **Stats.** Weekly watch time by service, plus watchlist films that are streaming now.
 - **Bedtime.** See when the title ends, set a sleep timer, or stop after this episode or film.
-- **Skips you can trust.** Intros, recaps, credits, ads and "Still watching?" are handled for you, each with a small notice and one-tap Undo. Skips can wait a beat, and season premieres can keep their recap.
+- **Skips you can trust.** Intros, recaps, credits and "Still watching?" are handled for you, plus ads on Netflix, Prime Video and HBO Max, each with a small notice and one-tap Undo. Skips can wait a beat, and season premieres can keep their recap.
 - **Your rules.** Choose "Keep intros" to keep a theme song you love, or let the first episode of a season play its intro.
 - **Speed that sticks.** Remembered per service and kept through ads and new episodes, with Shift + < and > shortcuts. Prime Video, HBO Max, Disney+ and Crunchyroll, which have no speed menu above 1x, get a speed pill.
 - **Autoplay limit.** Optionally pause after a few episodes play in a row without you touching anything.
