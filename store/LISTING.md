@@ -4,7 +4,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 ## Store listing tab
 
-**Name** (from the manifest): streamBuddy
+**Name** (from the manifest): streamBuddy - Letterboxd & IMDb Ratings
 
 **Summary** (132 max, currently 131):
 > Your friends' Letterboxd ratings plus Letterboxd and IMDb scores on Netflix, Prime Video, HBO Max, Disney+ and Crunchyroll posters.
@@ -123,7 +123,7 @@ Submit at https://addons.mozilla.org/developers/addon/submit/ and choose "On thi
 
 **Compatibility:** Firefox (desktop) and Firefox for Android.
 
-**Name:** streamBuddy
+**Name** (50 max, from the manifest): streamBuddy - Letterboxd & IMDb Ratings
 
 **Add-on URL:** `streambuddy`
 
