@@ -6,8 +6,8 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 **Name** (from the manifest): streamBuddy
 
-**Summary** (132 max, currently 127):
-> Your friends' Letterboxd ratings on every poster, plus Letterboxd and IMDb scores on Netflix, Prime Video, HBO Max, Disney+ and Crunchyroll.
+**Summary** (132 max, currently 131):
+> Your friends' Letterboxd ratings plus Letterboxd and IMDb scores on Netflix, Prime Video, HBO Max, Disney+ and Crunchyroll posters.
 
 **Category:** Entertainment
 
@@ -128,7 +128,7 @@ Submit at https://addons.mozilla.org/developers/addon/submit/ and choose "On thi
 **Add-on URL:** `streambuddy`
 
 **Summary** (250 max):
-> Your friends' Letterboxd ratings on every poster, plus Letterboxd and IMDb scores on Netflix, Prime Video, HBO Max, Disney+ and Crunchyroll. Seen and watchlist marks, episode ratings and intro skipping. Free, open source, no tracking.
+> Your friends' Letterboxd ratings plus Letterboxd and IMDb scores on Netflix, Prime Video, HBO Max, Disney+ and Crunchyroll posters. Seen and watchlist marks, episode ratings and intro skipping. Free, open source, no tracking.
 
 **Description:** reuse the Chrome description above. AMO supports basic Markdown, so the capitals headings can become `**bold**`.
 
