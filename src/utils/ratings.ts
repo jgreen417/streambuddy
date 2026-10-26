@@ -135,11 +135,11 @@ export function parseFriendRatings(html: string): number[] {
 }
 function decodeEntities(text: string) {
 	return text
-		.replaceAll("&amp;", "&")
 		.replaceAll("&#039;", "'")
 		.replaceAll("&quot;", '"')
 		.replaceAll("&lt;", "<")
 		.replaceAll("&gt;", ">")
+		.replaceAll("&amp;", "&")
 }
 
 // 25 friends per page; stop after 4 pages so one popular film can't fire off dozens of requests
