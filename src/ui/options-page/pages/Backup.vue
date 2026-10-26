@@ -98,7 +98,7 @@ function replaceSettings(event: Event) {
 	justify-content: space-between;
 	gap: 12px;
 	padding: 10px 12px;
-	border-radius: 10px;
+	border-radius: var(--sb-radius-lg);
 	background: var(--sb-surface-sunken);
 	border: 1px solid var(--sb-hairline);
 }

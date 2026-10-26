@@ -48,7 +48,7 @@ const { account, ratingsPaused } = useAccount()
 .sb-welcome img {
 	width: 48px;
 	height: 48px;
-	border-radius: 12px;
+	border-radius: var(--sb-radius-xl);
 	margin: 0 0 12px;
 }
 .sb-welcome h1 {
@@ -58,7 +58,7 @@ const { account, ratingsPaused } = useAccount()
 	max-width: 620px;
 	margin-top: 16px;
 	padding: 12px 14px;
-	border-radius: 10px;
+	border-radius: var(--sb-radius-lg);
 	background: var(--sb-accent-wash);
 	border: 1px solid var(--sb-accent-line);
 	color: var(--sb-text);

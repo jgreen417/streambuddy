@@ -65,5 +65,5 @@ h3 {
 }
 ::-webkit-scrollbar-thumb {
 	background: var(--sb-scrollbar);
-	border-radius: 5px;
+	border-radius: var(--sb-radius-xs);
 }
