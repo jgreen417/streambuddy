@@ -32,10 +32,11 @@ export const crunchyrollSite: RatingsSite = {
 		document.querySelectorAll(SEARCH),
 	],
 	seenMarker: (card) => card,
-	cleanTitle(card, kind) {
-		if (kind === 1) return withoutSeason(textOf(card, "h4 a"))
+	// told apart by the card itself: the shared code asks again without saying which kind of card it is
+	cleanTitle(card) {
+		if (card.dataset.t === "release-episode-card") return withoutSeason(textOf(card, "h4 a"))
 		if (card.dataset.t === "search-episode-card") return textOf(card, 'small[data-t="series-title"]')
-		if (kind === 2) return textOf(card, "h2")
+		if (card.dataset.t?.startsWith("search-")) return textOf(card, "h2")
 		return (
 			textOf(card, 'h3[data-t="title"]') ??
 			card.querySelector('img[data-t="original-image"]')?.getAttribute("alt") ??
