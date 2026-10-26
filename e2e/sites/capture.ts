@@ -203,6 +203,24 @@ try {
 			},
 			{ source: named.source, flags: named.flags },
 		)
+	// a headed Chromium drops :hover while it takes a screenshot, so the hovered element and the boxes around it are
+	// held in it for the shot
+	if (steps.hover) {
+		await page
+			.locator(steps.hover)
+			.first()
+			.evaluate((el) => {
+				for (let at: Element | null = el; at; at = at.parentElement) at.setAttribute("data-sb-hovered", "")
+			})
+		await cdp.send("DOM.enable")
+		await cdp.send("CSS.enable")
+		const { root } = await cdp.send("DOM.getDocument", { depth: 0 })
+		const { nodeIds } = await cdp.send("DOM.querySelectorAll", { nodeId: root.nodeId, selector: "[data-sb-hovered]" })
+		for (const nodeId of nodeIds) await cdp.send("CSS.forcePseudoState", { nodeId, forcedPseudoClasses: ["hover"] })
+		await page.evaluate(() =>
+			document.querySelectorAll("[data-sb-hovered]").forEach((el) => el.removeAttribute("data-sb-hovered")),
+		)
+	}
 	await mkdir(dir, { recursive: true })
 	await writeFile(path.join(dir, "shot.png"), await screenshotWithoutArt(page))
 	// what comes in from here would land after the files are written

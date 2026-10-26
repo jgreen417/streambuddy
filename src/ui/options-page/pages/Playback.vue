@@ -24,14 +24,15 @@ async function remove(show: string, kind: SkipKind) {
 	<h1>Playback</h1>
 	<p class="description">
 		streamBuddy skips intros, recaps and credits, passes ads, keeps your speed and can pause long autoplay runs on
-		Netflix, Prime Video, HBO Max and Disney+. Switch each one on or off in
+		Netflix, Prime Video, HBO Max, Disney+ and Crunchyroll. Switch each one on or off in
 		<RouterLink to="/options-page/Experience">Viewing preferences</RouterLink>
 		.
 	</p>
 
 	<h2>Shows you don’t skip</h2>
 	<p class="description">
-		When a skip notice appears, choose “Not for this show” to keep that part playing. Those exceptions are listed here.
+		When a skip notice appears, choose “Keep intros” or “Keep credits” to stop skipping that part of the show. Those
+		shows are listed here; choose Skip again to turn skipping back on.
 	</p>
 	<ul
 		v-if="entries.length"

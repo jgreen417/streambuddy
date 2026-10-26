@@ -7,6 +7,7 @@ describe("serviceForHost", () => {
 		expect(serviceForHost("www.amazon.fr")).toBe("Amazon")
 		expect(serviceForHost("play.hbomax.com")).toBe("HBO")
 		expect(serviceForHost("www.disneyplus.com")).toBe("Disney")
+		expect(serviceForHost("www.crunchyroll.com")).toBe("Crunchyroll")
 		expect(serviceForHost("www.amazon.com.au")).toBeUndefined()
 		expect(serviceForHost("notnetflix.com")).toBeUndefined()
 	})

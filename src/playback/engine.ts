@@ -6,6 +6,10 @@ import { filmOver } from "@/utils/film-over"
 import { nextEpisodeRating } from "@/utils/next-episode"
 
 const TICK_MS = 250
+// a jump shorter than this is the video playing on while a skip lands, not a skip
+const MIN_SAVED = 5
+// the notice's button that stops a show's skips of that kind
+const KEEP_LABELS = { intro: "Keep intros", recap: "Keep recaps", credits: "Keep credits" }
 const SPEED_PRESETS = [0.75, 1, 1.25, 1.5, 1.75, 2]
 const SPEED_STEP = 0.25
 const SPEED_MIN = 0.25
@@ -239,7 +243,7 @@ export class PlaybackEngine {
 		setTimeout(
 			() => {
 				const saved = this.video === video ? clock().currentTime - before : 0
-				if (saved > 1 && saved < 30 * 60) this.recordSaved(kind, saved)
+				if (saved > MIN_SAVED && saved < 30 * 60) this.recordSaved(kind, saved)
 				if (!settings.notices) return
 				const actions = []
 				if (canSeek && this.video === video)
@@ -258,11 +262,11 @@ export class PlaybackEngine {
 					)
 				this.announceSkip(kind, saved, actions)
 			},
-			this.site.clock ? 2500 : 700,
+			this.site.skipLandsMs ?? (this.site.clock ? 2500 : 700),
 		)
 	}
 	private announceSkip(kind: SkipKind, saved: number, actions: NoticeAction[], extra = "") {
-		const savedText = saved > 1 ? ` · ${formatSaved(saved)} saved` : ""
+		const savedText = saved > MIN_SAVED ? ` · ${formatSaved(saved)} saved` : ""
 		this.overlay.showNotice(`Skipped ${SKIP_LABELS[kind]}${savedText}${extra}`, actions)
 	}
 	// " · Next S3 E5 · IMDb 8.7" when the season lookup found the following episode
@@ -280,9 +284,9 @@ export class PlaybackEngine {
 		this.next = next
 		nextEpisodeRating(show, season, episode).then((rating) => (next.rating = rating))
 	}
-	private notForShow(kind: SkipKind, show: string, undo?: () => void): NoticeAction {
+	private notForShow(kind: Exclude<SkipKind, "stillWatching">, show: string, undo?: () => void): NoticeAction {
 		return {
-			label: "Not for this show",
+			label: KEEP_LABELS[kind],
 			quiet: true,
 			run: () => {
 				this.suppressed.add(kind)

@@ -47,7 +47,7 @@
 			<strong>Paste it into streamBuddy.</strong>
 			Back on the
 			<RouterLink to="/options-page/Account">Account</RouterLink>
-			page, paste it and press Save. Then reload any open Netflix, Prime Video, HBO Max or Disney+ tabs.
+			page, paste it and press Save. Then reload any open Netflix, Prime Video, HBO Max, Disney+ or Crunchyroll tabs.
 		</li>
 	</ol>
 	<h2>Do I need my own key?</h2>

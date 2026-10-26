@@ -1,5 +1,11 @@
 # Changelog
 
+# streamBuddy 1.0.7
+
+Crunchyroll is here.
+
+- Crunchyroll: rating badges on posters, New Episodes and search results, IMDb scores beside each episode, the review pill when a film's end credits start, intros and end credits skipped, and a speed pill above 1x.
+
 # streamBuddy 1.0.6
 
 Hover a rating badge to see who rated it and where else it's streaming. Quiet browsing now mutes autoplay previews by default.

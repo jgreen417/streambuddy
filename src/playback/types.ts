@@ -24,6 +24,8 @@ export type SiteAdapter = {
 	// true when the player treats a seek on its <video> as tampering and stops playback (Netflix, error
 	// F7375): skips then only press the site's own buttons, with no Undo
 	seekBlocked?: boolean
+	// ms after a skip button is pressed before the player has jumped, where it's slower than usual
+	skipLandsMs?: number
 	// identifies the episode being played, so per-episode state resets when it changes
 	episodeKey(): string | null
 	episodeNumber(): number | null
