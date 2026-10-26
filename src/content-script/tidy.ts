@@ -63,11 +63,16 @@ function quieten(video: HTMLVideoElement) {
 	video.muted = true
 	mutedByUs.add(video)
 }
-// a preview that starts playing is paused straight away; one the viewer starts with a click or key plays on
+// a preview that starts playing is paused straight away; once paused, the viewer can still play it with a click or key
+// (any input just before a preview's first start, like the click that opens a title, doesn't count)
 let stopping = false
 let isPreview: (video: HTMLVideoElement) => boolean = () => false
+const stopped = new WeakSet<HTMLVideoElement>()
 function stop(video: HTMLVideoElement) {
-	if (stopping && !video.paused && isPreview(video) && Date.now() - lastInput > 1000) video.pause()
+	if (!stopping || video.paused || !isPreview(video)) return
+	if (stopped.has(video) && Date.now() - lastInput < 1000) return
+	video.pause()
+	stopped.add(video)
 }
 function listen() {
 	listening = true
