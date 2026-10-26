@@ -8,6 +8,7 @@ import { test, expect } from "./harness"
 const AFTERSUN = "https://www.netflix.com/watch/81572766"
 const GODLAND = "https://www.netflix.com/watch/81572767"
 const PAST_LIVES = "https://www.netflix.com/watch/81572765"
+const CRAZY_STUPID_LOVE = "https://www.netflix.com/watch/81572768"
 
 async function review(page: Page) {
 	await expect(page.locator("body[data-seeked]")).toBeAttached({ timeout: 10_000 })
@@ -53,6 +54,27 @@ test("after-credits pill: expanded", async ({ open }) => {
 	)
 	await expect.soft(page).toHaveScreenshot("credits-card.png")
 	await clearOfControls(page)
+})
+
+// a long title with friends' faces and a score beside it is wider than the pill: it's cut short there, and the card
+// keeps its width rather than spilling past its border
+test("after-credits pill: long title", async ({ open }) => {
+	const page = await open(CRAZY_STUPID_LOVE)
+	const root = await review(page)
+	await root.getByRole("button", { name: "Show details" }).click()
+	await expect(root.locator(".sb-review-card")).toContainText("You just finished Crazy, Stupid, Love.")
+	const shell = (await root.locator(".sb-review-shell").boundingBox())!
+	for (const part of [
+		".sb-review-brand",
+		".sb-review-close",
+		".sb-review-more",
+		".sb-review-primary",
+		".sb-review-chevron",
+	]) {
+		const box = (await root.locator(part).boundingBox())!
+		expect(box.x, part).toBeGreaterThanOrEqual(shell.x)
+		expect(box.x + box.width, part).toBeLessThanOrEqual(shell.x + shell.width)
+	}
 })
 
 test("after-credits pill: nobody rated", async ({ open }) => {
