@@ -33,7 +33,7 @@ export const SERVICES = {
 		name: "HBO Max",
 		statsKey: "hbo",
 		feature: "hbo",
-		skipsAds: false,
+		skipsAds: true,
 		script: "src/content-script/max.ts",
 		matches: ["*://*.max.com/*", "*://*.hbomax.com/*"],
 	},

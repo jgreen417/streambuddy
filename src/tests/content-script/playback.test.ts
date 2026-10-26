@@ -9,6 +9,7 @@ describe("player text parsing", () => {
 	it.each([
 		["0:45", 45],
 		["Ad 1:30", 90],
+		[":25", 25],
 		["1:02:03", 3723],
 		["", null],
 		[null, null],

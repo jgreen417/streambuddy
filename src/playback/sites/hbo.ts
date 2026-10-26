@@ -1,5 +1,5 @@
 import type { SiteAdapter, SkipKind } from "../types"
-import { $, buttonWithText, mainVideo, parseEpisodeNumber, parseSeason } from "./dom"
+import { $, buttonWithText, mainVideo, parseClock, parseEpisodeNumber, parseSeason } from "./dom"
 
 function skipButton(kind: SkipKind): HTMLElement | null {
 	switch (kind) {
@@ -27,6 +27,10 @@ export const hbo: SiteAdapter = {
 		)
 	},
 	skipButton,
+	// ads are stitched into the title's own stream; the timer reads "1 of 3" then ":25", the seconds left in this ad
+	// only, and Max lets the <video> be seeked past it (only its own scrubber holds you to a break)
+	adRemaining: () => parseClock($('[data-testid="player-ux-ad-timer"] [class*="AdTimeRemainingText"]')?.textContent),
+	adStrategy: "seek",
 	episodeKey: () => /\/video\/watch\/([^/?#]+(?:\/[^/?#]+)?)/.exec(location.pathname)?.[1] ?? null,
 	episodeNumber: () => parseEpisodeNumber($('[data-testid="player-ux-season-episode"]')?.textContent),
 	episodeSeason: () => parseSeason($('[data-testid="player-ux-season-episode"]')?.textContent),
