@@ -6,6 +6,8 @@ import { filmOver } from "@/utils/film-over"
 import { nextEpisodeRating } from "@/utils/next-episode"
 
 const TICK_MS = 250
+// the notice's button that stops a show's skips of that kind
+const KEEP_LABELS = { intro: "Keep intros", recap: "Keep recaps", credits: "Keep credits" }
 const SPEED_PRESETS = [0.75, 1, 1.25, 1.5, 1.75, 2]
 const SPEED_STEP = 0.25
 const SPEED_MIN = 0.25
@@ -280,9 +282,9 @@ export class PlaybackEngine {
 		this.next = next
 		nextEpisodeRating(show, season, episode).then((rating) => (next.rating = rating))
 	}
-	private notForShow(kind: SkipKind, show: string, undo?: () => void): NoticeAction {
+	private notForShow(kind: Exclude<SkipKind, "stillWatching">, show: string, undo?: () => void): NoticeAction {
 		return {
-			label: "Don't skip for this show",
+			label: KEEP_LABELS[kind],
 			quiet: true,
 			run: () => {
 				this.suppressed.add(kind)

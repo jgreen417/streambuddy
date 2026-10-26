@@ -259,12 +259,12 @@ describe("playback engine", () => {
 		tick()
 		expect(video.currentTime).toBe(185)
 	})
-	it("leaves a show's intro alone after “Don't skip for this show”", async () => {
+	it("leaves a show's intro alone after “Keep intros”", async () => {
 		const { video, tick, addButton } = setup()
 		addButton("intro", 185)
 		tick()
 		vi.advanceTimersByTime(800)
-		noticeButton("Don't skip for this show")!.click()
+		noticeButton("Keep intros")!.click()
 		expect(video.currentTime).toBe(100)
 		expect(browser.storage.sync.set).toHaveBeenCalledWith({ skipRules: { "the bear": ["intro"] } })
 	})
@@ -277,7 +277,7 @@ describe("playback engine", () => {
 		vi.advanceTimersByTime(800)
 		expect(noticeText()).toContain("Skipped intro")
 		expect(noticeButton("Undo")).toBeUndefined()
-		noticeButton("Don't skip for this show")!.click()
+		noticeButton("Keep intros")!.click()
 		expect(video.currentTime).toBe(185)
 		expect(browser.storage.sync.set).toHaveBeenCalledWith({ skipRules: { "the bear": ["intro"] } })
 	})
