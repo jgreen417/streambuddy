@@ -74,6 +74,8 @@ export const crunchyroll: SiteAdapter = {
 	skipButton,
 	// a seek on its <video> leaves the player buffering for good, so skips press its own button
 	seekBlocked: true,
+	// its player starts the jump about 650ms after the press
+	skipLandsMs: 1500,
 	episodeKey: watchId,
 	episodeNumber: () => (/^E\d+\b/.test(episodeTitle() ?? "") ? parseEpisodeNumber(episodeTitle()) : null),
 	// the tab title starts "Season 1 Part 1 Asta and Yuno"

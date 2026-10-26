@@ -260,7 +260,7 @@ export class PlaybackEngine {
 					)
 				this.announceSkip(kind, saved, actions)
 			},
-			this.site.clock ? 2500 : 700,
+			this.site.skipLandsMs ?? (this.site.clock ? 2500 : 700),
 		)
 	}
 	private announceSkip(kind: SkipKind, saved: number, actions: NoticeAction[], extra = "") {
