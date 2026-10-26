@@ -36,3 +36,5 @@ jobs:
         run: npx depcruise src --config .dependency-cruiser.cjs
       - name: Test
         run: npx vitest run
+      - name: Firefox manifest lint
+        run: npm run build:firefox && npm run lint:manifest
