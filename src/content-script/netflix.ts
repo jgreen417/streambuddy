@@ -3,7 +3,7 @@ import { netflixSite } from "@/content-script/sites/netflix"
 import { netflix } from "@/playback/sites/netflix"
 import { startPlayback } from "@/playback/start"
 import { settings, settingsReady } from "@/stores/settings"
-import { keepTidy, quietPreviews, tidyNetflix } from "@/content-script/tidy"
+import { keepTidy, quietPreviews, stopPreviews, tidyNetflix } from "@/content-script/tidy"
 
 startSharedFunctions(netflixSite)
 startPlayback(netflix)
@@ -11,9 +11,15 @@ settingsReady.then(() => {
 	const tidy = keepTidy(() => {
 		tidyNetflix(settings.value.Netflix.hideGames, settings.value.Netflix.hideTop10)
 		quietPreviews(settings.value.General.quietPreviews && !netflixSite.isPlayerPage())
+		stopPreviews(settings.value.General.stopPreviews, () => !netflixSite.isPlayerPage())
 	})
 	watch(
-		() => [settings.value.Netflix.hideGames, settings.value.Netflix.hideTop10, settings.value.General.quietPreviews],
+		() => [
+			settings.value.Netflix.hideGames,
+			settings.value.Netflix.hideTop10,
+			settings.value.General.quietPreviews,
+			settings.value.General.stopPreviews,
+		],
 		tidy,
 	)
 })

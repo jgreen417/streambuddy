@@ -1,5 +1,5 @@
 // Page clean-ups a viewer would want: no rows of mobile games or the ranked Top 10 on Netflix, optionally no
-// Prime Video titles that need renting, buying or an extra subscription, and no autoplay previews with sound.
+// Prime Video titles that need renting, buying or an extra subscription, and no autoplay previews (silent or stopped).
 // Hidden items are marked so they can come back; videos are only unmuted if streamBuddy muted them.
 const HIDDEN_ATTR = "data-streambuddy-hidden"
 
@@ -63,11 +63,24 @@ function quieten(video: HTMLVideoElement) {
 	video.muted = true
 	mutedByUs.add(video)
 }
+// a preview that starts playing is paused straight away; one the viewer starts with a click or key plays on
+let stopping = false
+let isPreview: (video: HTMLVideoElement) => boolean = () => false
+function stop(video: HTMLVideoElement) {
+	if (stopping && !video.paused && isPreview(video) && Date.now() - lastInput > 1000) video.pause()
+}
 function listen() {
 	listening = true
 	const input = () => (lastInput = Date.now())
 	document.addEventListener("pointerdown", input, true)
 	document.addEventListener("keydown", input, true)
+	document.addEventListener(
+		"play",
+		({ target }) => {
+			if (target instanceof HTMLVideoElement) stop(target)
+		},
+		true,
+	)
 	// volumechange doesn't bubble, so it's caught on the way down
 	document.addEventListener(
 		"volumechange",
@@ -89,6 +102,16 @@ export function quietPreviews(on: boolean) {
 	if (!listening) listen()
 	for (const video of Array.from(document.querySelectorAll("video"))) quieten(video)
 	for (const video of mutedByUs) if (!video.isConnected) mutedByUs.delete(video)
+}
+
+// preview: whether a video is a preview rather than the service's player, asked when it starts playing, since the
+// player can open before the page's next tidy
+export function stopPreviews(on: boolean, preview: (video: HTMLVideoElement) => boolean) {
+	stopping = on
+	isPreview = preview
+	if (!on) return
+	if (!listening) listen()
+	for (const video of Array.from(document.querySelectorAll("video"))) stop(video)
 }
 
 export function tidyPrime(hidePaid: boolean) {

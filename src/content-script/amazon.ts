@@ -1,10 +1,10 @@
 import { listenForCreditsMarkers } from "@/content-script/credits-marker"
 import { startSharedFunctions } from "@/content-script/shared-functions"
-import { primeSite } from "@/content-script/sites/prime"
+import { PRIME_PLAYER, primeSite } from "@/content-script/sites/prime"
 import { prime } from "@/playback/sites/prime"
 import { startPlayback } from "@/playback/start"
 import { settings, settingsReady } from "@/stores/settings"
-import { keepTidy, quietPreviews, tidyPrime } from "@/content-script/tidy"
+import { keepTidy, quietPreviews, stopPreviews, tidyPrime } from "@/content-script/tidy"
 
 // Prime Video also lives on Amazon's shopping domains; only act on its pages
 const isPrimeVideo =
@@ -23,7 +23,12 @@ if (isPrimeVideo) {
 		const tidy = keepTidy(() => {
 			tidyPrime(settings.value.Amazon.hidePaid)
 			quietPreviews(settings.value.General.quietPreviews && !primeSite.isPlayerPage())
+			// the player (films and trailers alike) opens over the page without a new address
+			stopPreviews(settings.value.General.stopPreviews, (video) => !video.closest(PRIME_PLAYER))
 		})
-		watch(() => [settings.value.Amazon.hidePaid, settings.value.General.quietPreviews], tidy)
+		watch(
+			() => [settings.value.Amazon.hidePaid, settings.value.General.quietPreviews, settings.value.General.stopPreviews],
+			tidy,
+		)
 	})
 }
