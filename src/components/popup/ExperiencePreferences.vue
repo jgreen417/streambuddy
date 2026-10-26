@@ -223,7 +223,15 @@ const updateMode = (event: Event) => {
 			<summary>
 				<span>
 					Browsing
-					<small>{{ settings.General.quietPreviews ? "Previews muted" : "Preview sound on" }}</small>
+					<small>
+						{{
+							settings.General.stopPreviews
+								? "Previews stopped"
+								: settings.General.quietPreviews
+									? "Previews muted"
+									: "Preview sound on"
+						}}
+					</small>
 				</span>
 			</summary>
 			<div class="sb-disclosure-body">
@@ -231,6 +239,11 @@ const updateMode = (event: Event) => {
 					v-model="settings.General.quietPreviews"
 					label="Quiet browsing"
 					description="Mutes autoplay previews and trailers while you browse."
+				/>
+				<PopupToggle
+					v-model="settings.General.stopPreviews"
+					label="Stop previews from playing"
+					description="Previews stay paused until you press play. Crunchyroll has none."
 				/>
 				<template v-if="targets.includes('Netflix')">
 					<PopupToggle

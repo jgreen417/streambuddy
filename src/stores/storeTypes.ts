@@ -64,6 +64,8 @@ export type settingsType = {
 		pauseAfter: number
 		// mute autoplay previews and trailers while browsing
 		quietPreviews: boolean
+		// pause them as soon as they start
+		stopPreviews: boolean
 	}
 }
 
@@ -108,5 +110,6 @@ export const defaultSettings: settingsType = {
 		skipDelaySeconds: 0,
 		pauseAfter: 0,
 		quietPreviews: true,
+		stopPreviews: false,
 	},
 }

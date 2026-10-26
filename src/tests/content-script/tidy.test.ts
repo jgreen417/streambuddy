@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest"
-import { quietPreviews, tidyNetflix } from "../../content-script/tidy"
+import { quietPreviews, stopPreviews, tidyNetflix } from "../../content-script/tidy"
 
 describe("Netflix's games", () => {
 	afterEach(() => {
@@ -121,5 +121,73 @@ describe("quiet previews", () => {
 		unmute(preview, true)
 		quietPreviews(false)
 		expect(preview.muted).toBe(false)
+	})
+})
+
+describe("stopped previews", () => {
+	beforeAll(() => {
+		vi.useFakeTimers()
+	})
+	afterAll(() => {
+		vi.useRealTimers()
+	})
+	afterEach(() => {
+		document.body.innerHTML = ""
+		stopPreviews(false, () => false)
+	})
+	// jsdom doesn't play media, so a video here only tracks whether it's paused
+	function video(id: string) {
+		const element = document.createElement("video")
+		element.id = id
+		let paused = true
+		Object.defineProperty(element, "paused", { get: () => paused })
+		element.pause = () => {
+			paused = true
+		}
+		element.play = async () => {
+			paused = false
+			element.dispatchEvent(new Event("play"))
+		}
+		document.body.append(element)
+		return element
+	}
+	const inPlayer = (element: HTMLVideoElement) => element.id === "film"
+
+	it("pauses a preview as it starts, never the player", async () => {
+		const preview = video("preview")
+		const film = video("film")
+		stopPreviews(true, (element) => !inPlayer(element))
+		vi.advanceTimersByTime(5000)
+		await preview.play()
+		await film.play()
+		expect(preview.paused).toBe(true)
+		expect(film.paused).toBe(false)
+	})
+	it("pauses a preview's first start even right after a click", async () => {
+		const preview = video("preview")
+		stopPreviews(true, (element) => !inPlayer(element))
+		document.dispatchEvent(new Event("pointerdown"))
+		await preview.play()
+		expect(preview.paused).toBe(true)
+	})
+	it("lets the viewer play a stopped preview, and keeps it playing", async () => {
+		const preview = video("preview")
+		stopPreviews(true, (element) => !inPlayer(element))
+		vi.advanceTimersByTime(5000)
+		await preview.play()
+		document.dispatchEvent(new Event("pointerdown"))
+		await preview.play()
+		vi.advanceTimersByTime(5000)
+		stopPreviews(true, (element) => !inPlayer(element))
+		expect(preview.paused).toBe(false)
+	})
+	it("plays a video again once it turns out to be the player", async () => {
+		const opening = video("opening")
+		stopPreviews(true, () => true)
+		vi.advanceTimersByTime(5000)
+		await opening.play()
+		expect(opening.paused).toBe(true)
+		stopPreviews(true, () => false)
+		expect(opening.paused).toBe(false)
 	})
 })

@@ -62,6 +62,9 @@ function rowLogoHeight(card: HTMLElement, host: HTMLElement) {
 }
 
 // kind 0: cards in rows (and the search grid's own listitems), which carry their title; kind 1: the other cards
+// the same two player roots the playback engine looks for; newer players only have #dv-web-player
+export const PRIME_PLAYER = ".dv-player-fullscreen, #dv-web-player"
+
 export const primeSite: RatingsSite = {
 	service: "Amazon",
 	badge: { corner: "bottom", zIndex: "3" },
@@ -101,8 +104,7 @@ export const primeSite: RatingsSite = {
 	},
 	rowItem: (card) => card.closest<HTMLElement>("li") ?? card,
 	searchGrids: () => gridsAround('article[data-card-title], article[data-testid*="-card"]', "article"),
-	// the same two player roots the playback engine looks for; newer players only have #dv-web-player
-	isPlayerPage: () => !!document.querySelector(".dv-player-fullscreen video, #dv-web-player video"),
+	isPlayerPage: () => Array.from(document.querySelectorAll(PRIME_PLAYER)).some((root) => root.querySelector("video")),
 	creditsFromEnd: markedCreditsFromEnd,
 	playingTitle: () => document.title,
 	playingEpisode: () => episodeFromPlayer(episodeInfo() ?? undefined, prime.showTitle()),

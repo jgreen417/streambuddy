@@ -119,7 +119,12 @@ test("card inspector", async ({ open }) => {
 	await badge.hover()
 	const inspector = page.locator("[data-sb-inspector]")
 	await expect(inspector).toBeVisible({ timeout: 8_000 })
-	await expect(inspector.getByText("Amazon Prime Video")).toBeVisible({ timeout: 8_000 })
+	// "Where to watch" starts closed; opened, each other service links to a search for the title there
+	await inspector.getByRole("button", { name: /Where to watch/ }).click()
+	await expect(inspector.getByRole("link", { name: /Amazon Prime Video/ })).toHaveAttribute(
+		"href",
+		/^https:\/\/www\.primevideo\.com\/search\/.*phrase=Past%20Lives$/,
+	)
 	await loaded(page)
 	await expect.soft(inspector).toHaveScreenshot("netflix-inspector.png")
 	await inspector.getByRole("button", { name: "Not this title?" }).click()

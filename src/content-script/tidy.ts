@@ -1,5 +1,5 @@
 // Page clean-ups a viewer would want: no rows of mobile games or the ranked Top 10 on Netflix, optionally no
-// Prime Video titles that need renting, buying or an extra subscription, and no autoplay previews with sound.
+// Prime Video titles that need renting, buying or an extra subscription, and no autoplay previews (silent or stopped).
 // Hidden items are marked so they can come back; videos are only unmuted if streamBuddy muted them.
 const HIDDEN_ATTR = "data-streambuddy-hidden"
 
@@ -63,11 +63,34 @@ function quieten(video: HTMLVideoElement) {
 	video.muted = true
 	mutedByUs.add(video)
 }
+// A preview that starts playing is paused straight away. Once paused, the viewer can play it with a click or key and
+// it's left alone from then on; input just before a preview's first start, like the click that opens a title, doesn't
+// count. A video paused as a preview that turns out to be the player (it moved into it after starting) plays again.
+let stopping = false
+let isPreview: (video: HTMLVideoElement) => boolean = () => false
+const stoppedByUs = new Set<HTMLVideoElement>()
+const allowed = new WeakSet<HTMLVideoElement>()
+function stop(video: HTMLVideoElement) {
+	if (!stopping || video.paused || allowed.has(video) || !isPreview(video)) return
+	if (stoppedByUs.has(video) && Date.now() - lastInput < 1000) {
+		allowed.add(video)
+		return
+	}
+	video.pause()
+	stoppedByUs.add(video)
+}
 function listen() {
 	listening = true
 	const input = () => (lastInput = Date.now())
 	document.addEventListener("pointerdown", input, true)
 	document.addEventListener("keydown", input, true)
+	document.addEventListener(
+		"play",
+		({ target }) => {
+			if (target instanceof HTMLVideoElement) stop(target)
+		},
+		true,
+	)
 	// volumechange doesn't bubble, so it's caught on the way down
 	document.addEventListener(
 		"volumechange",
@@ -89,6 +112,24 @@ export function quietPreviews(on: boolean) {
 	if (!listening) listen()
 	for (const video of Array.from(document.querySelectorAll("video"))) quieten(video)
 	for (const video of mutedByUs) if (!video.isConnected) mutedByUs.delete(video)
+}
+
+// preview: whether a video is a preview rather than the service's player, asked when it starts playing, since the
+// player can open before the page's next tidy
+export function stopPreviews(on: boolean, preview: (video: HTMLVideoElement) => boolean) {
+	stopping = on
+	isPreview = preview
+	for (const video of stoppedByUs) {
+		if (!video.isConnected) stoppedByUs.delete(video)
+		else if (video.paused && !preview(video)) {
+			stoppedByUs.delete(video)
+			// the browser may refuse to start it without a click; then it waits for the viewer's
+			video.play().catch(() => {})
+		}
+	}
+	if (!on) return
+	if (!listening) listen()
+	for (const video of Array.from(document.querySelectorAll("video"))) stop(video)
 }
 
 export function tidyPrime(hidePaid: boolean) {

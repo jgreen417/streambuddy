@@ -1,7 +1,7 @@
 // The card inspector: a small, on-demand popover that makes the badge's hidden context readable — who rated it,
 // how many people voted, and where else it is streaming. It lives in a shadow root so the site's CSS can't reach it.
 import { sendMessage } from "webext-bridge/content-script"
-import { SERVICES, type StreamingService } from "@/constants/streamingServices"
+import { SERVICES, searchOn, streamingServices, type StreamingService } from "@/constants/streamingServices"
 import { color, cssDeclarations, friendColors, palette, serviceColors } from "@/design/tokens"
 import { installPageFont } from "@/utils/page-feature-styles"
 import { RATING_SOURCES, getScoreColor } from "@/utils/rating-sources"
@@ -32,6 +32,8 @@ const SERVICE_PROVIDER: Record<StreamingService, RegExp> = {
 }
 
 const providerCache = new Map<string, Promise<Availability | null>>()
+// opened once, "Where to watch" stays open on later cards until the page reloads
+let whereOpen = false
 
 // TMDb's watch/providers for this title in the viewer's region; null means the request failed, an empty row list
 // means the title is not listed there. Prices are not in TMDb, so the rows say Rent/Buy, never a made-up price.
@@ -124,10 +126,11 @@ function face(name: string) {
 	span.title = name
 	return span
 }
-const providerColor = (name: string) =>
-	serviceColors[
-		Object.values(SERVICES).find((service) => service.name.toLowerCase() === name.toLowerCase())?.statsKey ?? ""
-	] ?? color.surfaceRaised
+const providerService = (name: string) => streamingServices.find((service) => SERVICE_PROVIDER[service].test(name))
+const providerColor = (name: string) => {
+	const service = providerService(name)
+	return service ? serviceColors[SERVICES[service].statsKey] : color.surfaceRaised
+}
 
 function head() {
 	const bar = el("div", "head")
@@ -146,6 +149,7 @@ export function renderInspector(
 	service: StreamingService,
 	showFriends: boolean,
 	availability: Availability | null | undefined,
+	showWhere: boolean,
 ): HTMLElement {
 	const root = el("div", "sb-inspector")
 	root.setAttribute("role", "dialog")
@@ -217,36 +221,50 @@ export function renderInspector(
 	}
 
 	root.append(el("div", "rule"))
-	const where = el("div", "label")
+	const where = el("button", "label where-toggle")
+	where.type = "button"
+	where.setAttribute("aria-expanded", String(showWhere))
 	where.append(el("span", "", `Where to watch in ${region()}`))
+	where.insertAdjacentHTML(
+		"beforeend",
+		`<svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+	)
 	root.append(where)
-	const providers = el("div", "providers")
-	if (availability === undefined) providers.append(el("div", "providers-state", "Checking availability…"))
-	else if (availability === null)
-		providers.append(el("div", "providers-state", "Couldn’t check where else it’s streaming."))
-	else {
-		const serviceName = SERVICES[service].name
-		const here = el("div", "provider")
-		const chip = el("span", "pchip", serviceName.slice(0, 1))
-		chip.style.background = serviceColors[SERVICES[service].statsKey]
-		here.append(chip, el("span", "name", serviceName), el("span", "here", "Watching here"))
-		providers.append(here)
-		const others = availability.rows.filter((row) => !SERVICE_PROVIDER[service].test(row.name))
-		for (const row of others) {
-			const item = el("div", "provider")
-			const mark = el("span", "pchip", row.name.slice(0, 1))
-			mark.style.background = providerColor(row.name)
-			const right = el("span", `right${row.kind === "flatrate" ? " included" : ""}`, KIND_LABEL[row.kind])
-			item.append(mark, el("span", "name", row.name), right)
-			providers.append(item)
+	if (showWhere) {
+		const providers = el("div", "providers")
+		if (availability === undefined) providers.append(el("div", "providers-state", "Checking availability…"))
+		else if (availability === null)
+			providers.append(el("div", "providers-state", "Couldn’t check where else it’s streaming."))
+		else {
+			const serviceName = SERVICES[service].name
+			const here = el("div", "provider")
+			const chip = el("span", "pchip", serviceName.slice(0, 1))
+			chip.style.background = serviceColors[SERVICES[service].statsKey]
+			here.append(chip, el("span", "name", serviceName), el("span", "here", "Watching here"))
+			providers.append(here)
+			const others = availability.rows.filter((row) => !SERVICE_PROVIDER[service].test(row.name))
+			for (const row of others) {
+				// a search on that service, else TMDb's page with a link to every service
+				const provider = providerService(row.name)
+				const url = (provider && searchOn(provider, data.title)) || availability.link
+				const item = url
+					? Object.assign(el("a", "provider"), { href: url, target: "_blank", rel: "noopener noreferrer" })
+					: el("div", "provider")
+				const mark = el("span", "pchip", row.name.slice(0, 1))
+				mark.style.background = providerColor(row.name)
+				const right = el("span", `right${row.kind === "flatrate" ? " included" : ""}`, KIND_LABEL[row.kind])
+				item.append(mark, el("span", "name", row.name), right)
+				providers.append(item)
+			}
+			if (!others.length)
+				providers.append(el("div", "providers-state", "Not listed on another service in your region."))
 		}
-		if (!others.length) providers.append(el("div", "providers-state", "Not listed on another service in your region."))
-	}
-	root.append(providers)
-	if (availability) {
-		const attrib = el("div", "attrib")
-		attrib.append("Availability by JustWatch")
-		root.append(attrib)
+		root.append(providers)
+		if (availability) {
+			const attrib = el("div", "attrib")
+			attrib.append("Availability by JustWatch")
+			root.append(attrib)
+		}
 	}
 
 	const actions = el("div", "actions")
@@ -385,6 +403,11 @@ const STYLE = `
 .sb-inspector .dot.watch { background: var(--sb-badge-watchlist); }
 .sb-inspector .personal .stars { margin-left: auto; }
 .sb-inspector .label { display: flex; align-items: center; margin: 14px 0 7px; color: var(--sb-text-muted); font-size: 10px; font-weight: 600; letter-spacing: .13em; text-transform: uppercase; }
+.sb-inspector .where-toggle { width: 100%; margin-bottom: 0; padding: 0; border: 0; background: none; font-family: inherit; cursor: pointer; }
+.sb-inspector .where-toggle:hover { color: var(--sb-text); }
+.sb-inspector .where-toggle .chevron { width: 14px; height: 14px; margin-left: auto; transition: transform .2s; }
+.sb-inspector .where-toggle[aria-expanded="true"] { margin-bottom: 7px; }
+.sb-inspector .where-toggle[aria-expanded="true"] .chevron { transform: rotate(180deg); }
 .sb-inspector .see-all { margin-left: auto; color: var(--sb-text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; text-decoration: none; }
 .sb-inspector .see-all:hover { color: var(--sb-text); }
 .sb-inspector .friend { display: flex; align-items: center; gap: 9px; padding: 5px 0; font-size: 13px; }
@@ -397,6 +420,9 @@ const STYLE = `
 .sb-inspector .providers { border: 1px solid var(--sb-hairline); border-radius: var(--sb-radius-xl); overflow: hidden; }
 .sb-inspector .provider { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-top: 1px solid var(--sb-hairline); font-size: 12px; }
 .sb-inspector .provider:first-child { border-top: 0; }
+.sb-inspector a.provider { text-decoration: none; }
+.sb-inspector a.provider:hover { background: var(--sb-hover); }
+.sb-inspector a.provider .right::after { content: " ↗"; }
 .sb-inspector .pchip { width: 22px; height: 22px; border-radius: var(--sb-radius-sm); display: flex; align-items: center; justify-content: center; color: var(--sb-text); font-size: 10px; font-weight: 800; flex: none; }
 .sb-inspector .provider .name { color: var(--sb-text); }
 .sb-inspector .provider .right { margin-left: auto; color: var(--sb-text-muted); font-size: 11px; }
@@ -550,8 +576,21 @@ export function attachInspector(
 			paint()
 		}
 	}
+	// asked for only once "Where to watch" is open
+	const loadAvailability = () => {
+		if (started) return
+		started = true
+		void loadProviders(data).then((next) => {
+			availability = next
+			if (host) {
+				paint()
+				requestAnimationFrame(position)
+			}
+		})
+	}
 	const paint = () => {
 		if (!shadow) return
+		const toggleFocused = !!shadow.activeElement?.classList.contains("where-toggle")
 		shadow.querySelector(".sb-inspector")?.remove()
 		const content =
 			mode === "fix"
@@ -578,11 +617,21 @@ export function attachInspector(
 							},
 						},
 					)
-				: renderInspector(data, personal, service, showFriends, availability)
+				: renderInspector(data, personal, service, showFriends, availability, whereOpen)
 		content.querySelector<HTMLButtonElement>(".close")?.addEventListener("click", (event) => {
 			event.stopPropagation()
 			close()
 		})
+		if (mode === "detail") {
+			const toggle = content.querySelector<HTMLButtonElement>(".where-toggle")
+			toggle?.addEventListener("click", (event) => {
+				whereOpen = !whereOpen
+				if (whereOpen) loadAvailability()
+				paint()
+				// focus left by a mouse click would keep the card from closing when the pointer leaves
+				if (event.detail) shadow?.querySelector<HTMLButtonElement>(".where-toggle")?.blur()
+			})
+		}
 		if (mode === "detail")
 			content.querySelector<HTMLButtonElement>(".fix")?.addEventListener("click", () => {
 				mode = "fix"
@@ -594,6 +643,7 @@ export function attachInspector(
 				void runSearch(cardTitle)
 			})
 		shadow.append(content)
+		if (toggleFocused) content.querySelector<HTMLButtonElement>(".where-toggle")?.focus()
 		requestAnimationFrame(position)
 	}
 	const close = () => {
@@ -691,16 +741,7 @@ export function attachInspector(
 			() => observer.disconnect(),
 		]
 
-		if (!started) {
-			started = true
-			void loadProviders(data).then((next) => {
-				availability = next
-				if (host) {
-					paint()
-					requestAnimationFrame(position)
-				}
-			})
-		}
+		if (whereOpen) loadAvailability()
 	}
 
 	badge.addEventListener("pointerenter", () => {
