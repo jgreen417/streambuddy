@@ -50,13 +50,14 @@ const friendRow = (name: string, rating: string) =>
 
 describe("parseFriendRows", () => {
 	it("reads names and half-star ratings, skipping friends who watched without rating", () => {
-		const html = `<table>${friendRow("Sam", "rated-8")}${friendRow("Alex", "")}${friendRow("Jo &amp; Co", "rated-9")}${friendRow("Kim", "rated-1")}</table>`
+		const html = `<table>${friendRow("Sam", "rated-8")}${friendRow("Alex", "")}${friendRow("Jo &amp; Co", "rated-9")}${friendRow("Kim", "rated-1")}${friendRow("Lou &amp;lt;3", "rated-6")}</table>`
 		expect(parseFriendRows(html)).toEqual([
 			{ name: "Sam", rating: 4 },
 			{ name: "Jo & Co", rating: 4.5 },
 			{ name: "Kim", rating: 0.5 },
+			{ name: "Lou &lt;3", rating: 3 },
 		])
-		expect(parseFriendRatings(html)).toEqual([4, 4.5, 0.5])
+		expect(parseFriendRatings(html)).toEqual([4, 4.5, 0.5, 3])
 	})
 
 	it("returns an empty list when no friend has watched it", () => {
