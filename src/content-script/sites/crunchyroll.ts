@@ -1,4 +1,4 @@
-import { crunchyroll, crunchyrollPath, episodeTitle } from "@/playback/sites/crunchyroll"
+import { crunchyroll, crunchyrollPath, episodeTitle, playingSkipEvents } from "@/playback/sites/crunchyroll"
 import { gridsAround } from "./dom"
 import type { MediaType, RatingsSite } from "./types"
 
@@ -57,6 +57,11 @@ export const crunchyrollSite: RatingsSite = {
 	rowItem: (card) => card.closest<HTMLElement>('[data-t="carousel-card-wrapper"]') ?? card,
 	searchGrids: () => (crunchyrollPath().startsWith("/search") ? gridsAround(SEARCH, SEARCH) : []),
 	isPlayerPage: () => crunchyrollPath().startsWith("/watch/"),
+	// where Crunchyroll's own skip times put the credits
+	creditsFromEnd(video) {
+		const credits = playingSkipEvents()?.credits
+		return credits && Number.isFinite(video.duration) ? video.duration - credits.start : undefined
+	},
 	playingTitle: () => crunchyroll.showTitle(),
 	playingEpisode() {
 		const episode = crunchyroll.episodeNumber()

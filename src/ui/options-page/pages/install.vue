@@ -12,7 +12,8 @@ const { account, ratingsPaused } = useAccount()
 		/>
 		<h1>Welcome to streamBuddy</h1>
 		<p class="description">
-			Letterboxd scores on films and IMDb scores on series, right on Netflix, Prime Video, HBO Max and Disney+.
+			Letterboxd scores on films and IMDb scores on series, right on Netflix, Prime Video, HBO Max, Disney+ and
+			Crunchyroll.
 			{{
 				ratingsPaused
 					? "Ratings are paused: TMDb stopped accepting streamBuddy’s shared key. Add your own free key in step 2 to turn them back on."
