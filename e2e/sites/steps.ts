@@ -60,6 +60,9 @@ export async function putInState(page: Page, steps: Steps, copy: boolean) {
 	}
 }
 
+// a player's timeline: an ARIA slider, or a range input running over the title's seconds (Crunchyroll's)
+const TIMELINE = '[role="slider"][aria-valuemax], input[type="range"][max]'
+
 async function seekFromEnd(page: Page, seconds: number) {
 	// a web-component player keeps its <video> and timeline in open shadow roots
 	await page.waitForFunction(() => {
@@ -67,8 +70,7 @@ async function seekFromEnd(page: Page, seconds: number) {
 		for (let i = 0; i < roots.length; i++)
 			for (const el of Array.from(roots[i].querySelectorAll("*"))) {
 				if (el.shadowRoot) roots.push(el.shadowRoot)
-				if ((el instanceof HTMLVideoElement && el.duration > 0) || el.matches('[role="slider"][aria-valuemax]'))
-					return true
+				if ((el instanceof HTMLVideoElement && el.duration > 0) || el.matches(TIMELINE)) return true
 			}
 		return false
 	})
@@ -79,8 +81,11 @@ async function seekFromEnd(page: Page, seconds: number) {
 			.map((video) => ({ video, length: Number.isFinite(video.duration) ? video.duration : Number.MAX_VALUE }))
 			.sort((a, b) => b.length - a.length)[0]?.video
 		// a stream fed in pieces (Disney+) has no length on its <video>, and a web-component player's isn't in the
-		// document; the player's timeline is seeked instead
+		// document; the player's timeline is seeked instead. So is Crunchyroll's, whose player stalls when its <video> is
+		// seeked: its timeline is a range input as long as the video.
 		if (!video || !Number.isFinite(video.duration)) return true
+		const ranges = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="range"][max]'))
+		if (ranges.some((range) => Math.abs(Number(range.max) - video.duration) < 2)) return true
 		const target = video.duration - seconds
 		type Players = {
 			getAllPlayerSessionIds(): string[]
@@ -97,15 +102,21 @@ async function seekFromEnd(page: Page, seconds: number) {
 	if (live) await seekTimeline(page, seconds)
 }
 
-// clicks the player's own timeline at that many seconds before its end, read from the slider's aria values
+// clicks the player's own timeline at that many seconds before its end, read from the slider's aria values or the
+// range input's own; the longest one is the timeline (a volume slider runs to 1 or 100)
 async function seekTimeline(page: Page, seconds: number) {
 	await page.mouse.move(10, 10)
 	await page.mouse.move(200, 200, { steps: 4 })
-	const slider = page.locator('[role="slider"][aria-valuemax]').first()
-	const box = await slider.boundingBox()
-	const [min, max] = await Promise.all(
-		["aria-valuemin", "aria-valuemax"].map(async (name) => Number((await slider.getAttribute(name)) ?? 0)),
+	const sliders = await page.locator(TIMELINE).all()
+	const ranges = await Promise.all(
+		sliders.map(async (slider) => {
+			const read = async (aria: string, own: string) =>
+				Number((await slider.getAttribute(aria)) ?? (await slider.getAttribute(own)) ?? 0)
+			return { slider, min: await read("aria-valuemin", "min"), max: await read("aria-valuemax", "max") }
+		}),
 	)
+	const { slider, min, max } = ranges.sort((a, b) => b.max - b.min - (a.max - a.min))[0] ?? { min: 0, max: 0 }
+	const box = await slider?.boundingBox()
 	if (!box || !(max > min)) throw new Error("The player has no timeline to seek, so --seek-from-end can't be used here")
 	const end = max - (seconds * (max - min)) / timelineSeconds(min, max)
 	await page.mouse.click(box.x + (box.width * (end - min)) / (max - min), box.y + box.height / 2)
