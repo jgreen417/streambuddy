@@ -26,6 +26,7 @@ export const hbo: SiteAdapter = {
 			null
 		)
 	},
+	topBarAnchor: () => $('[data-testid="player-ux-back-button"]'),
 	skipButton,
 	// ads are stitched into the title's own stream; the timer reads "1 of 3" then ":25", the seconds left in this ad
 	// only, and Max lets the <video> be seeked past it (only its own scrubber holds you to a break)

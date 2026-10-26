@@ -1,8 +1,8 @@
 import { cssDeclarations } from "@/design/tokens"
 import { installPageFont } from "@/utils/page-feature-styles"
 
-// streamBuddy's in-player UI: a notice pill (bottom left), the speed pill (top centre) and, under it, the time pill
-// with its sleep-timer menu. They live in one shadow root so the site's CSS can't reach them, and the host moves
+// streamBuddy's in-player UI: a notice pill (bottom left), and the speed pill and the time pill with its sleep-timer
+// menu side by side at the top centre. They live in one shadow root so the site's CSS can't reach them, and the host moves
 // into whichever element is fullscreen.
 
 const STYLE = `
@@ -27,9 +27,10 @@ button:focus-visible { outline: 2px solid var(--sb-focus); outline-offset: 2px; 
 button.quiet { padding: 3px 9px; font-size: 12px; background: transparent; color: var(--sb-text);
 	box-shadow: inset 0 0 0 1px var(--sb-line-hover); }
 button.quiet:hover { color: var(--sb-text); background: var(--sb-hairline); }
-/* top centre: players keep their own buttons in the top corners */
-.speed { position: absolute; left: 50%; transform: translateX(-50%); top: 20px; padding: 4px; gap: 2px; opacity: 0;
-	transition: opacity 0.2s ease; }
+/* top centre, level with the player's own top-bar buttons, which keep to the corners */
+.bar { position: absolute; left: 50%; top: var(--top-bar-y, 40px); transform: translate(-50%, -50%);
+	display: flex; align-items: stretch; gap: 8px; }
+.speed { padding: 4px; gap: 2px; opacity: 0; transition: opacity 0.2s ease; }
 .speed.show, .speed:hover, .speed:focus-within { opacity: 1; }
 .speed .value { min-width: 52px; text-align: center; font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
 .speed .value.fast { color: var(--sb-up); }
@@ -37,15 +38,17 @@ button.quiet:hover { color: var(--sb-text); background: var(--sb-hairline); }
 .speed.open .presets { display: flex; }
 .speed .presets button { padding: 6px 10px; background: transparent; }
 .speed .presets button[aria-pressed="true"] { background: var(--sb-text); color: var(--sb-bg); }
-/* under the speed pill, for the same reason; shown with the player's controls, like the speed pill */
-.time { position: absolute; left: 50%; transform: translateX(-50%); top: 64px; padding: 4px; opacity: 0;
-	pointer-events: none; transition: opacity 0.2s ease; }
+/* shown with the player's controls, like the speed pill */
+.time { position: relative; padding: 4px; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
 .time.show, .time.open, .time:hover, .time:focus-within { opacity: 1; pointer-events: auto; }
 .time .value { display: flex; align-items: center; gap: 8px; background: transparent; font-weight: 500;
 	font-variant-numeric: tabular-nums; }
 .time .value b { font-weight: 700; }
 .time .icon { display: flex; }
 .time .icon svg { width: 16px; height: 16px; }
+.time .chevron { display: flex; margin-left: -2px; transition: transform 0.2s ease; }
+.time .chevron svg { width: 14px; height: 14px; }
+.time.open .chevron { transform: rotate(180deg); }
 .time-menu { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); min-width: 240px;
 	padding: 8px; display: flex; flex-direction: column; gap: 2px; background: var(--sb-glass-dark);
 	border: 1px solid var(--sb-line-raised); border-radius: var(--sb-radius-lg); box-shadow: var(--sb-shadow-float);
@@ -59,7 +62,7 @@ button.quiet:hover { color: var(--sb-text); background: var(--sb-hairline); }
 .time-menu .opt:hover { background: var(--sb-line-hover); }
 .time-menu .check { color: var(--sb-accent); }
 .time-menu .rule { height: 1px; margin: 4px 8px; background: var(--sb-line-raised); }
-@media (prefers-reduced-motion: reduce) { .notice, .speed, .time { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .notice, .speed, .time, .time .chevron { transition: none; } }
 `
 
 export type NoticeAction = { label: string; quiet?: boolean; run: () => void }
@@ -81,6 +84,7 @@ export class PlayerOverlay {
 	private root = this.host.attachShadow({ mode: "open" })
 	private layer = document.createElement("div")
 	private notice = document.createElement("div")
+	private bar = document.createElement("div")
 	private noticeTimer: ReturnType<typeof setTimeout> | undefined
 	private speed: HTMLDivElement | null = null
 	private speedTimer: ReturnType<typeof setTimeout> | undefined
@@ -101,7 +105,8 @@ export class PlayerOverlay {
 		this.notice.setAttribute("aria-live", "polite")
 		this.notice.addEventListener("mouseenter", () => clearTimeout(this.noticeTimer))
 		this.notice.addEventListener("mouseleave", () => this.hideNoticeSoon(2500))
-		this.layer.append(this.notice)
+		this.bar.className = "bar"
+		this.layer.append(this.notice, this.bar)
 		this.root.append(style, this.layer)
 		document.addEventListener("pointerdown", (event) => {
 			if (this.timeMenu && !event.composedPath().includes(this.host)) this.closeTimeMenu()
@@ -123,6 +128,13 @@ export class PlayerOverlay {
 			parent.append(this.host)
 		}
 		return true
+	}
+	// the speed and time pills sit level with the player's own top bar, where it has one
+	alignTo(anchor: HTMLElement | null) {
+		const box = anchor?.getBoundingClientRect()
+		if (!box?.height || !this.host.isConnected) return
+		const middle = box.top + box.height / 2 - this.host.getBoundingClientRect().top
+		this.layer.style.setProperty("--top-bar-y", `${Math.round(middle)}px`)
 	}
 	detach() {
 		this.closeTimeMenu()
@@ -166,7 +178,7 @@ export class PlayerOverlay {
 			this.speed.className = "speed pill"
 			this.speed.setAttribute("role", "group")
 			this.speed.setAttribute("aria-label", "Playback speed")
-			this.layer.append(this.speed)
+			this.bar.prepend(this.speed)
 		}
 		const value = document.createElement("button")
 		value.type = "button"
@@ -217,13 +229,15 @@ export class PlayerOverlay {
 			this.timeValue = document.createElement("button")
 			this.timeValue.type = "button"
 			this.timeValue.className = "value"
+			this.timeValue.title = "Sleep timer"
+			this.timeValue.setAttribute("aria-haspopup", "dialog")
 			this.timeValue.addEventListener("click", (event) => {
 				event.stopPropagation()
 				if (this.timeMenu) this.closeTimeMenu()
 				else this.timeOpener?.()
 			})
 			this.time.append(this.timeValue)
-			this.layer.append(this.time)
+			this.bar.append(this.time)
 		}
 		this.timeOpener = onOpen
 		const [main, ...rest] = label.split(" · ")
@@ -235,10 +249,12 @@ export class PlayerOverlay {
 		strong.textContent = main
 		copy.append(strong)
 		if (rest.length) copy.append(` · ${rest.join(" · ")}`)
-		this.timeValue?.replaceChildren(icon, copy)
+		const chevron = document.createElement("span")
+		chevron.className = "chevron"
+		chevron.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5 8 10l3.5-3.5"/></svg>`
+		this.timeValue?.replaceChildren(icon, copy, chevron)
 		if (this.timeValue) {
-			this.timeValue.title = label
-			this.timeValue.setAttribute("aria-label", label)
+			this.timeValue.setAttribute("aria-label", `${label}. Sleep timer`)
 			this.timeValue.setAttribute("aria-expanded", String(!!this.timeMenu))
 		}
 	}
