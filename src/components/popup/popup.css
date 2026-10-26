@@ -618,12 +618,30 @@ body {
 	gap: var(--sb-space-lg);
 	padding: var(--sb-space-md) var(--sb-space-inset);
 	border-top: 1px solid var(--sb-hairline);
+	position: relative;
 }
 .sb-title-row:first-child {
 	border-top: 0;
 }
-a.sb-title-row:hover {
+.sb-title-row:hover {
 	background: var(--sb-track);
+}
+/* the title's link covers the row; the service link sits above it */
+.sb-title-open {
+	display: block;
+}
+.sb-title-open::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+}
+.sb a.sb-title-watch {
+	position: relative;
+	z-index: 1;
+	color: var(--sb-accent);
+}
+.sb a.sb-title-watch:hover {
+	text-decoration: underline;
 }
 .sb-title-name {
 	overflow: hidden;

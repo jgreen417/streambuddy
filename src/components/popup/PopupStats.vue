@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { SERVICE_NAMES_BY_STATS_KEY as PLATFORM_NAMES } from "@/constants/streamingServices"
+import {
+	SERVICE_NAMES_BY_STATS_KEY as PLATFORM_NAMES,
+	searchOn,
+	SERVICES,
+	streamingServices,
+} from "@/constants/streamingServices"
 import { computed, ref } from "vue"
 import { settingsReady } from "@/stores/settings"
 import { getRatingPercentile, getScoreColor } from "@/utils/rating-sources"
@@ -12,6 +17,7 @@ import {
 	recentSeenTitles,
 	sumLastDays,
 	type SavedLog,
+	type SeenTitle,
 	type SeenTop,
 	type WatchLog,
 } from "@/utils/stats"
@@ -84,6 +90,11 @@ const askForRating = computed(() => !rateLinkOpened.value && Object.keys(watchLo
 function openedRateLink() {
 	rateLinkOpened.value = true
 	browser.storage.local.set({ rateLinkOpened: true })
+}
+// a search for the title on the service it was spotted on
+function watchUrl(title: SeenTitle) {
+	const service = streamingServices.find((key) => SERVICES[key].statsKey === title.platform)
+	return service && searchOn(service, title.title)
 }
 const formatRating = (title: { source: string; rating: number }) =>
 	title.source === "letterboxd" ? `Letterboxd ${title.rating.toFixed(1)}/5` : `IMDb ${title.rating.toFixed(1)}/10`
@@ -195,17 +206,32 @@ const formatRating = (title: { source: string; rating: number }) =>
 		<template v-if="watchlistTitles.length">
 			<div class="sb-label">From your watchlist, spotted recently</div>
 			<div class="sb-group">
-				<a
+				<div
 					v-for="title in watchlistTitles"
 					:key="title.title"
 					class="sb-title-row"
-					:href="title.url"
-					target="_blank"
-					rel="noopener noreferrer"
 				>
 					<div style="min-width: 0">
-						<div class="sb-title-name">{{ title.title }}</div>
-						<div class="sb-title-meta">{{ PLATFORM_NAMES[title.platform] ?? title.platform }} · opens Letterboxd</div>
+						<a
+							class="sb-title-name sb-title-open"
+							:href="title.url"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							{{ title.title }}
+						</a>
+						<div class="sb-title-meta">
+							<a
+								v-if="watchUrl(title)"
+								class="sb-title-watch"
+								:href="watchUrl(title)"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								Watch on {{ PLATFORM_NAMES[title.platform] }} ↗
+							</a>
+							<template v-else>{{ PLATFORM_NAMES[title.platform] ?? title.platform }} · opens Letterboxd</template>
+						</div>
 					</div>
 					<span
 						class="sb-pill"
@@ -213,26 +239,40 @@ const formatRating = (title: { source: string; rating: number }) =>
 					>
 						{{ formatRating(title) }}
 					</span>
-				</a>
+				</div>
 			</div>
 		</template>
 
 		<div class="sb-label">Highly rated titles you spotted</div>
 		<div class="sb-group">
-			<a
+			<div
 				v-for="title in bestTitles"
 				:key="title.title"
 				class="sb-title-row"
-				:href="title.url"
-				target="_blank"
-				rel="noopener noreferrer"
 			>
 				<div style="min-width: 0">
-					<div class="sb-title-name">{{ title.title }}</div>
+					<a
+						class="sb-title-name sb-title-open"
+						:href="title.url"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						{{ title.title }}
+					</a>
 					<div class="sb-title-meta">
-						{{ PLATFORM_NAMES[title.platform] ?? title.platform }} ·
-						{{ title.media_type === "tv" ? "series" : "film" }} · opens
-						{{ title.source === "letterboxd" ? "Letterboxd" : "IMDb" }}
+						<a
+							v-if="watchUrl(title)"
+							class="sb-title-watch"
+							:href="watchUrl(title)"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							Watch on {{ PLATFORM_NAMES[title.platform] }} ↗
+						</a>
+						<template v-else>
+							{{ PLATFORM_NAMES[title.platform] ?? title.platform }} · opens
+							{{ title.source === "letterboxd" ? "Letterboxd" : "IMDb" }}
+						</template>
 					</div>
 				</div>
 				<span
@@ -241,7 +281,7 @@ const formatRating = (title: { source: string; rating: number }) =>
 				>
 					{{ formatRating(title) }}
 				</span>
-			</a>
+			</div>
 			<div
 				v-if="!bestTitles.length"
 				class="sb-empty"
