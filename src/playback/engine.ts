@@ -76,7 +76,6 @@ export class PlaybackEngine {
 		document.addEventListener(
 			"pointermove",
 			() => {
-				this.alignToTopBar()
 				this.overlay.flashSpeed()
 				this.overlay.flashTime()
 			},
@@ -102,6 +101,7 @@ export class PlaybackEngine {
 		}
 		if (video !== this.video) this.enterVideo(video)
 		this.overlay.attach()
+		this.alignToTopBar()
 		this.checkEpisode(video)
 		const settings = this.settings()
 		if (this.checkSleep(video)) return
@@ -277,7 +277,7 @@ export class PlaybackEngine {
 	}
 	// #endregion
 
-	// the player's top bar shows with its controls, as the pills do; an anchor kept in the page is measured again,
+	// measured every tick, so the pills follow a resize or fullscreen; an anchor kept in the page is measured again,
 	// one the site redraws is looked up again
 	private alignToTopBar() {
 		if (!this.topBarAnchor?.isConnected) this.topBarAnchor = this.site.topBarAnchor?.() ?? null

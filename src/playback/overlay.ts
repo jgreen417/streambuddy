@@ -132,7 +132,7 @@ export class PlayerOverlay {
 	// the speed and time pills sit level with the player's own top bar, where it has one
 	alignTo(anchor: HTMLElement | null) {
 		const box = anchor?.getBoundingClientRect()
-		if (!box?.height) return
+		if (!box?.height || !this.host.isConnected) return
 		const middle = box.top + box.height / 2 - this.host.getBoundingClientRect().top
 		this.layer.style.setProperty("--top-bar-y", `${Math.round(middle)}px`)
 	}
@@ -249,7 +249,6 @@ export class PlayerOverlay {
 		strong.textContent = main
 		copy.append(strong)
 		if (rest.length) copy.append(` · ${rest.join(" · ")}`)
-		// says the pill opens a menu: the sleep timer
 		const chevron = document.createElement("span")
 		chevron.className = "chevron"
 		chevron.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5 8 10l3.5-3.5"/></svg>`
