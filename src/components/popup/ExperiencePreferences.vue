@@ -205,7 +205,9 @@ const updateMode = (event: Event) => {
 					<option value="score">Score only</option>
 				</select>
 			</label>
-			<p class="sb-help">Score only shows just the score and where it’s from. Hover the badge to see friends’ ratings.</p>
+			<p class="sb-help">
+				Score only shows just the score and where it’s from. Hover the badge to see friends’ ratings.
+			</p>
 		</div>
 		<details
 			class="sb-disclosure"
