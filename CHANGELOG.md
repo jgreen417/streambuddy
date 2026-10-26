@@ -1,5 +1,12 @@
 # Changelog
 
+# streamBuddy 1.0.8
+
+Crunchyroll is here.
+
+- The store listings now call it "streamBuddy - Letterboxd & IMDb Ratings", so it's easier to find.
+- Everything in 1.0.7 below, which went straight to 1.0.8 on the stores.
+
 # streamBuddy 1.0.7
 
 Crunchyroll is here.
