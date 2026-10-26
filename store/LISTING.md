@@ -35,7 +35,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > WATCH WITHOUT THE FIDDLY BITS
 > • Optional automatic skipping of supported intro, recap and credits controls, with a notice and one-tap Undo
 > • Optional handling of "Still watching?" prompts; available controls vary by service and title
-> • "Not for this show" keeps a theme song you love; optionally hear episode 1's intro
+> • "Don't skip for this show" keeps a theme song you love; optionally hear episode 1's intro
 > • Speed that sticks: remembered per service and kept on the next episode, with Shift + < / > shortcuts and a speed pill on Prime Video, HBO Max, Disney+ and Crunchyroll
 > • Optional pause after a few episodes autoplay in a row
 > • Hides Netflix's mobile-games rows, and optionally Prime titles that cost extra

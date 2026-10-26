@@ -77,5 +77,13 @@ export const crunchyrollSite: RatingsSite = {
 		return season && show ? { show, season, episode } : null
 	},
 	endScreenShowing: () => false,
-	placeReview: () => {},
+	// the player sits at the top of a scrolling page, not filling the window, so the pill goes in its top right corner
+	placeReview(review) {
+		const player = crunchyroll.playerRoot()?.getBoundingClientRect()
+		if (!player?.width) return
+		review.classList.add("sb-review-top")
+		const right = document.documentElement.clientWidth - player.right
+		review.style.setProperty("--sb-review-top", `${Math.round(Math.max(0, player.top) + 16)}px`)
+		review.style.setProperty("--sb-review-right", `${Math.round(Math.max(0, right) + 16)}px`)
+	},
 }

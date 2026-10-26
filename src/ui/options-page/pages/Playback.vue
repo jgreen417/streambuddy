@@ -31,7 +31,8 @@ async function remove(show: string, kind: SkipKind) {
 
 	<h2>Shows you don’t skip</h2>
 	<p class="description">
-		When a skip notice appears, choose “Not for this show” to keep that part playing. Those exceptions are listed here.
+		When a skip notice appears, choose “Don't skip for this show” to keep that part playing. Those exceptions are listed
+		here.
 	</p>
 	<ul
 		v-if="entries.length"

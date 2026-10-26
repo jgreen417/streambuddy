@@ -24,7 +24,7 @@ button { all: unset; cursor: pointer; padding: 6px 12px; border-radius: var(--sb
 	color: var(--sb-text); background: var(--sb-surface-raised); white-space: nowrap; }
 button:hover { background: var(--sb-line-hover); }
 button:focus-visible { outline: 2px solid var(--sb-focus); outline-offset: 2px; }
-button.quiet { background: transparent; color: var(--sb-text-soft); }
+button.quiet { background: transparent; color: var(--sb-text); box-shadow: inset 0 0 0 1px var(--sb-line-hover); }
 button.quiet:hover { color: var(--sb-text); background: var(--sb-hairline); }
 /* top centre: players keep their own buttons in the top corners */
 .speed { position: absolute; left: 50%; transform: translateX(-50%); top: 20px; padding: 4px; gap: 2px; opacity: 0;

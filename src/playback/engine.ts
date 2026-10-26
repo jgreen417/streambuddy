@@ -282,7 +282,7 @@ export class PlaybackEngine {
 	}
 	private notForShow(kind: SkipKind, show: string, undo?: () => void): NoticeAction {
 		return {
-			label: "Not for this show",
+			label: "Don't skip for this show",
 			quiet: true,
 			run: () => {
 				this.suppressed.add(kind)
