@@ -417,9 +417,8 @@ function disneyEpisodeCards(root: ParentNode) {
 
 // a Crunchyroll series' episode cards, titled "E3 - Killing Magic", under its season picker ("Season 2")
 function crunchyrollEpisodeCards(root: ParentNode) {
-	const season = Number(
-		text(document.querySelector('[role="button"][aria-label="Seasons"]')).match(/(\d+)\s*$/)?.[1] ?? 1,
-	)
+	// the picker reads "Season 2" in the profile's language, or "Season 1 Part 2"
+	const season = Number(text(document.querySelector('.erc-seasons-select [role="button"]')).match(/\d+/)?.[0] ?? 1)
 	return Array.from(root.querySelectorAll<HTMLElement>('.erc-playable-collection [data-t^="episode-card"]'), (card) => {
 		const episode = Number(text(card.querySelector("h3")).match(/^E(\d+)\b/)?.[1])
 		const target = card.querySelector<HTMLElement>("a:has(figure)") ?? card

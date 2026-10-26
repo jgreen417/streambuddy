@@ -48,7 +48,7 @@ describe("page adapters", () => {
 		expect(readEpisodeCards("prime", document.body)[0]).toMatchObject({ season: 2, episode: 3 })
 	})
 	it("maps Crunchyroll episodes by the season picker and the E-number in each title", () => {
-		document.body.innerHTML = `<h1 class="hero-body__seo-title--x1">Frieren: Beyond Journey's End</h1><div role="button" aria-label="Seasons"><span>Season 2</span></div><div class="erc-playable-collection"><div data-t="episode-card "><a href="/watch/G7PU4MZ1G"><figure></figure></a><h3><a>E3 - Killing Magic</a></h3></div></div>`
+		document.body.innerHTML = `<h1 class="hero-body__seo-title--x1">Frieren: Beyond Journey's End</h1><div class="erc-seasons-select"><div role="button" aria-label="Staffeln"><span>Staffel 2</span></div></div><div class="erc-playable-collection"><div data-t="episode-card "><a href="/watch/G7PU4MZ1G"><figure></figure></a><h3><a>E3 - Killing Magic</a></h3></div></div>`
 		const context = readDetailContext("crunchyroll")!
 		expect(context.title).toBe("Frieren: Beyond Journey's End")
 		expect(context.mediaType).toBe("tv")

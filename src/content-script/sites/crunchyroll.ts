@@ -10,15 +10,17 @@ const SEARCH =
 
 // "From Far Away Season 1" -> "From Far Away": the New Episodes row names the season after the series
 export const withoutSeason = (title: string | null | undefined) =>
-	title?.replace(/\s+Season\s+\d+$/i, "").trim() || undefined
+	title?.replace(/\s+(?:Season|Staffel|Saison|Temporada|Stagione|Sezon|Säsong|Sezonul)\s+\d+$/iu, "").trim() ||
+	undefined
 
 const textOf = (card: HTMLElement, selector: string) => card.querySelector(selector)?.textContent?.trim() || undefined
 
 // A film is a one-season, one-episode series here, and so is a one-off special, so a browse card only says "tv" when
-// its hover card counts more than one episode; the films list says "movie" outright
+// its hover card counts more than one episode ("2 Seasons 38 Episodes", in the profile's language); the films list
+// says "movie" outright
 function browseMediaType(card: HTMLElement, url: string): MediaType {
 	if (/[?&]media=movies\b/.test(url)) return "movie"
-	const episodes = Number(/(\d+)\s+Episodes?/i.exec(textOf(card, '[data-t="meta-info"]') ?? "")?.[1])
+	const episodes = Number(/^\D*\d+\D+(\d+)/.exec(textOf(card, '[data-t="meta-info"]') ?? "")?.[1])
 	return episodes > 1 ? "tv" : null
 }
 
