@@ -31,11 +31,11 @@ describe("watch providers", () => {
 		expect(parseProviders({ error: "HTTP 429" }, "GB")).toBeNull()
 	})
 
-	it("sends plan, store and channel variants to the service they're watched on", () => {
+	it("sends plan and store variants to their service, and keeps channel add-ons apart", () => {
 		expect(providerService("Netflix Standard with Ads")).toBe("Netflix")
 		expect(providerService("Amazon Prime Video with Ads")).toBe("Amazon")
 		expect(providerService("Amazon Video")).toBe("Amazon")
-		expect(providerService("HBO Max Amazon Channel")).toBe("Amazon")
+		expect(providerService("HBO Max Amazon Channel")).toBeUndefined()
 		expect(providerService("HBO Max")).toBe("HBO")
 		expect(providerService("Disney Plus")).toBe("Disney")
 		expect(providerService("Apple TV")).toBeUndefined()

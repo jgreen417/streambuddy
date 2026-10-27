@@ -23,10 +23,11 @@ const KIND_LABEL: Record<ProviderKind, string> = {
 	buy: "Buy",
 }
 // TMDb names, so the service the viewer is already on is not repeated as an "also on" row
-// TMDb lists plan and store variants ("Netflix Standard with Ads", "Amazon Video", "… Amazon Channel") as their own providers
+// TMDb lists plan and store variants ("Netflix Standard with Ads", "Amazon Video") as their own providers; an
+// "… Amazon Channel" or "… Apple TV Channel" is a paid add-on of its own, so it keeps its own row
 const SERVICE_PROVIDER: Record<StreamingService, RegExp> = {
 	Netflix: /^Netflix\b/i,
-	Amazon: /^(Amazon )?Prime Video\b|^Amazon Video$|Amazon Channel$/i,
+	Amazon: /^(Amazon )?Prime Video\b|^Amazon Video$/i,
 	HBO: /^(HBO )?Max\b/i,
 	Disney: /^Disney(\+| Plus)/i,
 	Crunchyroll: /^Crunchyroll\b/i,
@@ -61,8 +62,7 @@ export function parseProviders(json: unknown, region: string): Availability | nu
 	return {
 		rows: [...rows]
 			.map(([name, kind]) => ({ name, kind }))
-			.sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || a.name.localeCompare(b.name))
-			.slice(0, 5),
+			.sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || a.name.localeCompare(b.name)),
 		link: typeof entry.link === "string" ? entry.link : undefined,
 	}
 }
@@ -128,7 +128,7 @@ function face(name: string) {
 	return span
 }
 export const providerService = (name: string) =>
-	streamingServices.find((service) => SERVICE_PROVIDER[service].test(name))
+	/ Channel$/i.test(name) ? undefined : streamingServices.find((service) => SERVICE_PROVIDER[service].test(name))
 const providerColor = (name: string) => {
 	const service = providerService(name)
 	return service ? serviceColors[SERVICES[service].statsKey] : color.surfaceRaised
@@ -246,13 +246,15 @@ export function renderInspector(
 			providers.append(here)
 			const shown = new Set<StreamingService>([service])
 			// rows come best offer first, so a service's plan variants after its first row add nothing
-			const others = availability.rows.filter((row) => {
-				const provider = providerService(row.name)
-				if (!provider) return true
-				if (shown.has(provider)) return false
-				shown.add(provider)
-				return true
-			})
+			const others = availability.rows
+				.filter((row) => {
+					const provider = providerService(row.name)
+					if (!provider) return true
+					if (shown.has(provider)) return false
+					shown.add(provider)
+					return true
+				})
+				.slice(0, 5)
 			for (const row of others) {
 				// a search on that service, else TMDb's page with a link to every service
 				const provider = providerService(row.name)
