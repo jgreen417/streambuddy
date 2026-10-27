@@ -505,6 +505,11 @@ const updateMode = (event: Event) => {
 						</option>
 					</select>
 				</label>
+				<PopupToggle
+					v-model="settings.General.finaleEnding"
+					label="Pause after a series finale"
+					description="Lets a show’s last episode end on its credits instead of autoplaying something else."
+				/>
 			</div>
 		</details>
 	</div>

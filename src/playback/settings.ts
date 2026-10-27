@@ -20,5 +20,6 @@ export function playbackSettings(settings: settingsType, service: StreamingServi
 		skipDelaySeconds: g.skipDelaySeconds,
 		notices: g.skipNotices,
 		pauseAfter: g.pauseAfter,
+		finaleEnding: g.finaleEnding,
 	}
 }

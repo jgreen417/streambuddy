@@ -3,6 +3,7 @@ import { isExcepted, loadRules, onRulesChanged, saveRules, withException } from 
 import { SKIP_LABELS, type PlaybackSettings, type SiteAdapter, type SkipKind, type SkipRules } from "./types"
 import { addSavedSeconds, formatDuration, type SavedLog } from "@/utils/stats"
 import { filmOver } from "@/utils/film-over"
+import { seriesEnding, type SeriesEnding } from "@/utils/series-ending"
 
 const TICK_MS = 250
 // a jump shorter than this is the video playing on while a skip lands, not a skip
@@ -50,6 +51,8 @@ export class PlaybackEngine {
 	private sleepAt: number | null = null
 	private sleepMinutes: number | null = null
 	private stopAtEnd = false
+	// the last episode of a show that has ended gets one pause where its credits start
+	private endingShown = false
 	// a fired timer or stop holds the skips and ad handling until the title plays again
 	private resting = false
 	// seconds left in the title at the last tick, to tell autoplay moving on from the viewer picking another title
@@ -107,6 +110,7 @@ export class PlaybackEngine {
 		this.checkEpisode(video)
 		const settings = this.settings()
 		if (this.checkSleep(video)) return
+		if (this.checkEnding(video, settings)) return
 		this.handleAds(video, settings)
 		if (!this.adRestore) this.handleSkips(video, settings)
 		this.handleSpeed(settings)
@@ -145,6 +149,7 @@ export class PlaybackEngine {
 			else this.stopAtEnd = false
 		}
 		this.suppressed.clear()
+		this.endingShown = false
 		this.lastPress.clear()
 		this.firstSeen.clear()
 		this.premiere = false
@@ -192,6 +197,8 @@ export class PlaybackEngine {
 			if (!settings.skip[kind] || this.suppressed.has(kind) || isExcepted(this.rules, show, kind)) continue
 			if (kind === "intro" && settings.keepFirstIntro && this.premiere) continue
 			if (kind === "recap" && settings.keepSeasonRecaps && this.premiere) continue
+			// the last episode ends on its own credits, not on whatever the service would skip to
+			if (kind === "credits" && settings.finaleEnding && this.ending(video)) continue
 			const button = this.site.skipButton(kind)
 			// a control that comes and goes (ads, the end screen) starts its wait again next time it appears
 			if (!button || !isShown(button)) {
@@ -383,6 +390,33 @@ export class PlaybackEngine {
 			[{ label: "Keep watching", run: () => video.play().catch(() => {}) }],
 			60_000,
 		)
+	}
+	// #endregion
+
+	// #region the end of a show
+	private checkEnding(video: HTMLVideoElement, settings: PlaybackSettings) {
+		const ending = settings.finaleEnding && !this.endingShown ? this.ending(video) : null
+		if (!ending) return false
+		const clock = this.site.clock?.() ?? video
+		const credits = this.site.skipButton("credits")
+		const atEnd = video.ended || clock.currentTime >= clock.duration - 1
+		if (clock.currentTime < ending.creditsAt && !(credits && isShown(credits)) && !atEnd) return false
+		this.endingShown = true
+		this.resting = true
+		video.pause()
+		const actions: NoticeAction[] = [
+			{
+				label: clock.duration - clock.currentTime > 5 ? "Watch the credits" : "Keep watching",
+				run: () => video.play().catch(() => {}),
+			},
+		]
+		const rate = ending.rate
+		if (rate) actions.push({ label: rate.label, quiet: true, run: () => window.open(rate.url, "_blank", "noopener") })
+		this.overlay.showNotice(`That’s the end of ${ending.show}`, actions, 60_000)
+		return true
+	}
+	private ending(video: HTMLVideoElement): SeriesEnding | null {
+		return seriesEnding((this.site.clock?.() ?? video).duration)
 	}
 	// #endregion
 

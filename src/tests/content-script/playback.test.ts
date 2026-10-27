@@ -3,6 +3,7 @@ import { PlaybackEngine } from "../../playback/engine"
 import { isExcepted, showKey, withException, withoutException } from "../../playback/rules"
 import { parseClock, parseEpisodeNumber, parseSeason } from "../../playback/sites/dom"
 import type { PlaybackSettings, SiteAdapter, SkipKind } from "../../playback/types"
+import { setSeriesEnding } from "../../utils/series-ending"
 import { setFilmEnded } from "../../utils/film-over"
 
 describe("player text parsing", () => {
@@ -101,6 +102,7 @@ function setup(overrides: Partial<PlaybackSettings> = {}) {
 		skipDelaySeconds: 0,
 		notices: true,
 		pauseAfter: 0,
+		finaleEnding: true,
 		...overrides,
 	}
 	const engine = new PlaybackEngine(site, () => settings)
@@ -131,6 +133,69 @@ const noticeButton = (label: string) =>
 		document.querySelector("[data-streambuddy]")?.shadowRoot?.querySelectorAll<HTMLButtonElement>(".notice button") ??
 			[],
 	).find((button) => button.textContent === label)
+
+describe("the end of a show", () => {
+	beforeEach(() => {
+		vi.useFakeTimers()
+		document.body.innerHTML = ""
+		vi.mocked(browser.storage.sync.get).mockResolvedValue({})
+		vi.mocked(browser.storage.local.get).mockResolvedValue({})
+		vi.mocked(browser.storage.local.set).mockResolvedValue(undefined)
+	})
+	afterEach(() => {
+		setSeriesEnding(null)
+		vi.useRealTimers()
+	})
+
+	it("lets a series finale's credits be and pauses where they start, with an optional rating", () => {
+		const open = vi.spyOn(window, "open").mockReturnValue(null)
+		const { video, tick, addButton } = setup()
+		setSeriesEnding({
+			show: "The Bear",
+			duration: 3000,
+			creditsAt: 2900,
+			rate: { label: "Rate on IMDb", url: "https://www.imdb.com/title/tt14452776/" },
+		})
+		addButton("credits", 3000)
+		tick()
+		expect(video.currentTime).toBe(100)
+		expect(video.paused).toBe(true)
+		expect(noticeText()).toContain("That’s the end of The Bear")
+		noticeButton("Rate on IMDb")!.click()
+		expect(open).toHaveBeenCalledWith("https://www.imdb.com/title/tt14452776/", "_blank", "noopener")
+		open.mockRestore()
+	})
+	it("pauses once at the credits the service marks, and plays on when asked", () => {
+		const { video, tick } = setup()
+		setSeriesEnding({ show: "The Bear", duration: 3000, creditsAt: 2900 })
+		tick()
+		expect(video.paused).toBe(false)
+		video.currentTime = 2900
+		tick()
+		expect(video.paused).toBe(true)
+		expect(noticeButton("Rate on IMDb")).toBeUndefined()
+		noticeButton("Watch the credits")!.click()
+		expect(video.paused).toBe(false)
+		tick()
+		expect(video.paused).toBe(false)
+		expect(video.pause).toHaveBeenCalledTimes(1)
+	})
+	it("leaves other episodes, and finales with the pause off, to the usual credits skip", () => {
+		const other = setup()
+		setSeriesEnding({ show: "The Bear", duration: 2400, creditsAt: 2300 })
+		other.addButton("credits", 3000)
+		other.tick()
+		expect(other.video.currentTime).toBe(3000)
+
+		document.body.innerHTML = ""
+		const off = setup({ finaleEnding: false })
+		setSeriesEnding({ show: "The Bear", duration: 3000, creditsAt: 2900 })
+		off.addButton("credits", 3000)
+		off.tick()
+		expect(off.video.currentTime).toBe(3000)
+		expect(off.video.paused).toBe(false)
+	})
+})
 
 describe("playback engine", () => {
 	beforeEach(() => {

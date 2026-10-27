@@ -1,6 +1,7 @@
-// The review pill at the end credits: works out what's playing, looks it up ahead of the credits and puts the pill up
+// The review pill at the end credits: works out what's playing, looks it up ahead of the credits and puts the pill up.
+// The same lookup tells the playback engine when a show's very last episode is ending.
 import { sendMessage } from "webext-bridge/content-script"
-import { findSeriesFinale } from "@/utils/lookup"
+import { findSeriesFinale, isLookupError } from "@/utils/lookup"
 import { CreditsRatingPrompt, creditsLength, inCredits, playerTitle } from "@/utils/credits-review"
 import { shareLookup, type PlayingEpisode } from "@/utils/series-finale"
 import { lookupMovieInfo, today, type MovieInfo } from "./cache"
@@ -9,6 +10,7 @@ import { settings } from "@/stores/settings"
 import { locale, ratingSources } from "./settings"
 import type { RatingsSite } from "./sites/types"
 import { setFilmEnded } from "@/utils/film-over"
+import { setSeriesEnding } from "@/utils/series-ending"
 import type { RatingSources } from "@/stores/storeTypes"
 
 const creditsPrompt = new CreditsRatingPrompt(() => {
@@ -18,6 +20,7 @@ let playerLookup: {
 	title: string
 	sources: RatingSources
 	data: MovieInfo | null
+	finale: Finale | null
 	pending?: Promise<unknown>
 	retry: number
 } | null = null
@@ -30,8 +33,10 @@ let creditsShownFor: number | null = null
 let creditsShownAt = 0
 export function updateCreditsPrompt(site: RatingsSite) {
 	const enabled = settings.value.General.rateOnCredits
+	const pauseAtEnding = settings.value.General.finaleEnding
 	setFilmEnded(null)
-	if (!enabled) {
+	if (!enabled && !pauseAtEnding) {
+		setSeriesEnding(null)
 		creditsPrompt.tick(null, null, false)
 		return
 	}
@@ -45,6 +50,7 @@ export function updateCreditsPrompt(site: RatingsSite) {
 	}
 	creditsShownFor = null
 	if (!site.isPlayerPage()) {
+		setSeriesEnding(null)
 		creditsPrompt.tick(null, null, true)
 		return
 	}
@@ -58,9 +64,9 @@ export function updateCreditsPrompt(site: RatingsSite) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
-	// films, and the last episode of a limited series; never the rest of a show
+	// films, and the last episode of a show; never the rest of it. Films only matter to the pill.
 	const episode = site.playingEpisode(metadata)
-	if (episode === null) {
+	if (episode === null || (episode === undefined && !enabled)) {
 		creditsPrompt.tick(null, null, true)
 		return
 	}
@@ -71,13 +77,21 @@ export function updateCreditsPrompt(site: RatingsSite) {
 		return
 	}
 	const key = episode ? `${title}|S${episode.season}E${episode.episode}` : title
-	if (playerLookup?.title !== key || playerLookup.sources !== ratingSources())
-		playerLookup = { title: key, sources: ratingSources(), data: null, retry: 0 }
+	if (playerLookup?.title !== key || playerLookup.sources !== ratingSources()) {
+		playerLookup = { title: key, sources: ratingSources(), data: null, finale: null, retry: 0 }
+		setSeriesEnding(null)
+	}
 	// a rating whose friends' scores failed to load is shown meanwhile and looked up again once it's due a retry
 	const due = playerLookup.data?.retryAfter ?? Number.POSITIVE_INFINITY
 	if (!playerLookup.pending && (!playerLookup.data || due <= Date.now()) && playerLookup.retry <= Date.now()) {
 		const current = playerLookup
-		current.pending = (episode ? lookupSeriesFinale({ ...episode, show: title }) : lookupMovieInfo(title, null, null))
+		const lookup = episode
+			? lookupSeriesFinale({ ...episode, show: title }).then((finale) => {
+					current.finale = finale ?? current.finale
+					return finale?.info ?? null
+				})
+			: lookupMovieInfo(title, null, null)
+		current.pending = lookup
 			.then((data) => {
 				current.data = data ?? current.data
 			})
@@ -89,10 +103,21 @@ export function updateCreditsPrompt(site: RatingsSite) {
 	}
 	// the services' own end screens come up when the credits start, even without a marker in their metadata
 	const endScreen = site.endScreenShowing(video)
+	const finale = playerLookup.finale
+	if (pauseAtEnding && finale?.ended) {
+		// Letterboxd's pill offers the rating when it's up; otherwise the ending notice links to one
+		const rate = enabled && playerLookup.data ? undefined : finale.rate
+		setSeriesEnding({
+			show: title,
+			duration: video.duration,
+			creditsAt: Math.min(video.duration - (marked ?? 0), endScreen ? video.currentTime : Number.POSITIVE_INFINITY),
+			rate,
+		})
+	}
 	creditsPrompt.tick(
 		video,
 		playerLookup.data,
-		true,
+		enabled,
 		{
 			username: letterboxdUsername(),
 			watched: playerLookup.data ? loggedRating(playerLookup.data, true) : undefined,
@@ -107,21 +132,29 @@ export function updateCreditsPrompt(site: RatingsSite) {
 		placeCreditsReview(site)
 	}
 }
-const finaleLookups = new Map<string, Promise<MovieInfo | null>>()
-function lookupSeriesFinale(episode: PlayingEpisode): Promise<MovieInfo | null> {
+// a show's last episode: Letterboxd's rating for the pill when it lists the show, whether the show has ended, and where
+// else to rate it
+type Finale = { info: MovieInfo | null; ended: boolean; rate?: { label: string; url: string }; retry: boolean }
+const finaleLookups = new Map<string, Promise<Finale | null>>()
+function lookupSeriesFinale(episode: PlayingEpisode): Promise<Finale | null> {
 	const key = `${episode.show}|S${episode.season}E${episode.episode}|${settings.value.General.friendsRatings}`
 	return shareLookup(finaleLookups, key, () => lookupFinale(episode)).then((found) => {
-		// friends' ratings failed for a moment: let the retry after retryAfter ask again rather than reuse this
-		if (found?.retryAfter) finaleLookups.delete(key)
+		// Letterboxd or friends' ratings failed for a moment: let the retry after 30s ask again rather than reuse this
+		if (found?.info?.retryAfter || found?.retry) finaleLookups.delete(key)
 		return found
 	})
 }
-// the pill's rating for a limited series' last episode
-async function lookupFinale(episode: PlayingEpisode): Promise<MovieInfo | null> {
+async function lookupFinale(episode: PlayingEpisode): Promise<Finale | null> {
 	const found = await findSeriesFinale(episode, settings.value.General.friendsRatings, locale())
 	if (!found) return null
-	const { match, letterboxd } = found
-	return {
+	const { match, ended, imdbId } = found
+	const letterboxd = found.letterboxd && !isLookupError(found.letterboxd) ? found.letterboxd : null
+	const rate = letterboxd?.url?.startsWith("https://letterboxd.com/")
+		? { label: "Rate on Letterboxd", url: letterboxd.url }
+		: imdbId
+			? { label: "Rate on IMDb", url: `https://www.imdb.com/title/${imdbId}/` }
+			: undefined
+	const info: MovieInfo | null = letterboxd && {
 		id: match.id,
 		media_type: "tv",
 		title: match.name || match.original_name || episode.show,
@@ -140,6 +173,7 @@ async function lookupFinale(episode: PlayingEpisode): Promise<MovieInfo | null> 
 		friends: letterboxd.friends,
 		retryAfter: letterboxd.friends_unavailable ? Date.now() + 30_000 : undefined,
 	}
+	return { info, ended, rate, retry: isLookupError(found.letterboxd) }
 }
 // the longest video on the page is the film: Prime keeps its detail page's trailer underneath the player
 function filmVideo() {

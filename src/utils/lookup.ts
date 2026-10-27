@@ -37,6 +37,8 @@ type TMDBResponse = {
 	total_results: number
 }
 type TvDetails = {
+	// "Returning Series", "Ended", "Canceled", ...
+	status?: string
 	seasons?: Array<{ season_number?: number; episode_count?: number }>
 	external_ids?: { imdb_id?: string | null }
 }
@@ -109,22 +111,28 @@ export async function getExternalRating(
 	}
 }
 
-// A show's last episode gets the pill when Letterboxd has a page for the show, which it only has for limited series.
-// TMDb's episode counts decide, even on Netflix, which marks the newest episode of a weekly release as its last.
+// A show's last episode, as TMDb counts them, even on Netflix, which marks the newest episode of a weekly release as its
+// last. It gets the review pill when Letterboxd has a page for the show, which it only has for limited series, and the
+// ending pause when the show has ended. letterboxd is a LookupError when Letterboxd couldn't be asked just now.
+export type SeriesFinale = {
+	match: TMDBMovie
+	ended: boolean
+	imdbId: string | null
+	letterboxd: LetterboxdFilm | LookupError | null
+}
 export async function findSeriesFinale(
 	{ show, season, episode }: PlayingEpisode,
 	friends: boolean,
 	locale: string,
-): Promise<{ match: TMDBMovie; letterboxd: LetterboxdFilm } | null> {
+): Promise<SeriesFinale | null> {
 	const match = await searchTitle(show, "tv", null, locale)
 	if (!match) return null
 	const details = await tmdb<TvDetails>(`tv/${match.id}?append_to_response=external_ids`)
 	if (!details || isLookupError(details) || !isLastEpisode(details.seasons, season, episode)) return null
-	const imdbId = details.external_ids?.imdb_id
-	if (!imdbId) return null
-	const letterboxd = await sendMessage("letterboxdSeries", { imdbId, friends }, "background")
-	if (!letterboxd || isLookupError(letterboxd)) return null
-	return { match, letterboxd }
+	const ended = details.status === "Ended" || details.status === "Canceled"
+	const imdbId = details.external_ids?.imdb_id || null
+	const letterboxd = imdbId ? await sendMessage("letterboxdSeries", { imdbId, friends }, "background") : null
+	return { match, ended, imdbId, letterboxd }
 }
 
 // IMDb's ratings for each episode of a season; throws when they can't be had

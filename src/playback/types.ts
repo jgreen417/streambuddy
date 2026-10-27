@@ -51,6 +51,8 @@ export type PlaybackSettings = {
 	notices: boolean
 	// pause after this many episodes play back to back without the viewer touching anything; 0 = off
 	pauseAfter: number
+	// at the last episode of a show that has ended: let its credits play and pause before the service autoplays
+	finaleEnding: boolean
 }
 
 // per-show exceptions, keyed by normalised show title: { "the bear": ["intro"] }

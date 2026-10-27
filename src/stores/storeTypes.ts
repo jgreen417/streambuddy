@@ -62,6 +62,8 @@ export type settingsType = {
 		skipDelaySeconds: number
 		// pause when this many episodes autoplay in a row without the viewer touching anything; 0 = off
 		pauseAfter: number
+		// at the last episode of a show that has ended: let its credits play and pause before the service autoplays
+		finaleEnding: boolean
 		// mute autoplay previews and trailers while browsing
 		quietPreviews: boolean
 		// pause them as soon as they start
@@ -109,6 +111,7 @@ export const defaultSettings: settingsType = {
 		keepSeasonRecaps: false,
 		skipDelaySeconds: 0,
 		pauseAfter: 0,
+		finaleEnding: true,
 		quietPreviews: true,
 		stopPreviews: false,
 	},
