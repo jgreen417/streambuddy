@@ -477,6 +477,11 @@ const updateMode = (event: Event) => {
 					description="Hear the “previously on” when a new season begins."
 				/>
 				<PopupToggle
+					v-model="settings.General.returnReminders"
+					label="Remind me where I was"
+					description="Back to a show after a week or more: names the last episode you watched and plays its recap."
+				/>
+				<PopupToggle
 					v-model="settings.General.skipNotices"
 					label="Skip notices"
 					description="A short notice with Undo each time something is skipped."

@@ -1,5 +1,15 @@
 import { PlayerOverlay, formatClock, formatRate, formatSaved, type NoticeAction } from "./overlay"
-import { isExcepted, loadRules, onRulesChanged, saveRules, withException } from "./rules"
+import { isExcepted, loadRules, onRulesChanged, saveRules, showKey, withException } from "./rules"
+import {
+	loadVisits,
+	recapText,
+	returnText,
+	saveVisit,
+	showReturn,
+	withVisit,
+	type ShowReturn,
+	type ShowVisits,
+} from "./returns"
 import { SKIP_LABELS, type PlaybackSettings, type SiteAdapter, type SkipKind, type SkipRules } from "./types"
 import { addSavedSeconds, formatDuration, type SavedLog } from "@/utils/stats"
 import { filmOver } from "@/utils/film-over"
@@ -15,6 +25,8 @@ const SPEED_MIN = 0.25
 const SPEED_MAX = 4
 const FAST_FORWARD_RATE = 8
 const SKIP_ORDER: SkipKind[] = ["intro", "recap", "credits", "stillWatching"]
+// how long a recap waits for the player to name the show, to tell whether it's a return worth keeping the recap for
+const RETURN_CHECK_MS = 3000
 
 // One engine per tab. It watches the site's player through an adapter and does what the viewer asked for:
 // skips, passes ads, holds their speed, and pauses long autoplay runs. Every skip is announced and undoable.
@@ -56,6 +68,13 @@ export class PlaybackEngine {
 	private lastRemaining = Infinity
 	private timeLabel = ""
 	private topBarAnchor: HTMLElement | null = null
+	// coming back to a show: the last episode played of each, and which shows this tab has already checked
+	private visits: ShowVisits = {}
+	private visitChecked = new Set<string>()
+	private lastVisit = ""
+	// set for the episode a return starts on; its recap plays unless the viewer skips it
+	private returning: ShowReturn | null = null
+	private recapOffered = false
 
 	constructor(
 		private site: SiteAdapter,
@@ -68,6 +87,7 @@ export class PlaybackEngine {
 		this.rules = await loadRules()
 		onRulesChanged((rules) => (this.rules = rules))
 		this.rate = await loadRate(this.site.service)
+		this.visits = await loadVisits()
 		const touch = (event: Event) => {
 			if (event.isTrusted) this.touched = true
 		}
@@ -106,6 +126,7 @@ export class PlaybackEngine {
 		this.alignToTopBar()
 		this.checkEpisode(video)
 		const settings = this.settings()
+		this.noteVisit(settings)
 		if (this.checkSleep(video)) return
 		this.handleAds(video, settings)
 		if (!this.adRestore) this.handleSkips(video, settings)
@@ -148,6 +169,8 @@ export class PlaybackEngine {
 		this.lastPress.clear()
 		this.firstSeen.clear()
 		this.premiere = false
+		this.returning = null
+		this.recapOffered = false
 		this.autoplayRun = first || this.touched ? 1 : this.autoplayRun + 1
 		this.touched = false
 		const limit = this.settings().pauseAfter
@@ -176,6 +199,48 @@ export class PlaybackEngine {
 	}
 	// #endregion
 
+	// #region coming back to a show
+	// The player names the show and episode only some of the time (often only with its controls up), so this runs every
+	// tick: the first time a show is named in this tab decides whether it's a return, and each new episode number seen
+	// is saved as where the viewer is.
+	private noteVisit(settings: PlaybackSettings) {
+		const show = this.site.showTitle()
+		if (!show) return
+		const key = showKey(show)
+		if (!this.visitChecked.has(key)) {
+			this.visitChecked.add(key)
+			this.returning = settings.returnReminders ? showReturn(this.visits, show, Date.now()) : null
+			if (this.returning) this.overlay.showNotice(returnText(show, this.returning), [], 10_000)
+		}
+		const episode = this.site.episodeNumber()
+		if (episode === null) return
+		const season = this.site.episodeSeason?.() ?? null
+		const id = `${key}|${season}|${episode}`
+		if (id === this.lastVisit) return
+		this.lastVisit = id
+		const visit = { at: Date.now(), season, episode }
+		this.visits = withVisit(this.visits, show, visit)
+		saveVisit(show, visit).catch(() => {})
+	}
+	private offerRecap(button: HTMLElement, video: HTMLVideoElement, show: string | null, settings: PlaybackSettings) {
+		if (this.recapOffered || !this.returning) return
+		this.recapOffered = true
+		this.overlay.showNotice(
+			recapText(this.returning),
+			[
+				{
+					label: "Skip recap",
+					run: () => {
+						this.returning = null
+						if (button.isConnected) this.press("recap", button, video, show, settings)
+					},
+				},
+			],
+			15_000,
+		)
+	}
+	// #endregion
+
 	// #region skips
 	private handleSkips(video: HTMLVideoElement, settings: PlaybackSettings) {
 		const show = this.site.showTitle()
@@ -198,11 +263,17 @@ export class PlaybackEngine {
 				this.firstSeen.delete(kind)
 				continue
 			}
+			if (kind === "recap" && this.returning) {
+				this.offerRecap(button, video, show, settings)
+				continue
+			}
 			const now = Date.now()
-			if (settings.skipDelaySeconds > 0) {
+			const unnamed = kind === "recap" && settings.returnReminders && !show
+			const wait = Math.max(settings.skipDelaySeconds * 1000, unnamed ? RETURN_CHECK_MS : 0)
+			if (wait > 0) {
 				const first = this.firstSeen.get(kind) ?? now
 				this.firstSeen.set(kind, first)
-				if (now - first < settings.skipDelaySeconds * 1000) continue
+				if (now - first < wait) continue
 			}
 			if (now - (this.lastPress.get(kind) ?? 0) < 2000) continue
 			this.lastPress.set(kind, now)

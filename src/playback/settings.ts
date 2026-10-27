@@ -17,6 +17,7 @@ export function playbackSettings(settings: settingsType, service: StreamingServi
 		speedControl: s.speedControl,
 		keepFirstIntro: g.keepFirstIntro,
 		keepSeasonRecaps: g.keepSeasonRecaps,
+		returnReminders: g.returnReminders,
 		skipDelaySeconds: g.skipDelaySeconds,
 		notices: g.skipNotices,
 		pauseAfter: g.pauseAfter,

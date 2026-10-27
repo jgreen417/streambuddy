@@ -58,6 +58,8 @@ export type settingsType = {
 		keepFirstIntro: boolean
 		// hear the recap when a season starts
 		keepSeasonRecaps: boolean
+		// back to a show after a week or more: say which episode you last watched, and play its recap
+		returnReminders: boolean
 		// wait this many seconds after a skip control appears before pressing it; 0 = press at once
 		skipDelaySeconds: number
 		// pause when this many episodes autoplay in a row without the viewer touching anything; 0 = off
@@ -107,6 +109,7 @@ export const defaultSettings: settingsType = {
 		skipNotices: true,
 		keepFirstIntro: false,
 		keepSeasonRecaps: false,
+		returnReminders: true,
 		skipDelaySeconds: 0,
 		pauseAfter: 0,
 		quietPreviews: true,

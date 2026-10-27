@@ -4,6 +4,7 @@ import { isExcepted, showKey, withException, withoutException } from "../../play
 import { parseClock, parseEpisodeNumber, parseSeason } from "../../playback/sites/dom"
 import type { PlaybackSettings, SiteAdapter, SkipKind } from "../../playback/types"
 import { setFilmEnded } from "../../utils/film-over"
+import { formatAway, showReturn, withVisit, type ShowVisits } from "../../playback/returns"
 
 describe("player text parsing", () => {
 	it.each([
@@ -98,6 +99,7 @@ function setup(overrides: Partial<PlaybackSettings> = {}) {
 		speedControl: true,
 		keepFirstIntro: false,
 		keepSeasonRecaps: false,
+		returnReminders: true,
 		skipDelaySeconds: 0,
 		notices: true,
 		pauseAfter: 0,
@@ -422,5 +424,109 @@ describe("playback engine", () => {
 		expect(video.playbackRate).toBe(1.25)
 		setFilmEnded(null)
 		engine.stop()
+	})
+})
+
+const DAY = 24 * 60 * 60 * 1000
+
+describe("where you were in a show", () => {
+	it("counts a week or more away from a numbered episode as a return", () => {
+		const now = 100 * DAY
+		const visits: ShowVisits = { "the bear": { at: now - 21 * DAY, season: 2, episode: 4 } }
+		expect(showReturn(visits, "The Bear", now)).toEqual({ away: 21 * DAY, last: visits["the bear"] })
+		expect(showReturn(visits, "The Bear", now - 15 * DAY)).toBeNull()
+		expect(showReturn({ "the bear": { at: 0, season: null, episode: null } }, "The Bear", now)).toBeNull()
+		expect(showReturn(visits, "Severance", now)).toBeNull()
+	})
+	it("says how long you've been away in round numbers", () => {
+		expect(formatAway(8 * DAY)).toBe("8 days")
+		expect(formatAway(21 * DAY)).toBe("3 weeks")
+		expect(formatAway(70 * DAY)).toBe("2 months")
+		expect(formatAway(400 * DAY)).toBe("over a year")
+	})
+	it("keeps the 200 most recently watched shows", () => {
+		let visits: ShowVisits = {}
+		for (let i = 0; i < 201; i++) visits = withVisit(visits, `Show ${i}`, { at: i, season: 1, episode: 1 })
+		expect(Object.keys(visits)).toHaveLength(200)
+		expect(visits["show 0"]).toBeUndefined()
+		expect(visits["show 200"]).toEqual({ at: 200, season: 1, episode: 1 })
+	})
+})
+
+describe("coming back to a show", () => {
+	const visitsIn = (visits: ShowVisits) =>
+		vi
+			.mocked(browser.storage.local.get)
+			.mockImplementation((async (key: string) => (key === "showVisits" ? { showVisits: visits } : {})) as never)
+	beforeEach(() => {
+		vi.useFakeTimers()
+		vi.setSystemTime(100 * DAY)
+		document.body.innerHTML = ""
+		vi.mocked(browser.storage.sync.get).mockResolvedValue({})
+		vi.mocked(browser.storage.local.get).mockResolvedValue({})
+		vi.mocked(browser.storage.local.set).mockResolvedValue(undefined)
+	})
+	afterEach(() => {
+		vi.useRealTimers()
+	})
+
+	it("names the last episode watched and plays the recap after weeks away, until the viewer skips it", async () => {
+		visitsIn({ "the bear": { at: 79 * DAY, season: 2, episode: 4 } })
+		const { video, tick, addButton, engine } = setup()
+		await engine.start()
+		addButton("recap", 185)
+		tick()
+		expect(video.currentTime).toBe(100)
+		expect(noticeText()).toContain("Playing the recap · you last watched S2 E4, 3 weeks ago")
+		tick()
+		expect(video.currentTime).toBe(100)
+		noticeButton("Skip recap")!.click()
+		expect(video.currentTime).toBe(185)
+		await vi.waitFor(() => expect(browser.storage.local.set).toHaveBeenCalled())
+		expect(browser.storage.local.set).toHaveBeenCalledWith({
+			showVisits: { "the bear": { at: 100 * DAY, season: 3, episode: 2 } },
+		})
+		engine.stop()
+	})
+	it("says where you were even when there's no recap, once per show", async () => {
+		visitsIn({ "the bear": { at: 79 * DAY, season: 2, episode: 4 } })
+		const { tick, addButton, engine, state, video } = setup()
+		await engine.start()
+		tick()
+		expect(noticeText()).toBe("Back to The Bear after 3 weeks · you last watched S2 E4")
+		// the next episode, back to back: its recap is skipped as usual
+		state.episode = "ep2"
+		addButton("recap", 185)
+		tick()
+		expect(video.currentTime).toBe(185)
+		engine.stop()
+	})
+	it("skips the recap as usual after a short break, or with reminders off", async () => {
+		visitsIn({ "the bear": { at: 98 * DAY, season: 3, episode: 1 } })
+		const recent = setup()
+		await recent.engine.start()
+		recent.addButton("recap", 185)
+		recent.tick()
+		expect(recent.video.currentTime).toBe(185)
+		recent.engine.stop()
+
+		document.body.innerHTML = ""
+		visitsIn({ "the bear": { at: 79 * DAY, season: 2, episode: 4 } })
+		const off = setup({ returnReminders: false })
+		await off.engine.start()
+		off.addButton("recap", 185)
+		off.tick()
+		expect(off.video.currentTime).toBe(185)
+		off.engine.stop()
+	})
+	it("gives the player a moment to name the show before skipping a recap", () => {
+		const { video, tick, addButton, state } = setup()
+		state.show = ""
+		addButton("recap", 185)
+		tick()
+		expect(video.currentTime).toBe(100)
+		vi.advanceTimersByTime(3000)
+		tick()
+		expect(video.currentTime).toBe(185)
 	})
 })
