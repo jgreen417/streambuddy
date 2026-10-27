@@ -23,12 +23,13 @@ const KIND_LABEL: Record<ProviderKind, string> = {
 	buy: "Buy",
 }
 // TMDb names, so the service the viewer is already on is not repeated as an "also on" row
+// TMDb lists plan and store variants ("Netflix Standard with Ads", "Amazon Video", "… Amazon Channel") as their own providers
 const SERVICE_PROVIDER: Record<StreamingService, RegExp> = {
-	Netflix: /^Netflix$/i,
-	Amazon: /^(Amazon )?Prime Video$/i,
-	HBO: /^(Max|HBO Max)$/i,
-	Disney: /^Disney(\+| Plus)$/i,
-	Crunchyroll: /^Crunchyroll$/i,
+	Netflix: /^Netflix\b/i,
+	Amazon: /^(Amazon )?Prime Video\b|^Amazon Video$|Amazon Channel$/i,
+	HBO: /^(HBO )?Max\b/i,
+	Disney: /^Disney(\+| Plus)/i,
+	Crunchyroll: /^Crunchyroll\b/i,
 }
 
 const providerCache = new Map<string, Promise<Availability | null>>()
@@ -126,7 +127,8 @@ function face(name: string) {
 	span.title = name
 	return span
 }
-const providerService = (name: string) => streamingServices.find((service) => SERVICE_PROVIDER[service].test(name))
+export const providerService = (name: string) =>
+	streamingServices.find((service) => SERVICE_PROVIDER[service].test(name))
 const providerColor = (name: string) => {
 	const service = providerService(name)
 	return service ? serviceColors[SERVICES[service].statsKey] : color.surfaceRaised
@@ -242,7 +244,15 @@ export function renderInspector(
 			chip.style.background = serviceColors[SERVICES[service].statsKey]
 			here.append(chip, el("span", "name", serviceName), el("span", "here", "Watching here"))
 			providers.append(here)
-			const others = availability.rows.filter((row) => !SERVICE_PROVIDER[service].test(row.name))
+			const shown = new Set<StreamingService>([service])
+			// rows come best offer first, so a service's plan variants after its first row add nothing
+			const others = availability.rows.filter((row) => {
+				const provider = providerService(row.name)
+				if (!provider) return true
+				if (shown.has(provider)) return false
+				shown.add(provider)
+				return true
+			})
 			for (const row of others) {
 				// a search on that service, else TMDb's page with a link to every service
 				const provider = providerService(row.name)
