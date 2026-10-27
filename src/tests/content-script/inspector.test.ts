@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseProviders } from "../../content-script/inspector"
+import { parseProviders, providerService } from "../../content-script/inspector"
 
 describe("watch providers", () => {
 	it("dedupes a provider to its best offer and keeps TMDb's link", () => {
@@ -29,5 +29,15 @@ describe("watch providers", () => {
 	it("separates a missing region from an unreachable request", () => {
 		expect(parseProviders({ results: {} }, "GB")).toEqual({ rows: [] })
 		expect(parseProviders({ error: "HTTP 429" }, "GB")).toBeNull()
+	})
+
+	it("sends plan and store variants to their service, and keeps channel add-ons apart", () => {
+		expect(providerService("Netflix Standard with Ads")).toBe("Netflix")
+		expect(providerService("Amazon Prime Video with Ads")).toBe("Amazon")
+		expect(providerService("Amazon Video")).toBe("Amazon")
+		expect(providerService("HBO Max Amazon Channel")).toBeUndefined()
+		expect(providerService("HBO Max")).toBe("HBO")
+		expect(providerService("Disney Plus")).toBe("Disney")
+		expect(providerService("Apple TV")).toBeUndefined()
 	})
 })
