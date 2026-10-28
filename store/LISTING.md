@@ -6,8 +6,8 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 **Name** (from the manifest): streamBuddy - Letterboxd & IMDb Ratings
 
-**Summary** (132 max, currently 131):
-> Your friends' Letterboxd ratings plus Letterboxd and IMDb scores on Netflix, Prime Video, HBO Max, Disney+, Crunchyroll and Tubi.
+**Summary** (132 max, currently 123; name a few services, not all of them: Chrome rejected 1.1.0's full list as excessive keywords):
+> Your friends' Letterboxd ratings plus Letterboxd and IMDb scores on Netflix, Prime Video, HBO Max and more streaming sites.
 
 **Category:** Entertainment
 
@@ -15,7 +15,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 
 **Description:**
 
-> Watch what your friends loved. streamBuddy puts your Letterboxd friends' ratings, and your own, right on the posters on Netflix, Prime Video, HBO Max, Disney+, Crunchyroll and Tubi.
+> Watch what your friends loved. streamBuddy puts your Letterboxd friends' ratings, and your own, right on the posters on Netflix, Prime Video, HBO Max and more of the streaming sites you already use.
 >
 > Every supported title card gets a small colour-coded chip: the Letterboxd average for films and the IMDb rating for series, where a matching rating is available. Connect your Letterboxd and the same chip shows how your friends rated it and whether you've seen it or saved it for later.
 >
@@ -36,7 +36,7 @@ Paste these into the Developer Dashboard. Character limits are noted where the s
 > • Optional automatic skipping of supported intro, recap and credits controls, with a notice and one-tap Undo
 > • Optional handling of "Still watching?" prompts; available controls vary by service and title
 > • "Keep intros" keeps a theme song you love; optionally hear episode 1's intro
-> • Speed that sticks: remembered per service and kept on the next episode, with Shift + < / > shortcuts and a speed pill on Prime Video, HBO Max, Disney+, Crunchyroll and Tubi
+> • Speed that sticks: remembered per service and kept on the next episode, with Shift + < / > shortcuts and a speed pill on services whose own speed menu stops at 1x
 > • Optional pause after a few episodes autoplay in a row
 > • Hides Netflix's mobile-games rows, and optionally Prime titles that cost extra
 >
@@ -128,7 +128,7 @@ Submit at https://addons.mozilla.org/developers/addon/submit/ and choose "On thi
 **Add-on URL:** `streambuddy`
 
 **Summary** (250 max):
-> Your friends' Letterboxd ratings plus Letterboxd and IMDb scores on Netflix, Prime Video, HBO Max, Disney+, Crunchyroll and Tubi posters. Seen and watchlist marks, episode ratings and intro skipping. Free, open source, no tracking.
+> Your friends' Letterboxd ratings plus Letterboxd and IMDb scores on Netflix, Prime Video, HBO Max and more streaming sites. Seen and watchlist marks, episode ratings and intro skipping. Free, open source, no tracking.
 
 **Description:** reuse the Chrome description above. AMO supports basic Markdown, so the capitals headings can become `**bold**`.
 
