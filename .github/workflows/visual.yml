@@ -27,7 +27,7 @@ jobs:
     env:
       HOME: /root
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # pages saved from the live sites (e2e/sites), kept private; without the token (a fork) those checks are skipped
       - id: sites
         env:
@@ -49,7 +49,7 @@ jobs:
           done
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.sites.outputs.token == 'true'
         with:
           repository: jgreen417/streambuddy-sites
@@ -88,7 +88,7 @@ jobs:
               [ ! -e "$file" ] || echo "- \`${file#e2e/.new-baselines/}\`"
             done
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: visual-report
@@ -98,7 +98,7 @@ jobs:
           retention-days: 14
           # the output folders start with a dot, which upload-artifact skips unless told otherwise
           include-hidden-files: true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: visual-new-baselines

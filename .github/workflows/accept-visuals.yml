@@ -30,7 +30,7 @@ jobs:
     env:
       HOME: /root
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - id: sites
@@ -54,7 +54,7 @@ jobs:
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
       # the token isn't left in the checkout while the pull request's code runs; only the push below uses it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.sites.outputs.token == 'true'
         with:
           repository: jgreen417/streambuddy-sites
@@ -150,7 +150,7 @@ jobs:
       # the script that holds the token comes from the default branch, not from the pull request being closed. The
       # checkout's own credentials aren't kept: git would send them to streambuddy-sites ahead of the script's token,
       # and that repo isn't this workflow token's, so it would read as not found
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.repository.default_branch }}
           sparse-checkout: .github/scripts
