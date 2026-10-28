@@ -43,7 +43,8 @@
 			<strong>Paste it into streamBuddy.</strong>
 			Back on the
 			<RouterLink to="/options-page/Account">Account</RouterLink>
-			page, paste it and press Save. Then reload any open Netflix, Prime Video, HBO Max, Disney+ or Crunchyroll tabs.
+			page, paste it and press Save. Then reload any open Netflix, Prime Video, HBO Max, Disney+, Crunchyroll or Tubi
+			tabs.
 		</li>
 	</ol>
 	<h2>Do I need my own key?</h2>
@@ -58,7 +59,7 @@
 	</p>
 	<p class="description">
 		This product uses the TMDb API but is not endorsed or certified by TMDb. streamBuddy is not affiliated with
-		Letterboxd, IMDb, Netflix, Amazon, Warner Bros. Discovery, Disney or Crunchyroll.
+		Letterboxd, IMDb, Netflix, Amazon, Warner Bros. Discovery, Disney, Crunchyroll or Tubi.
 	</p>
 </template>
 <style scoped>

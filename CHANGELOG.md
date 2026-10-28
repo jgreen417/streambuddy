@@ -1,5 +1,11 @@
 # Changelog
 
+# streamBuddy 1.1.0
+
+Tubi is here.
+
+- Tubi: rating badges on posters, search results and "You May Also Like", IMDb scores beside each episode, the review pill when a film's credits start (top left of the player, opening downwards), ads skipped, and a speed pill.
+
 # streamBuddy 1.0.9
 
 HBO Max ads are skipped, and Alt+Shift+B hides or shows ratings.

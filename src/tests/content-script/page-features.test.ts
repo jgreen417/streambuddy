@@ -54,6 +54,14 @@ describe("page adapters", () => {
 		expect(context.mediaType).toBe("tv")
 		expect(readEpisodeCards("crunchyroll", context.root)[0]).toMatchObject({ season: 2, episode: 3 })
 	})
+	it("maps Tubi episodes by the S01:E03 label in each card, on series and episode pages", () => {
+		document.body.innerHTML = `<h1 class="sr-only">Tales From the Crypt</h1><a href="/tv-shows/200372477/s01-e02"><div><img alt=""></div><h3>S02:E03 - Lover Come Hack to Me</h3></a>`
+		const context = readDetailContext("tubi", "/series/300021761/tales-from-the-crypt/season-2")!
+		expect(context).toMatchObject({ title: "Tales From the Crypt", mediaType: "tv" })
+		expect(readEpisodeCards("tubi", context.root)[0]).toMatchObject({ season: 2, episode: 3 })
+		expect(readDetailContext("tubi", "/tv-shows/200372477/s01-e02")?.title).toBe("Tales From the Crypt")
+		expect(readDetailContext("tubi", "/movies/516375/bloodsport")).toBeNull()
+	})
 	it("finds the Netflix title when the About heading sits outside the about container", () => {
 		document.body.innerHTML = `<div data-uia="modal-motion-container-DETAIL_MODAL"><h3>About The Irishman</h3><div data-uia="about-container"><div>Cast</div></div><div data-uia="previewModal--detailsMetadata"><span class="year">2019</span></div></div>`
 		expect(readDetailContext("netflix")?.title).toBe("The Irishman")

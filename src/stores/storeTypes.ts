@@ -28,6 +28,7 @@ export type settingsType = {
 	HBO: ServicePlayback
 	Disney: ServicePlayback
 	Crunchyroll: ServicePlayback
+	Tubi: ServicePlayback
 	Video: {
 		dimLowRatings: boolean
 	}
@@ -86,6 +87,7 @@ export const defaultSettings: settingsType = {
 	HBO: { ...playbackDefaults },
 	Disney: { ...playbackDefaults },
 	Crunchyroll: { ...playbackDefaults },
+	Tubi: { ...playbackDefaults },
 	Video: {
 		dimLowRatings: false,
 	},

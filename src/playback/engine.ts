@@ -14,6 +14,8 @@ const SPEED_STEP = 0.25
 const SPEED_MIN = 0.25
 const SPEED_MAX = 4
 const FAST_FORWARD_RATE = 8
+// how far past a listed ad break the jump over it lands
+const AD_BREAK_PAST = 0.5
 const SKIP_ORDER: SkipKind[] = ["intro", "recap", "credits", "stillWatching"]
 
 // One engine per tab. It watches the site's player through an adapter and does what the viewer asked for:
@@ -366,10 +368,14 @@ export class PlaybackEngine {
 		this.sleepMinutes = null
 		this.timeLabel = ""
 		this.resting = true
+		// an ad in a <video> of its own (Tubi's) is what's on screen while the title's waits, even if it's paused
+		const ad = this.site.adVideo?.()
+		const playing = ad && (this.site.adRemaining?.() ?? null) !== null ? ad : video
+		playing.pause()
 		video.pause()
 		this.overlay.showNotice(
 			`Sleep timer · paused at ${formatClock(Date.now())}`,
-			[{ label: "Keep watching", run: () => video.play().catch(() => {}) }],
+			[{ label: "Keep watching", run: () => playing.play().catch(() => {}) }],
 			60_000,
 		)
 	}
@@ -393,6 +399,7 @@ export class PlaybackEngine {
 			if (this.adRestore) this.endFastForward(video)
 			this.adAnnounced = false
 			this.seekedAdRemaining = null
+			if (settings.skipAds) this.passAdBreak(video)
 			return
 		}
 		if (this.site.adStrategy === "seek") {
@@ -400,7 +407,8 @@ export class PlaybackEngine {
 			if (Date.now() - this.lastSeekedAd < 3000 || remaining === this.seekedAdRemaining) return
 			this.lastSeekedAd = Date.now()
 			this.seekedAdRemaining = remaining
-			video.currentTime += remaining
+			const ad = this.site.adVideo?.() ?? video
+			ad.currentTime += remaining
 			this.recordSaved("ad", remaining)
 			if (settings.notices) this.overlay.showNotice("Skipped ad")
 			return
@@ -417,6 +425,14 @@ export class PlaybackEngine {
 			this.recordSaved("ad", remaining * (1 - 1 / FAST_FORWARD_RATE))
 			if (settings.notices) this.overlay.showNotice(`Fast-forwarding ad · ${formatSaved(remaining)} left`, [], 3500)
 		}
+	}
+	// a listed break about to start is jumped over, so the site plays no ad for it: about two ticks ahead, at the
+	// speed it's playing
+	private passAdBreak(video: HTMLVideoElement) {
+		if (video.paused) return
+		const lead = (2 * TICK_MS * Math.max(1, video.playbackRate)) / 1000
+		const start = this.site.adBreaks?.().find((at) => at > video.currentTime && at - video.currentTime <= lead)
+		if (start !== undefined) video.currentTime = start + AD_BREAK_PAST
 	}
 	private endFastForward(video: HTMLVideoElement) {
 		video.muted = this.adRestore?.muted ?? false

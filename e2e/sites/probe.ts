@@ -9,12 +9,14 @@ import { disneySite } from "@/content-script/sites/disney"
 import { maxSite } from "@/content-script/sites/max"
 import { netflixSite } from "@/content-script/sites/netflix"
 import { primeSite } from "@/content-script/sites/prime"
+import { tubiSite } from "@/content-script/sites/tubi"
 import type { RatingsSite } from "@/content-script/sites/types"
 import { crunchyroll } from "@/playback/sites/crunchyroll"
 import { disney } from "@/playback/sites/disney"
 import { max } from "@/playback/sites/max"
 import { netflix } from "@/playback/sites/netflix"
 import { prime } from "@/playback/sites/prime"
+import { tubi } from "@/playback/sites/tubi"
 import type { SiteAdapter, SkipKind } from "@/playback/types"
 import type { CreditsMarker } from "@/utils/credits-markers"
 import { readDetailContext, readEpisodeCards } from "@/utils/page-features"
@@ -26,6 +28,7 @@ const SITES: Record<StreamingService, { ratings: RatingsSite; playback: SiteAdap
 	HBO: { ratings: maxSite, playback: max },
 	Disney: { ratings: disneySite, playback: disney },
 	Crunchyroll: { ratings: crunchyrollSite, playback: crunchyroll },
+	Tubi: { ratings: tubiSite, playback: tubi },
 }
 const SKIPS: SkipKind[] = ["intro", "recap", "credits", "stillWatching"]
 

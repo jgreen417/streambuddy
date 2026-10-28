@@ -126,6 +126,7 @@ export const serviceColors: Record<string, string> = {
 	hbo: "#7b5cff",
 	disney: "#0f6cf2",
 	crunchyroll: "#f47521",
+	tubi: "#ffdf00",
 }
 
 // Liquid Glass: light text on a blurred, lightly tinted pane. The pane's tint and blur come from the frost setting.

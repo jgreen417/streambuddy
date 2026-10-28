@@ -177,6 +177,21 @@ describe("playback engine", () => {
 		expect(video.paused).toBe(true)
 		expect(noticeText()).toContain("Sleep timer · paused at")
 	})
+	it("pauses an ad in its own <video> when the sleep timer runs out, and plays the ad again on Keep watching", () => {
+		const { video, tick, site } = setup({ skipAds: false })
+		const ad = new FakeVideo()
+		site.adVideo = () => ad as unknown as HTMLVideoElement
+		site.adRemaining = () => 20
+		tick()
+		timeButton().click()
+		menuButton("15 minutes")!.click()
+		video.paused = true
+		vi.advanceTimersByTime(15 * 60 * 1000)
+		tick()
+		expect(ad.paused).toBe(true)
+		noticeButton("Keep watching")!.click()
+		expect(ad.play).toHaveBeenCalled()
+	})
 	it("stops at the credits instead of advancing when asked", () => {
 		const { video, tick, addButton } = setup()
 		tick()
@@ -312,6 +327,41 @@ describe("playback engine", () => {
 		state.ad = 15
 		tick()
 		expect(video.currentTime).toBe(145)
+	})
+
+	it("seeks the ad's own <video> where the ad plays apart from the title", () => {
+		const { video, tick, state, site } = setup()
+		const ad = new FakeVideo()
+		ad.currentTime = 2
+		site.adVideo = () => ad as unknown as HTMLVideoElement
+		state.ad = 28
+		tick()
+		expect(ad.currentTime).toBe(30)
+		expect(video.currentTime).toBe(100)
+	})
+
+	it("jumps over a listed ad break just before it starts, and only while playing", () => {
+		const { video, tick, site, settings } = setup()
+		site.adBreaks = () => [797, 1299]
+		video.currentTime = 796
+		tick()
+		expect(video.currentTime).toBe(796)
+		video.currentTime = 796.6
+		video.paused = true
+		tick()
+		expect(video.currentTime).toBe(796.6)
+		video.paused = false
+		tick()
+		expect(video.currentTime).toBe(797.5)
+		// at double speed it looks twice as far ahead
+		video.playbackRate = 2
+		video.currentTime = 1298.1
+		tick()
+		expect(video.currentTime).toBe(1299.5)
+		settings.skipAds = false
+		video.currentTime = 1298.8
+		tick()
+		expect(video.currentTime).toBe(1298.8)
 	})
 
 	it("fast-forwards ads muted where seeking isn't allowed, then restores the viewer's speed", async () => {
