@@ -1,12 +1,13 @@
 name: PR review trigger
 
-# Sends every pull request opened in this repository, or updated with a new commit,
-# to OpenBot, which reviews the diff and posts its findings as openbot-reviewer[bot].
+# Sends each pull request in this repository to OpenBot once it is ready for review,
+# and OpenBot posts its findings as openbot-reviewer[bot]. New commits don't trigger
+# another review: run this workflow by hand for one.
 # Repository secrets: OPENBOT_WEBHOOK_URL and OPENBOT_WEBHOOK_SECRET.
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
       pr:
@@ -23,8 +24,12 @@ permissions:
 
 jobs:
   notify:
-    # A pull request from a fork gets no secrets, so it cannot be signed.
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    # Fork and Dependabot pull requests get no Actions secrets, so they cannot be signed.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor != 'dependabot[bot]' &&
+       !github.event.pull_request.draft)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -47,7 +52,6 @@ jobs:
           # One payload shape for both event triggers and a manual run.
           gh api "repos/$REPO/pulls/$PR" > pr.json
           body=$(jq -c --arg action "$ACTION" --arg repo "$REPO" \
-                --arg login "$(jq -r .user.login pr.json)" \
                 '{type: "streambuddy.pull_request",
                   occurredAt: (now | todate),
                   data: {
@@ -58,35 +62,20 @@ jobs:
                       title: .title,
                       base: {ref: .base.ref},
                       head: {sha: .head.sha, ref: .head.ref},
-                      user: {login: $login}
+                      user: {login: .user.login}
                     }
                   }}' pr.json)
           # No trailing newline: the signature covers these exact bytes.
           printf '%s' "$body" > body.json
 
           delivery="gh-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          key="$OPENBOT_WEBHOOK_SECRET"
-          # The host may key the HMAC with the secret's text or with the bytes it decodes from
-          # base64, so a rejected signature is retried with the decoded key. Those bytes can
-          # contain NULs and end in a newline, which a shell variable would drop, so the decoded
-          # key is carried as hex and handed to openssl with hexkey.
-          key_hex=""
-          sign() {
-            if [ -n "$key_hex" ]; then
-              printf '%s' "$1.$delivery.$body" \
-                | openssl dgst -sha256 -mac HMAC -macopt "hexkey:$key_hex" -hex | sed -E 's/^.*= //'
-            else
-              printf '%s' "$1.$delivery.$body" \
-                | openssl dgst -sha256 -hmac "$key" -hex | sed -E 's/^.*= //'
-            fi
-          }
-          tried_decoded=0
 
           # The relay answers 503 while the OpenBot host is offline: retry for a few minutes.
           # The timestamp is rebuilt every attempt, because the host rejects one older than 5 minutes.
           for attempt in 1 2 3 4 5 6; do
             ts=$(date +%s)
-            sig=$(sign "$ts" "$key")
+            sig=$(printf '%s' "$ts.$delivery.$body" \
+              | openssl dgst -sha256 -hmac "$OPENBOT_WEBHOOK_SECRET" -hex | sed -E 's/^.*= //')
 
             # curl prints its own 000 when no response arrived, so a failed transfer replaces
             # the status instead of appending a second one
@@ -108,14 +97,6 @@ jobs:
                 exit 0
                 ;;
               401)
-                # The secret is compared as raw bytes or as decoded base64; try the other once.
-                if [ "$tried_decoded" = 0 ]; then
-                  if key_hex=$(printf '%s' "$OPENBOT_WEBHOOK_SECRET" | base64 -d 2>/dev/null | od -An -v -tx1 | tr -d ' \n') && [ -n "$key_hex" ]; then
-                    tried_decoded=1
-                    echo "Signature rejected; retrying with the base64-decoded secret."
-                    continue
-                  fi
-                fi
                 echo "::error::OpenBot rejected the signature (401): $(head -c 300 response.json)"
                 exit 1
                 ;;
@@ -138,4 +119,5 @@ jobs:
             esac
           done
 
-          echo "::warning::OpenBot stayed offline; no review ran for pull request #$PR."
+          echo "::error::OpenBot stayed offline; no review ran for pull request #$PR. Re-run this job once it is back."
+          exit 1
