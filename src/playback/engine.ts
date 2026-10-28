@@ -368,10 +368,14 @@ export class PlaybackEngine {
 		this.sleepMinutes = null
 		this.timeLabel = ""
 		this.resting = true
+		// an ad playing in a <video> of its own (Tubi's) is what's playing while the title's waits
+		const ad = this.site.adVideo?.()
+		const playing = ad && !ad.paused ? ad : video
+		playing.pause()
 		video.pause()
 		this.overlay.showNotice(
 			`Sleep timer · paused at ${formatClock(Date.now())}`,
-			[{ label: "Keep watching", run: () => video.play().catch(() => {}) }],
+			[{ label: "Keep watching", run: () => playing.play().catch(() => {}) }],
 			60_000,
 		)
 	}

@@ -177,6 +177,20 @@ describe("playback engine", () => {
 		expect(video.paused).toBe(true)
 		expect(noticeText()).toContain("Sleep timer · paused at")
 	})
+	it("pauses an ad playing in its own <video> when the sleep timer runs out, and plays it again on Keep watching", () => {
+		const { video, tick, site } = setup({ skipAds: false })
+		const ad = new FakeVideo()
+		site.adVideo = () => ad as unknown as HTMLVideoElement
+		tick()
+		timeButton().click()
+		menuButton("15 minutes")!.click()
+		video.paused = true
+		vi.advanceTimersByTime(15 * 60 * 1000)
+		tick()
+		expect(ad.paused).toBe(true)
+		noticeButton("Keep watching")!.click()
+		expect(ad.play).toHaveBeenCalled()
+	})
 	it("stops at the credits instead of advancing when asked", () => {
 		const { video, tick, addButton } = setup()
 		tick()
