@@ -66,9 +66,19 @@ jobs:
 
           delivery="gh-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           key="$OPENBOT_WEBHOOK_SECRET"
+          # The host may key the HMAC with the secret's text or with the bytes it decodes from
+          # base64, so a rejected signature is retried with the decoded key. Those bytes can
+          # contain NULs and end in a newline, which a shell variable would drop, so the decoded
+          # key is carried as hex and handed to openssl with hexkey.
+          key_hex=""
           sign() {
-            printf '%s' "$1.$delivery.$body" \
-              | openssl dgst -sha256 -hmac "$2" -hex | sed -E 's/^.*= //'
+            if [ -n "$key_hex" ]; then
+              printf '%s' "$1.$delivery.$body" \
+                | openssl dgst -sha256 -mac HMAC -macopt "hexkey:$key_hex" -hex | sed -E 's/^.*= //'
+            else
+              printf '%s' "$1.$delivery.$body" \
+                | openssl dgst -sha256 -hmac "$key" -hex | sed -E 's/^.*= //'
+            fi
           }
           tried_decoded=0
 
@@ -78,12 +88,15 @@ jobs:
             ts=$(date +%s)
             sig=$(sign "$ts" "$key")
 
+            # curl prints its own 000 when no response arrived, so a failed transfer replaces
+            # the status instead of appending a second one
             code=$(curl -sS -m 30 -o response.json -w '%{http_code}' -X POST "$OPENBOT_WEBHOOK_URL" \
               -H 'content-type: application/json' \
               -H "x-openbot-timestamp: $ts" \
               -H "x-openbot-delivery-id: $delivery" \
               -H "x-openbot-signature: sha256=$sig" \
-              --data-binary @body.json || echo 000)
+              --data-binary @body.json) || code=000
+            [ -n "$code" ] || code=000
 
             case "$code" in
               202)
@@ -97,9 +110,8 @@ jobs:
               401)
                 # The secret is compared as raw bytes or as decoded base64; try the other once.
                 if [ "$tried_decoded" = 0 ]; then
-                  if decoded=$(printf '%s' "$OPENBOT_WEBHOOK_SECRET" | base64 -d 2>/dev/null) && [ -n "$decoded" ]; then
+                  if key_hex=$(printf '%s' "$OPENBOT_WEBHOOK_SECRET" | base64 -d 2>/dev/null | od -An -v -tx1 | tr -d ' \n') && [ -n "$key_hex" ]; then
                     tried_decoded=1
-                    key="$decoded"
                     echo "Signature rejected; retrying with the base64-decoded secret."
                     continue
                   fi
