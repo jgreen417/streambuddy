@@ -1,5 +1,18 @@
 # Changelog
 
+# streamBuddy 1.0.9
+
+HBO Max ads are skipped, and Alt+Shift+B hides or shows ratings.
+
+- HBO Max: ads are skipped like on Netflix and Prime Video. The popup's "Skip ads" switch now only shows on services where ads are skipped.
+- Press Alt+Shift+B to hide or show ratings on title cards. Switching ratings off or on now takes effect straight away, without a reload.
+- "Stop previews from playing" under Quiet browsing keeps trailers paused until you press play (off by default).
+- "Where to watch" in the card inspector folds behind a toggle, and each service links to a search for the title there. Spotted titles in the Stats tab link to the service they were spotted on.
+- The hover card opens IMDb for IMDb scores, and the review pill drops the score when no Letterboxd profile is linked.
+- The speed and time pills line up with each player's top bar, and the time pill shows it opens a menu.
+- Netflix episode ratings line up with the episode length, and the best episode gets a star without the outline.
+- Long film titles stay inside the review card, and Letterboxd friend names with "&" show correctly.
+
 # streamBuddy 1.0.8
 
 Crunchyroll is here.
