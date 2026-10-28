@@ -10,14 +10,12 @@ export type TubiTitle = { postlude?: number; adBreaks: number[] }
 
 // The page's data is a script, window.__data = {…}, written as JSON except for bare undefined values
 export function parseTubiTitle(html: string, id: string): TubiTitle | null {
-	const start = html.indexOf("window.__data=")
-	if (start < 0) return null
-	const end = html.indexOf("</script>", start)
-	const body = html
-		.slice(start + "window.__data=".length, end < 0 ? undefined : end)
-		.trim()
-		.replace(/;$/, "")
-		.replace(/(?<=[:,[])undefined(?=[,}\]])/g, "null")
+	const start = /window\.__data\s*=\s*\{/.exec(html)
+	if (!start) return null
+	const from = start.index + start[0].length - 1
+	const to = objectEnd(html, from)
+	if (to < 0) return null
+	const body = html.slice(from, to).replace(/(?<=[:,[])\s*undefined\s*(?=[,}\]])/g, "null")
 	let data: { video?: { byId?: Record<string, TubiVideo> } }
 	try {
 		data = JSON.parse(body)
@@ -32,33 +30,55 @@ export function parseTubiTitle(html: string, id: string): TubiTitle | null {
 		adBreaks: (video.monetization?.cue_points ?? []).filter((at) => typeof at === "number" && at > 0),
 	}
 }
+
+// just past the brace that closes the object opening at from, so a statement after it in the same script is left out
+function objectEnd(text: string, from: number) {
+	let depth = 0
+	let inString = false
+	for (let at = from; at < text.length; at++) {
+		const char = text[at]
+		if (inString) {
+			if (char === "\\") at++
+			else if (char === '"') inString = false
+		} else if (char === '"') inString = true
+		else if (char === "{") depth++
+		else if (char === "}" && --depth === 0) return at + 1
+	}
+	return -1
+}
 type TubiVideo = { credit_cuepoints?: { postlude?: number }; monetization?: { cue_points?: number[] } }
 
-// each title's data once read, else when it may be asked for again (a failed fetch waits a while)
-const titles = new Map<string, TubiTitle | number>()
+// each title's data once read, else how many reads have failed and when to try again
+const titles = new Map<string, TubiTitle | { failures: number; retryAt: number }>()
 const RETRY_MS = 30_000
+const TRIES = 2
 
 // The script the page was loaded with holds the first title and its season's other episodes; once Tubi has moved on
-// to a title it doesn't hold, the page is fetched again for that title's own data
+// to a title it doesn't hold, the page is fetched again for that title's own data, once more if that fails, then
+// the title goes without (the ad itself is still cut short)
 export function playingTubiTitle(): TubiTitle | undefined {
 	const id = playingId()
 	if (!id) return undefined
 	const known = titles.get(id)
-	if (typeof known === "object") return known
-	if (known !== undefined && Date.now() < known) return undefined
-	const script = Array.from(document.scripts).find((element) => element.text.startsWith("window.__data="))
+	if (known && "adBreaks" in known) return known
+	if (known && Date.now() < known.retryAt) return undefined
+	const script = Array.from(document.scripts).find((element) => element.text.includes("window.__data"))
 	const inline = script && parseTubiTitle(script.text, id)
 	if (inline) {
 		titles.set(id, inline)
 		return inline
 	}
-	titles.set(id, Date.now() + RETRY_MS)
+	const failures = (known?.failures ?? 0) + 1
+	const failed = () =>
+		titles.set(id, failures < TRIES ? { failures, retryAt: Date.now() + RETRY_MS } : { adBreaks: [] })
+	titles.set(id, { failures, retryAt: Infinity })
 	fetch(location.pathname)
 		.then(async (response) => {
-			// a page that loaded but doesn't hold the title won't on a later try either
-			if (response.ok) titles.set(id, parseTubiTitle(await response.text(), id) ?? { adBreaks: [] })
+			const title = response.ok ? parseTubiTitle(await response.text(), id) : null
+			if (title) titles.set(id, title)
+			else failed()
 		})
-		.catch(() => {})
+		.catch(failed)
 	return undefined
 }
 

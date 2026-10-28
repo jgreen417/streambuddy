@@ -177,10 +177,11 @@ describe("playback engine", () => {
 		expect(video.paused).toBe(true)
 		expect(noticeText()).toContain("Sleep timer · paused at")
 	})
-	it("pauses an ad playing in its own <video> when the sleep timer runs out, and plays it again on Keep watching", () => {
+	it("pauses an ad in its own <video> when the sleep timer runs out, and plays the ad again on Keep watching", () => {
 		const { video, tick, site } = setup({ skipAds: false })
 		const ad = new FakeVideo()
 		site.adVideo = () => ad as unknown as HTMLVideoElement
+		site.adRemaining = () => 20
 		tick()
 		timeButton().click()
 		menuButton("15 minutes")!.click()

@@ -368,9 +368,9 @@ export class PlaybackEngine {
 		this.sleepMinutes = null
 		this.timeLabel = ""
 		this.resting = true
-		// an ad playing in a <video> of its own (Tubi's) is what's playing while the title's waits
+		// an ad in a <video> of its own (Tubi's) is what's on screen while the title's waits, even if it's paused
 		const ad = this.site.adVideo?.()
-		const playing = ad && !ad.paused ? ad : video
+		const playing = ad && (this.site.adRemaining?.() ?? null) !== null ? ad : video
 		playing.pause()
 		video.pause()
 		this.overlay.showNotice(
