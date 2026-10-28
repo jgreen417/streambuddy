@@ -52,15 +52,19 @@ export const tubiSite: RatingsSite = {
 		return postlude && Number.isFinite(video.duration) ? video.duration - postlude : undefined
 	},
 	playingTitle: () => tubi.showTitle(),
+	// an episode's page whose label can't be read is still an episode, not a film
 	playingEpisode() {
 		const episode = tubi.episodeNumber()
-		if (episode === null) return undefined
+		if (episode === null) return location.pathname.startsWith("/tv-shows/") ? null : undefined
 		const season = tubi.episodeSeason?.()
 		const show = tubi.showTitle()
 		return season && show ? { show, season, episode } : null
 	},
-	// the next-up panel counts down to the next title from the start of the credits
-	endScreenShowing: () => !!document.querySelector('a[data-test-id="atag-link"][href*="autoplay=true"]'),
+	// the next-up panel slides up over the player at the start of the credits and counts down to the next title
+	endScreenShowing() {
+		const next = document.querySelector('a[data-test-id="atag-link"][href*="autoplay=true"]')?.getBoundingClientRect()
+		return !!next?.width && next.top < innerHeight
+	},
 	// the next-up panel covers the bottom of the player and the sign-up button its bottom left, so the pill opens
 	// downwards from the video's top left
 	placeReview(review) {

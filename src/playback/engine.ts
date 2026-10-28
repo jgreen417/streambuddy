@@ -14,8 +14,8 @@ const SPEED_STEP = 0.25
 const SPEED_MIN = 0.25
 const SPEED_MAX = 4
 const FAST_FORWARD_RATE = 8
-// how close a listed ad break is when it's jumped over, and how far past it the jump lands
-const AD_BREAK_LEAD = 1
+// how far past a listed ad break the jump over it lands
+const AD_BREAK_PAST = 0.5
 const SKIP_ORDER: SkipKind[] = ["intro", "recap", "credits", "stillWatching"]
 
 // One engine per tab. It watches the site's player through an adapter and does what the viewer asked for:
@@ -422,11 +422,13 @@ export class PlaybackEngine {
 			if (settings.notices) this.overlay.showNotice(`Fast-forwarding ad · ${formatSaved(remaining)} left`, [], 3500)
 		}
 	}
-	// a listed break about to start is jumped over, so the site plays no ad for it
+	// a listed break about to start is jumped over, so the site plays no ad for it: about two ticks ahead, at the
+	// speed it's playing
 	private passAdBreak(video: HTMLVideoElement) {
 		if (video.paused) return
-		const start = this.site.adBreaks?.().find((at) => at > video.currentTime && at - video.currentTime <= AD_BREAK_LEAD)
-		if (start !== undefined) video.currentTime = start + AD_BREAK_LEAD / 2
+		const lead = (2 * TICK_MS * Math.max(1, video.playbackRate)) / 1000
+		const start = this.site.adBreaks?.().find((at) => at > video.currentTime && at - video.currentTime <= lead)
+		if (start !== undefined) video.currentTime = start + AD_BREAK_PAST
 	}
 	private endFastForward(video: HTMLVideoElement) {
 		video.muted = this.adRestore?.muted ?? false

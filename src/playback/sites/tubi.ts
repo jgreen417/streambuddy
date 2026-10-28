@@ -55,8 +55,8 @@ export function playingTubiTitle(): TubiTitle | undefined {
 	titles.set(id, Date.now() + RETRY_MS)
 	fetch(location.pathname)
 		.then(async (response) => {
-			const title = response.ok ? parseTubiTitle(await response.text(), id) : null
-			if (title) titles.set(id, title)
+			// a page that loaded but doesn't hold the title won't on a later try either
+			if (response.ok) titles.set(id, parseTubiTitle(await response.text(), id) ?? { adBreaks: [] })
 		})
 		.catch(() => {})
 	return undefined

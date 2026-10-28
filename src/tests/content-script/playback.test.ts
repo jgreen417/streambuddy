@@ -328,20 +328,25 @@ describe("playback engine", () => {
 	it("jumps over a listed ad break just before it starts, and only while playing", () => {
 		const { video, tick, site, settings } = setup()
 		site.adBreaks = () => [797, 1299]
-		video.currentTime = 795
+		video.currentTime = 796
 		tick()
-		expect(video.currentTime).toBe(795)
-		video.currentTime = 796.4
+		expect(video.currentTime).toBe(796)
+		video.currentTime = 796.6
 		video.paused = true
 		tick()
-		expect(video.currentTime).toBe(796.4)
+		expect(video.currentTime).toBe(796.6)
 		video.paused = false
 		tick()
 		expect(video.currentTime).toBe(797.5)
-		settings.skipAds = false
-		video.currentTime = 1298.5
+		// at double speed it looks twice as far ahead
+		video.playbackRate = 2
+		video.currentTime = 1298.1
 		tick()
-		expect(video.currentTime).toBe(1298.5)
+		expect(video.currentTime).toBe(1299.5)
+		settings.skipAds = false
+		video.currentTime = 1298.8
+		tick()
+		expect(video.currentTime).toBe(1298.8)
 	})
 
 	it("fast-forwards ads muted where seeking isn't allowed, then restores the viewer's speed", async () => {
