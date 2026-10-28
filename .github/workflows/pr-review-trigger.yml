@@ -1,0 +1,129 @@
+name: PR review trigger
+
+# Sends every pull request opened in this repository, or updated with a new commit,
+# to OpenBot, which reviews the diff and posts its findings as openbot-reviewer[bot].
+# Repository secrets: OPENBOT_WEBHOOK_URL and OPENBOT_WEBHOOK_SECRET.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to review
+        required: true
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  notify:
+    # A pull request from a fork gets no secrets, so it cannot be signed.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Send the event to OpenBot
+        env:
+          OPENBOT_WEBHOOK_URL: ${{ secrets.OPENBOT_WEBHOOK_URL }}
+          OPENBOT_WEBHOOK_SECRET: ${{ secrets.OPENBOT_WEBHOOK_SECRET }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number || inputs.pr }}
+          ACTION: ${{ github.event.action || 'workflow_dispatch' }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${OPENBOT_WEBHOOK_URL:-}" ] || [ -z "${OPENBOT_WEBHOOK_SECRET:-}" ]; then
+            echo "::error::Set the repository secrets OPENBOT_WEBHOOK_URL and OPENBOT_WEBHOOK_SECRET."
+            exit 1
+          fi
+
+          # One payload shape for both event triggers and a manual run.
+          gh api "repos/$REPO/pulls/$PR" > pr.json
+          body=$(jq -c --arg action "$ACTION" --arg repo "$REPO" \
+                --arg login "$(jq -r .user.login pr.json)" \
+                '{type: "streambuddy.pull_request",
+                  occurredAt: (now | todate),
+                  data: {
+                    action: $action,
+                    repository: {full_name: $repo},
+                    pull_request: {
+                      number: .number,
+                      title: .title,
+                      base: {ref: .base.ref},
+                      head: {sha: .head.sha, ref: .head.ref},
+                      user: {login: $login}
+                    }
+                  }}' pr.json)
+          # No trailing newline: the signature covers these exact bytes.
+          printf '%s' "$body" > body.json
+
+          delivery="gh-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          key="$OPENBOT_WEBHOOK_SECRET"
+          sign() {
+            printf '%s' "$1.$delivery.$body" \
+              | openssl dgst -sha256 -hmac "$2" -hex | sed -E 's/^.*= //'
+          }
+          tried_decoded=0
+
+          # The relay answers 503 while the OpenBot host is offline: retry for a few minutes.
+          # The timestamp is rebuilt every attempt, because the host rejects one older than 5 minutes.
+          for attempt in 1 2 3 4 5 6; do
+            ts=$(date +%s)
+            sig=$(sign "$ts" "$key")
+
+            code=$(curl -sS -m 30 -o response.json -w '%{http_code}' -X POST "$OPENBOT_WEBHOOK_URL" \
+              -H 'content-type: application/json' \
+              -H "x-openbot-timestamp: $ts" \
+              -H "x-openbot-delivery-id: $delivery" \
+              -H "x-openbot-signature: sha256=$sig" \
+              --data-binary @body.json || echo 000)
+
+            case "$code" in
+              202)
+                echo "OpenBot accepted the event for pull request #$PR."
+                exit 0
+                ;;
+              200)
+                echo "OpenBot already had this event for pull request #$PR."
+                exit 0
+                ;;
+              401)
+                # The secret is compared as raw bytes or as decoded base64; try the other once.
+                if [ "$tried_decoded" = 0 ]; then
+                  if decoded=$(printf '%s' "$OPENBOT_WEBHOOK_SECRET" | base64 -d 2>/dev/null) && [ -n "$decoded" ]; then
+                    tried_decoded=1
+                    key="$decoded"
+                    echo "Signature rejected; retrying with the base64-decoded secret."
+                    continue
+                  fi
+                fi
+                echo "::error::OpenBot rejected the signature (401): $(head -c 300 response.json)"
+                exit 1
+                ;;
+              400)
+                echo "::error::OpenBot rejected the body (400): $(head -c 300 response.json)"
+                exit 1
+                ;;
+              404)
+                echo "::error::The webhook routine is gone (404). Recreate it and update OPENBOT_WEBHOOK_URL."
+                exit 1
+                ;;
+              503|000)
+                echo "OpenBot is offline (attempt $attempt, $code); retrying in 30s."
+                sleep 30
+                ;;
+              *)
+                echo "::warning::OpenBot answered $code: $(head -c 300 response.json)"
+                exit 0
+                ;;
+            esac
+          done
+
+          echo "::warning::OpenBot stayed offline; no review ran for pull request #$PR."
