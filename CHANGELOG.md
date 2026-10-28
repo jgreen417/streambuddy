@@ -1,6 +1,6 @@
 # Changelog
 
-# streamBuddy 1.1.0
+# streamBuddy 1.1.1
 
 Tubi is here.
 
