@@ -118,7 +118,11 @@ jobs:
               const pr = JSON.parse(s); console.log(pr.state, pr.merged, pr.merged_at ?? "-", pr.base.ref) })')
           [ "$state" = closed ] || exit 0
           export MERGED MERGED_AT BASE
-          .github/scripts/settle-saved-screenshots.sh
+          # from outside the checkout, whose saved workflow token git would send to streambuddy-sites ahead of the
+          # script's, so it would read as not found
+          script="$PWD/.github/scripts/settle-saved-screenshots.sh"
+          cd "$(mktemp -d)"
+          "$script"
       # a push made with the workflow token, or to streambuddy-sites, starts no workflows here, so the pull request's
       # checks are started once both are in
       - name: Re-run the checks
