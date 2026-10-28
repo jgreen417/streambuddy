@@ -22,6 +22,11 @@ export type SiteAdapter = {
 	adRemaining?(): number | null
 	// how the site lets an ad be passed: some players allow seeking past it, others only fast playback
 	adStrategy?: "seek" | "fastForward"
+	// the <video> an ad plays in, where it isn't the title's own (Tubi's): the seek past an ad moves that one
+	adVideo?(): HTMLVideoElement | null
+	// where the title's ad breaks start, in seconds, where the site lists them and plays no ad for a break the title
+	// is seeked past (Tubi)
+	adBreaks?(): number[]
 	// true when the player treats a seek on its <video> as tampering and stops playback (Netflix, error
 	// F7375): skips then only press the site's own buttons, with no Undo
 	seekBlocked?: boolean

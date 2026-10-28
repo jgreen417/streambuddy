@@ -121,6 +121,14 @@ export function readDetailContext(site: FeatureSite, path = location.pathname): 
 			mediaType: crunchyrollEpisodeCards(document).length ? "tv" : null,
 		}
 	}
+	if (site === "tubi") {
+		// a series' page, or an episode's, which lists the season's episodes under its player; the visible title is a
+		// logo, and a hidden h1 names the show
+		const target = document.querySelector<HTMLElement>("h1")
+		const title = text(target)
+		if (!target || !title || !/^\/(?:series|tv-shows)\//.test(path)) return null
+		return { root: document.body, target, title, year: null, mediaType: "tv" }
+	}
 	const target = document.querySelector<HTMLElement>('[data-testid="atf-component-next-gen"]')
 	const title = headingText(target?.querySelector("h1") ?? null).replace(
 		/\s*-\s*(?:Season|Staffel|Saison|Temporada|Stagione|सीज़न)\s+\d+.*$/i,
@@ -167,6 +175,8 @@ export function readEpisodeCards(site: FeatureSite, root: HTMLElement) {
 		cards.push(...disneyEpisodeCards(root))
 	} else if (site === "crunchyroll") {
 		cards.push(...crunchyrollEpisodeCards(root))
+	} else if (site === "tubi") {
+		cards.push(...tubiEpisodeCards(root))
 	} else {
 		const season = Number(document.title.match(primeSeason)?.[1])
 		if (!season) return cards
@@ -442,5 +452,14 @@ function crunchyrollEpisodeCards(root: ParentNode) {
 		const episode = Number(text(card.querySelector("h3")).match(/^E(\d+)\b/)?.[1])
 		const target = card.querySelector<HTMLElement>("a:has(figure)") ?? card
 		return episode > 0 ? { card, target, season, episode } : null
+	}).filter((card) => card !== null)
+}
+
+// a Tubi season's episode cards, each a link titled "S01:E03 - Lover Come Hack to Me", with a 16:9 thumbnail first
+function tubiEpisodeCards(root: ParentNode) {
+	return Array.from(root.querySelectorAll<HTMLElement>('a[href^="/tv-shows/"]:has(h3)'), (card) => {
+		const place = parseEpisodeLabel(text(card.querySelector("h3")))
+		const target = card.querySelector("img")?.parentElement ?? card
+		return place ? { card, target, ...place } : null
 	}).filter((card) => card !== null)
 }

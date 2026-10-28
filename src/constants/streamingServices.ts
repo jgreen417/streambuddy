@@ -60,6 +60,15 @@ export const SERVICES = {
 		script: "src/content-script/crunchyroll.ts",
 		matches: ["*://*.crunchyroll.com/*"],
 	},
+	Tubi: {
+		name: "Tubi",
+		statsKey: "tubi",
+		feature: "tubi",
+		skipsAds: true,
+		search: "https://tubitv.com/search/",
+		script: "src/content-script/tubi.ts",
+		matches: ["*://*.tubitv.com/*"],
+	},
 } as const
 
 export type StreamingService = keyof typeof SERVICES

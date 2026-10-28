@@ -24,7 +24,8 @@ async function remove(show: string, kind: SkipKind) {
 	<h1>Playback</h1>
 	<p class="description">
 		streamBuddy skips intros, recaps and credits, keeps your speed and can pause long autoplay runs on Netflix, Prime
-		Video, HBO Max, Disney+ and Crunchyroll. Ads are skipped on Prime Video and HBO Max, and fast-forwarded on Netflix.
+		Video, HBO Max, Disney+, Crunchyroll and Tubi. Ads are skipped on Prime Video, HBO Max and Tubi, and fast-forwarded
+		on Netflix.
 		<RouterLink to="/options-page/Experience">Viewing preferences</RouterLink>
 		has a switch for each one. To set a sleep timer, click the end time at the top of the player.
 	</p>

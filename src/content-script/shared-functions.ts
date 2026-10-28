@@ -46,6 +46,7 @@ function watchSettings() {
 			settings.value.HBO?.showRating,
 			settings.value.Disney?.showRating,
 			settings.value.Crunchyroll?.showRating,
+			settings.value.Tubi?.showRating,
 		],
 		() => refreshRowPresentation(),
 	)

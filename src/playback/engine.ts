@@ -14,6 +14,8 @@ const SPEED_STEP = 0.25
 const SPEED_MIN = 0.25
 const SPEED_MAX = 4
 const FAST_FORWARD_RATE = 8
+// how close a listed ad break is when it's jumped over, and how far past it the jump lands
+const AD_BREAK_LEAD = 1
 const SKIP_ORDER: SkipKind[] = ["intro", "recap", "credits", "stillWatching"]
 
 // One engine per tab. It watches the site's player through an adapter and does what the viewer asked for:
@@ -393,6 +395,7 @@ export class PlaybackEngine {
 			if (this.adRestore) this.endFastForward(video)
 			this.adAnnounced = false
 			this.seekedAdRemaining = null
+			if (settings.skipAds) this.passAdBreak(video)
 			return
 		}
 		if (this.site.adStrategy === "seek") {
@@ -400,7 +403,8 @@ export class PlaybackEngine {
 			if (Date.now() - this.lastSeekedAd < 3000 || remaining === this.seekedAdRemaining) return
 			this.lastSeekedAd = Date.now()
 			this.seekedAdRemaining = remaining
-			video.currentTime += remaining
+			const ad = this.site.adVideo?.() ?? video
+			ad.currentTime += remaining
 			this.recordSaved("ad", remaining)
 			if (settings.notices) this.overlay.showNotice("Skipped ad")
 			return
@@ -417,6 +421,12 @@ export class PlaybackEngine {
 			this.recordSaved("ad", remaining * (1 - 1 / FAST_FORWARD_RATE))
 			if (settings.notices) this.overlay.showNotice(`Fast-forwarding ad · ${formatSaved(remaining)} left`, [], 3500)
 		}
+	}
+	// a listed break about to start is jumped over, so the site plays no ad for it
+	private passAdBreak(video: HTMLVideoElement) {
+		if (video.paused) return
+		const start = this.site.adBreaks?.().find((at) => at > video.currentTime && at - video.currentTime <= AD_BREAK_LEAD)
+		if (start !== undefined) video.currentTime = start + AD_BREAK_LEAD / 2
 	}
 	private endFastForward(video: HTMLVideoElement) {
 		video.muted = this.adRestore?.muted ?? false

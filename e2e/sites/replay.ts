@@ -116,6 +116,8 @@ for (const video of marked("video[data-sb-video]")) {
 	const { duration, at, paused } = JSON.parse(video.dataset.sbVideo)
 	if (!duration) continue
 	video.muted = true
+	// Tubi's player marks its <video> preload="none", which would keep the stand-in from loading at all
+	video.preload = "auto"
 	video.src = "/media/stand-in.wav?seconds=" + Math.ceil(duration)
 	video.addEventListener("loadedmetadata", () => {
 		video.currentTime = at

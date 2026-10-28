@@ -314,6 +314,36 @@ describe("playback engine", () => {
 		expect(video.currentTime).toBe(145)
 	})
 
+	it("seeks the ad's own <video> where the ad plays apart from the title", () => {
+		const { video, tick, state, site } = setup()
+		const ad = new FakeVideo()
+		ad.currentTime = 2
+		site.adVideo = () => ad as unknown as HTMLVideoElement
+		state.ad = 28
+		tick()
+		expect(ad.currentTime).toBe(30)
+		expect(video.currentTime).toBe(100)
+	})
+
+	it("jumps over a listed ad break just before it starts, and only while playing", () => {
+		const { video, tick, site, settings } = setup()
+		site.adBreaks = () => [797, 1299]
+		video.currentTime = 795
+		tick()
+		expect(video.currentTime).toBe(795)
+		video.currentTime = 796.4
+		video.paused = true
+		tick()
+		expect(video.currentTime).toBe(796.4)
+		video.paused = false
+		tick()
+		expect(video.currentTime).toBe(797.5)
+		settings.skipAds = false
+		video.currentTime = 1298.5
+		tick()
+		expect(video.currentTime).toBe(1298.5)
+	})
+
 	it("fast-forwards ads muted where seeking isn't allowed, then restores the viewer's speed", async () => {
 		const { video, tick, state, site, engine } = setup()
 		site.adStrategy = "fastForward"

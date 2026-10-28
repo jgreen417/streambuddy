@@ -243,7 +243,7 @@ const updateMode = (event: Event) => {
 				<PopupToggle
 					v-model="settings.General.stopPreviews"
 					label="Stop previews from playing"
-					description="Previews stay paused until you press play. Crunchyroll has none."
+					description="Previews stay paused until you press play. Crunchyroll and Tubi have none."
 				/>
 				<template v-if="targets.includes('Netflix')">
 					<PopupToggle
@@ -279,7 +279,7 @@ const updateMode = (event: Event) => {
 			</summary>
 			<div class="sb-disclosure-body">
 				<p class="sb-help">
-					Title pages, episodes and search work on Netflix, HBO Max, Prime Video, Disney+ and Crunchyroll.
+					Title pages, episodes and search work on Netflix, HBO Max, Prime Video, Disney+, Crunchyroll and Tubi.
 				</p>
 				<label class="sb-cutoff">
 					Ratings from
@@ -462,7 +462,7 @@ const updateMode = (event: Event) => {
 					:model-value="speed === true"
 					:mixed="speed === 'mixed'"
 					label="Speed control"
-					description="Remembers your speed per service. Shift + < or > to adjust; Prime Video, HBO Max, Disney+ and Crunchyroll also get a speed pill."
+					description="Remembers your speed per service. Shift + < or > to adjust; Prime Video, HBO Max, Disney+, Crunchyroll and Tubi also get a speed pill."
 					@update:model-value="speed = $event"
 				/>
 				<PopupToggle
