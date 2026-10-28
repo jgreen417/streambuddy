@@ -61,7 +61,7 @@
 		"concurrently": "^10.0.4",
 		"cross-env": "^10.1.0",
 		"daisyui": "^5.7.50",
-		"dependency-cruiser": "^17.4.3",
+		"dependency-cruiser": "^18.7.0",
 		"dotenv": "^18.0.9",
 		"esbuild": "^0.28.2",
 		"eslint": "^10.13.0",
