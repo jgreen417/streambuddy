@@ -14,6 +14,9 @@ updates:
     ignore:
       # must match the mcr.microsoft.com/playwright image in visual.yml and accept-visuals.yml; bump all three together
       - dependency-name: "@playwright/test"
+      # vue-tsc doesn't run on TypeScript 7 yet
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /

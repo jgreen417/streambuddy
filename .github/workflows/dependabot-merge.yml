@@ -1,0 +1,61 @@
+name: Dependabot auto-merge
+
+# Dependabot pull requests merge themselves once every check on their latest commit has passed, except major bumps of
+# packages the extension ships (and of GitHub Actions, since the release workflow only runs on a tag): those wait for
+# a person. The first job labels the pull requests that may merge; the second runs whenever one of the checking
+# workflows finishes and merges when nothing is still running or red.
+
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_run:
+    workflows: ["CI", "Visual checks", "Dependency review", "CodeQL"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  label:
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'
+    name: Mark for auto-merge
+    runs-on: ubuntu-latest
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@v2
+      - if: steps.meta.outputs.update-type != 'version-update:semver-major' || steps.meta.outputs.dependency-type == 'direct:development'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr edit "${{ github.event.pull_request.number }}" --repo "$GITHUB_REPOSITORY" --add-label automerge
+
+  merge:
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.actor.login == 'dependabot[bot]'
+    name: Merge when green
+    runs-on: ubuntu-latest
+    concurrency:
+      group: dependabot-merge-${{ github.event.workflow_run.head_sha }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - run: |
+          pr=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/pulls" \
+            -q '[.[] | select(.state == "open" and .head.sha == env.SHA and any(.labels[]; .name == "automerge"))][0].number // empty')
+          if [ -z "$pr" ]; then
+            echo "No open automerge pull request at $SHA"
+            exit 0
+          fi
+
+          gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs" -q '.check_runs[]' > checks.json
+          jq -r '[.name, .status, .conclusion] | @tsv' checks.json
+          # a workflow that hasn't started yet has no check runs, so also wait for the two that every pull request gets
+          ready=$(jq -s 'map(select(.name != "Merge when green" and .name != "Mark for auto-merge"))
+            | (map(.name) | contains(["Lint, typecheck & test", "Badge placement & screenshots"]))
+              and all(.status == "completed" and (.conclusion | IN("success", "neutral", "skipped")))' checks.json)
+          if [ "$ready" != true ]; then
+            echo "Checks still running or failed"
+            exit 0
+          fi
+
+          gh pr merge "$pr" --repo "$GITHUB_REPOSITORY" --merge --match-head-commit "$SHA"
