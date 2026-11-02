@@ -135,7 +135,6 @@ const providerColor = (name: string) => {
 	return service ? serviceColors[SERVICES[service].statsKey] : color.surfaceRaised
 }
 
-// just the close button, in the top corner beside the title
 function head() {
 	const bar = el("div", "head")
 	const close = el("button", "close", "×")
@@ -394,7 +393,7 @@ const STYLE = `
 * { box-sizing: border-box; }
 .sb-inspector { position: relative; width: 100%; max-height: min(640px, calc(100vh - 24px)); overflow-y: auto; padding: 16px; border: 1px solid var(--sb-line-glass); border-radius: 22px; background: var(--sb-glass-panel); -webkit-backdrop-filter: var(--sb-blur-panel); backdrop-filter: var(--sb-blur-panel); box-shadow: var(--sb-shadow-panel); color: var(--sb-text); font: 500 13px/1.35 var(--sb-font-page); scrollbar-width: thin; scrollbar-color: var(--sb-scrollbar) transparent; }
 .sb-inspector .head { position: absolute; top: 12px; right: 12px; }
-.sb-inspector .head + * { margin-top: 0; padding-right: 32px; }
+.sb-inspector .head + * { padding-right: 32px; }
 .sb-inspector .close { all: unset; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--sb-text-muted); font-size: 20px; cursor: pointer; }
 .sb-inspector .close:hover { background: var(--sb-well-glass); color: var(--sb-text); }
 .sb-inspector .title { margin: 10px 0 2px; font-size: 21px; font-weight: 800; line-height: 1.08; letter-spacing: -.025em; }

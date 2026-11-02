@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { SERVICE_REQUEST_URL } from "@/constants/links"
-import { SUPPORTED_SERVICE_NAMES, streamingServices } from "@/constants/streamingServices"
+import { SUPPORTED_SERVICE_NAMES } from "@/constants/streamingServices"
 </script>
 <template>
 	<aside
@@ -8,7 +8,7 @@ import { SUPPORTED_SERVICE_NAMES, streamingServices } from "@/constants/streamin
 		aria-label="Request a streaming service"
 	>
 		<strong>Missing a service?</strong>
-		<span :title="SUPPORTED_SERVICE_NAMES">streamBuddy covers {{ streamingServices.length }} so far.</span>
+		<span>streamBuddy covers {{ SUPPORTED_SERVICE_NAMES }} so far.</span>
 		<a
 			:href="SERVICE_REQUEST_URL"
 			target="_blank"
@@ -19,7 +19,6 @@ import { SUPPORTED_SERVICE_NAMES, streamingServices } from "@/constants/streamin
 	</aside>
 </template>
 <style scoped>
-/* a quiet note under the settings menu, always there and never in the way */
 .sb-request {
 	display: flex;
 	flex-direction: column;

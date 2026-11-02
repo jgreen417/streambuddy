@@ -90,7 +90,7 @@ function navigateTabs(event: KeyboardEvent) {
 							:key="site.service"
 							:value="site.service"
 						>
-							{{ site.name }} settings
+							{{ site.name }} only
 						</option>
 					</select>
 					<span

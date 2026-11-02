@@ -99,7 +99,7 @@ player overlay loads the same bundled file into its shadow root. Numbers in scor
   margins and gaps, and three named insets: `edge` 14px (the popup's and the credits pill's outer edge), `inset` 12px
   (from a group's border to its content) and `card` 18px (above the credits card's content). Sizes of things (toggles,
   icons, the badge's 3px inset) stay as plain values.
-- Shadow and blur: the badge is smoked glass (`badgeBg` couchDeep at 62% with `blur.badge`); `shadow.badge` is a
+- Shadow and blur: the badge is smoked glass (`badgeBg` couchDeep at 74% with `blur.badge`); `shadow.badge` is a
   faint light edge and a soft drop that lifts it off any artwork. Glass panels use `shadow.panel`. Floating panels (`float`, `review`) use soft shadows. Liquid Glass (`glass`, `shadow.glass`) is a blurred
   tint with a hairline edge; its frost setting runs from clear to frosted.
 - Motion: `ease.settle` for things settling into place (tabs, the badge appearing, bars growing), `ease.unfold` for the

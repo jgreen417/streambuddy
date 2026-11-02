@@ -51,9 +51,9 @@
 	--sb-error: #ff5861;
 	--sb-text-on-error: #ffffff;
 	--sb-warning: #ffd23f;
-	--sb-badge-bg: rgba(21, 19, 18, 0.62);
+	--sb-badge-bg: rgba(21, 19, 18, 0.74);
 	--sb-badge-ink: #fbf4ec;
-	--sb-badge-label: rgba(251, 244, 236, 0.72);
+	--sb-badge-label: rgba(251, 244, 236, 0.85);
 	--sb-badge-watchlist: #8ec5ff;
 	--sb-score-ink: #1b1918;
 	--sb-badge-unrated: #b3aaa1;

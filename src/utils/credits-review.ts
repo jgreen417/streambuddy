@@ -286,16 +286,15 @@ export class CreditsRatingPrompt {
 				button.setAttribute("aria-expanded", String(open))
 				button.setAttribute("aria-controls", card.id)
 			}
-			chevron.setAttribute("aria-label", open ? "Hide details" : "Show details")
 		}
 		setOpen(false)
 		// the pill hides while the card is open, so focus moves to the card's own close button and back
-		const open = () => {
+		const expand = () => {
 			setOpen(true)
 			collapse.focus()
 		}
-		toggle.addEventListener("click", open)
-		chevron.addEventListener("click", open)
+		toggle.addEventListener("click", expand)
+		chevron.addEventListener("click", expand)
 		collapse.addEventListener("click", () => {
 			setOpen(false)
 			toggle.focus()

@@ -115,9 +115,9 @@ export const color = {
 	textOnError: palette.white,
 	warning: palette.yellow,
 	// the rating badge: smoked glass with popcorn text (with --sb-blur-badge; Liquid Glass swaps these on the badge itself)
-	badgeBg: alpha("couchDeep", 0.62),
+	badgeBg: alpha("couchDeep", 0.74),
 	badgeInk: palette.popcorn,
-	badgeLabel: alpha("popcorn", 0.72),
+	badgeLabel: alpha("popcorn", 0.85),
 	badgeWatchlist: palette.sky,
 	// a score is always dark on its band colour
 	scoreInk: palette.couch,
@@ -133,8 +133,9 @@ export const scoreScale = ["#f1a99e", "#e2b38b", "#d3bc7b", "#aec88f", "#97ccaa"
 // The first three are also the fixed trio.
 export const friendColors = [palette.tangerine, palette.sky, palette.sun, palette.mint, palette.lilac] as const
 
-// The watch-time chart's services, most watched first: popcorn down to grey, so the chart doesn't turn into a rainbow.
-export const chartSteps = [palette.popcorn, palette.stone, palette.scrollbar, palette.starEmpty] as const
+// The watch-time chart's services, most watched first: popcorn down to grey, one step per service, each at least 3:1 on
+// the popup so a slice never disappears.
+export const chartSteps = [palette.popcorn, palette.sand, palette.stone, "#8a827b", "#776f69", "#655e59"] as const
 
 // Each service's own brand colour, for the service chips on the hover card.
 export const serviceColors: Record<string, string> = {

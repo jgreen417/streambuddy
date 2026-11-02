@@ -97,7 +97,7 @@ function watchUrl(title: SeenTitle) {
 	return service && searchOn(service, title.title)
 }
 // most watched first: popcorn, then greys
-const step = (index: number) => chartSteps[Math.min(index, chartSteps.length - 1)]
+const step = (index: number) => chartSteps[index % chartSteps.length]
 const formatRating = (title: { source: string; rating: number }) =>
 	title.source === "letterboxd" ? `Letterboxd ${title.rating.toFixed(1)}/5` : `IMDb ${title.rating.toFixed(1)}/10`
 </script>
