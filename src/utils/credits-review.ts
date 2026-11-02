@@ -251,10 +251,23 @@ export class CreditsRatingPrompt {
 		buttons.append(later)
 		inner.append(buttons)
 		const rateLink = this.rateAsk?.due() ? link("", this.rateAsk.url, "Rate it") : undefined
+		let rateLine: HTMLElement | undefined
 		if (rateLink) {
-			const line = el("p", "sb-review-rate", "Liking streamBuddy? ")
-			line.append(rateLink)
-			inner.append(line)
+			rateLine = el("p", "sb-review-rate", "Liking streamBuddy? ")
+			rateLine.append(rateLink)
+			inner.append(rateLine)
+		}
+		// asked once the card is opened, unless another card, the popup or settings got there first
+		let rateAsked = false
+		const askOnOpen = () => {
+			if (!rateLine || rateAsked) return
+			if (this.rateAsk?.due()) {
+				rateAsked = true
+				this.rateAsk.shown()
+			} else {
+				rateLine.remove()
+				rateLine = undefined
+			}
 		}
 
 		// the pill
@@ -311,7 +324,7 @@ export class CreditsRatingPrompt {
 				button.setAttribute("aria-expanded", String(open))
 				button.setAttribute("aria-controls", card.id)
 			}
-			if (open && rateLink) this.rateAsk?.shown()
+			if (open) askOnOpen()
 		}
 		setOpen(false)
 		// the pill hides while the card is open, so focus moves to the card's own close button and back
