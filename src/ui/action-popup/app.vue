@@ -46,11 +46,12 @@ function closeWhatsNew(openChangelog: boolean) {
 	if (openChangelog) openSettings("/options-page/Changelog")
 }
 
-// after a few days of watching, once, and never alongside the update note
+// after a few days of watching, once, and not in a popup that opened with the update note
 const askForRating = ref(false)
-Promise.all([loadRateAsk(), browser.storage.local.get("watchLog")]).then(([ask, { watchLog }]) => {
-	const days = Object.keys(watchLog ?? {}).length
-	askForRating.value = !ask.rateLinkOpened && !ask.ratePopupDismissed && days >= POPUP_ASK_DAYS
+Promise.all([loadRateAsk(), browser.storage.local.get(["watchLog", "whatsNew"])]).then(([ask, stored]) => {
+	const days = Object.keys(stored.watchLog ?? {}).length
+	askForRating.value =
+		stored.whatsNew !== version && !ask.rateLinkOpened && !ask.ratePopupDismissed && days >= POPUP_ASK_DAYS
 })
 function closeRatingAsk(opened: boolean) {
 	askForRating.value = false

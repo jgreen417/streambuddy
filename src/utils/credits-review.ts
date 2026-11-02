@@ -170,6 +170,13 @@ export class CreditsRatingPrompt {
 			? data.rating_url
 			: `https://letterboxd.com/tmdb/${data.id}/`
 		const slug = getLetterboxdSlug(data.rating_url)
+		// the links that open the film to log it, as opposed to the friends list or the rating ask
+		const filmLinks: HTMLAnchorElement[] = []
+		const filmLink = (className: string, text: string) => {
+			const a = link(className, filmUrl, text)
+			filmLinks.push(a)
+			return a
+		}
 		const friends = data.friends ?? []
 		const friendsCount = data.friends_count ?? friends.length
 		const score = data.source === "tmdb" ? (data.rating ?? data.score) : data.rating
@@ -239,9 +246,9 @@ export class CreditsRatingPrompt {
 				this.openSetup()
 				dismiss()
 			})
-			buttons.append(connect, link("sb-review-secondary", filmUrl, "Open on Letterboxd"))
+			buttons.append(connect, filmLink("sb-review-secondary", "Open on Letterboxd"))
 		} else {
-			buttons.append(link("sb-review-primary", filmUrl, state === "logged" ? "Log again" : "Rate on Letterboxd"))
+			buttons.append(filmLink("sb-review-primary", state === "logged" ? "Log again" : "Rate on Letterboxd"))
 			const later = el("button", "sb-review-secondary", "Not now")
 			later.type = "button"
 			later.addEventListener("click", dismiss)
@@ -281,7 +288,7 @@ export class CreditsRatingPrompt {
 			state === "friends" ? data.friends_rating : state === "logged" || state === "unlinked" ? undefined : score
 		if (pillScore) toggle.append(scorePill(state === "friends" ? "letterboxd" : data.source, pillScore))
 		pill.append(toggle)
-		if (state === "logged") pill.append(link("sb-review-action", filmUrl, "Log again"))
+		if (state === "logged") pill.append(filmLink("sb-review-action", "Log again"))
 		if (state === "unlinked") {
 			const connect = el("button", "sb-review-action sb-review-ghost", "Connect")
 			connect.type = "button"
@@ -320,7 +327,7 @@ export class CreditsRatingPrompt {
 			const anchor = (event.target as Element).closest?.("a")
 			if (!anchor) return
 			if (anchor === rateLink) this.rateAsk?.opened()
-			else if (anchor.href === filmUrl) this.rateAsk?.loggedFilm()
+			else if (filmLinks.includes(anchor)) this.rateAsk?.loggedFilm()
 			dismiss()
 		})
 		root.addEventListener("keydown", (event) => {

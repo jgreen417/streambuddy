@@ -3,7 +3,7 @@ import { marked } from "marked"
 import { reviewsUrl, saveRateAsk, storeName } from "@/utils/rate-ask"
 
 // the page's own heading, like the other pages; each release is a section under it
-const changelog = marked.parse(__CHANGELOG__.replace(/^# Changelog\n/, "").replace(/^# /gm, "## "), { async: false })
+const changelog = marked.parse(__CHANGELOG__.replace(/^# Changelog\s*$/m, "").replace(/^# /gm, "## "), { async: false })
 </script>
 
 <template>
