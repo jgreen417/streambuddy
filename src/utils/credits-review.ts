@@ -115,12 +115,24 @@ function link(className: string, href: string, text: string) {
 	return a
 }
 
+// The card's one-time ask for a store rating, due once a few films have been logged from it
+export type CardRateAsk = {
+	url: string
+	due(): boolean
+	loggedFilm(): void
+	shown(): void
+	opened(): void
+}
+
 // The end-of-film review: a pill over the player once a film's credits roll, which expands into a card with
 // what your friends thought and a link to log it on Letterboxd. It never logs anything itself.
 export class CreditsRatingPrompt {
 	private prompted = new Set<string>()
 	private current = ""
-	constructor(private openSetup: () => void = () => {}) {}
+	constructor(
+		private openSetup: () => void = () => {},
+		private rateAsk?: CardRateAsk,
+	) {}
 
 	get showing() {
 		return !!document.querySelector(".sb-review")
@@ -158,6 +170,13 @@ export class CreditsRatingPrompt {
 			? data.rating_url
 			: `https://letterboxd.com/tmdb/${data.id}/`
 		const slug = getLetterboxdSlug(data.rating_url)
+		// the links that open the film to log it, as opposed to the friends list or the rating ask
+		const filmLinks: HTMLAnchorElement[] = []
+		const filmLink = (className: string, text: string) => {
+			const a = link(className, filmUrl, text)
+			filmLinks.push(a)
+			return a
+		}
 		const friends = data.friends ?? []
 		const friendsCount = data.friends_count ?? friends.length
 		const score = data.source === "tmdb" ? (data.rating ?? data.score) : data.rating
@@ -225,12 +244,31 @@ export class CreditsRatingPrompt {
 				dismiss()
 			})
 			buttons.append(connect)
-		} else buttons.append(link("sb-review-primary", filmUrl, state === "logged" ? "Log again" : "Rate on Letterboxd"))
+		} else buttons.append(filmLink("sb-review-primary", state === "logged" ? "Log again" : "Rate on Letterboxd"))
 		const later = el("button", "sb-review-later", "Not now")
 		later.type = "button"
 		later.addEventListener("click", dismiss)
 		buttons.append(later)
 		inner.append(buttons)
+		const rateLink = this.rateAsk?.due() ? link("", this.rateAsk.url, "Rate it") : undefined
+		let rateLine: HTMLElement | undefined
+		if (rateLink) {
+			rateLine = el("p", "sb-review-rate", "Liking streamBuddy? ")
+			rateLine.append(rateLink)
+			inner.append(rateLine)
+		}
+		// asked once the card is opened, unless another card, the popup or settings got there first
+		let rateAsked = false
+		const askOnOpen = () => {
+			if (!rateLine || rateAsked) return
+			if (this.rateAsk?.due()) {
+				rateAsked = true
+				this.rateAsk.shown()
+			} else {
+				rateLine.remove()
+				rateLine = undefined
+			}
+		}
 
 		// the pill
 		const pill = el("div", "sb-review-pill")
@@ -258,7 +296,7 @@ export class CreditsRatingPrompt {
 			state === "friends" ? data.friends_rating : state === "logged" || state === "unlinked" ? undefined : score
 		if (pillScore) toggle.append(scorePill(state === "friends" ? "letterboxd" : data.source, pillScore))
 		pill.append(toggle)
-		if (state === "logged") pill.append(link("sb-review-action", filmUrl, "Log again"))
+		if (state === "logged") pill.append(filmLink("sb-review-action", "Log again"))
 		if (state === "unlinked") {
 			const connect = el("button", "sb-review-action sb-review-ghost", "Connect")
 			connect.type = "button"
@@ -286,6 +324,7 @@ export class CreditsRatingPrompt {
 				button.setAttribute("aria-expanded", String(open))
 				button.setAttribute("aria-controls", card.id)
 			}
+			if (open) askOnOpen()
 		}
 		setOpen(false)
 		// the pill hides while the card is open, so focus moves to the card's own close button and back
@@ -301,7 +340,11 @@ export class CreditsRatingPrompt {
 		})
 		// following a link to Letterboxd is the end of it
 		root.addEventListener("click", (event) => {
-			if ((event.target as Element).closest?.("a")) dismiss()
+			const anchor = (event.target as Element).closest?.("a")
+			if (!anchor) return
+			if (anchor === rateLink) this.rateAsk?.opened()
+			else if (filmLinks.includes(anchor)) this.rateAsk?.loggedFilm()
+			dismiss()
 		})
 		root.addEventListener("keydown", (event) => {
 			if (event.key !== "Escape") return

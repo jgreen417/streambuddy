@@ -103,6 +103,8 @@ export function installPageFeatureStyle() {
  .sb-review-primary { display:flex; flex:1; align-items:center; justify-content:center; min-height:44px; padding:var(--sb-space-md) var(--sb-space-lg); border:0; border-radius:var(--sb-radius-xl); background:var(--sb-accent); color:var(--sb-text-on-accent) !important; font-size:15px; font-weight:700; text-align:center; }
  .sb-review-later { flex:none; min-height:44px; padding:0 var(--sb-space-lg); border:0; border-radius:var(--sb-radius-xl); background:none; color:var(--sb-text-muted) !important; font-size:15px; font-weight:500; }
  .sb-review-later:hover { background:var(--sb-well-glass); color:var(--sb-text) !important; }
+ .sb-review-rate { margin:var(--sb-space-lg) 0 0; color:var(--sb-text-muted); font-size:12px; text-align:center; }
+ .sb-review-rate a { color:var(--sb-accent) !important; font-weight:700; }
  .sb-shortcut-notice { position:fixed; left:50%; bottom:48px; z-index:2147483647; transform:translateX(-50%); padding:10px 18px; border:1px solid var(--sb-line-glass); border-radius:var(--sb-radius-pill); background:var(--sb-glass-panel); -webkit-backdrop-filter:var(--sb-blur-panel); backdrop-filter:var(--sb-blur-panel); box-shadow:var(--sb-shadow-float); color:var(--sb-text); font:600 14px/1.3 var(--sb-font-page); white-space:nowrap; pointer-events:none; }
  @media (prefers-reduced-motion:reduce) { .sb-review, .sb-review *, .sb-feature-button,.sb-episode-rating,.sb-card-rating,.sb-hide-title { animation:none !important; transition:none !important; } }
  `

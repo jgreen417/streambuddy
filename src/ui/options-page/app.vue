@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { BUG_REPORT_URL, DONATE_URL, PRIVACY_URL, SOURCE_URL } from "@/constants/links"
+import { reviewsUrl, saveRateAsk } from "@/utils/rate-ask"
 import ServiceRequestBanner from "@/components/options/ServiceRequestBanner.vue"
 import { useFrontendStore } from "@/stores/options.store"
 const version = __VERSION__
@@ -80,6 +81,15 @@ const hash = computed(() => router.currentRoute.value.path)
 			</nav>
 			<ServiceRequestBanner />
 			<div class="mt-auto credit">
+				<a
+					class="support"
+					:href="reviewsUrl"
+					target="_blank"
+					rel="noopener"
+					@click="saveRateAsk({ rateLinkOpened: true })"
+				>
+					★ Rate streamBuddy
+				</a>
 				<a
 					v-if="DONATE_URL"
 					class="support"

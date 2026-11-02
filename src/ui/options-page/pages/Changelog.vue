@@ -1,11 +1,25 @@
 <script setup lang="ts">
 import { marked } from "marked"
+import { reviewsUrl, saveRateAsk, storeName } from "@/utils/rate-ask"
 
-// one page heading like the other pages; each release is a section under it
-const changelog = marked.parse(__CHANGELOG__.replace(/^# (?!Changelog$)/gm, "## "), { async: false })
+// the page's own heading, like the other pages; each release is a section under it
+const changelog = marked.parse(__CHANGELOG__.replace(/^# Changelog\s*$/m, "").replace(/^# /gm, "## "), { async: false })
 </script>
 
 <template>
+	<h1>{{ $t("changelog") }}</h1>
+	<p class="sb-changelog-rate">
+		Liking streamBuddy?
+		<a
+			:href="reviewsUrl"
+			target="_blank"
+			rel="noopener"
+			@click="saveRateAsk({ rateLinkOpened: true })"
+		>
+			Rate it on {{ storeName }}
+		</a>
+		to help other Letterboxd fans find it.
+	</p>
 	<!-- eslint-disable vue/no-v-html -->
 	<div
 		class="sb-changelog"
@@ -15,6 +29,14 @@ const changelog = marked.parse(__CHANGELOG__.replace(/^# (?!Changelog$)/gm, "## 
 </template>
 
 <style scoped>
+.sb-changelog-rate {
+	max-width: 620px;
+	color: var(--sb-text-muted);
+}
+.sb-changelog-rate a {
+	color: var(--sb-accent);
+	font-weight: 600;
+}
 .sb-changelog {
 	max-width: 620px;
 }
