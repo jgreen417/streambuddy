@@ -52,7 +52,7 @@ test("popup", async ({ open }) => {
 	const page = await open("about:blank", { viewport: { width: 340, height: 600 }, local: LOCAL })
 	await extensionPage(page, "src/ui/action-popup/index.html", ".sb-header")
 	// Chromium draws the service dropdown's text a pixel higher on some runs, so that one box is left out
-	await expect.soft(page).toHaveScreenshot("popup-settings.png", { mask: [page.locator(".sb-scope select").first()] })
+	await expect.soft(page).toHaveScreenshot("popup-settings.png", { mask: [page.locator(".sb-context select").first()] })
 	// the popup stops at the browser's 600px limit and scrolls, so each tab is also shot scrolled to the end
 	const content = page.locator(".sb-content")
 	await content.evaluate((el) => el.scrollTo(0, el.scrollHeight))
@@ -75,7 +75,7 @@ test("popup on a service streamBuddy doesn't cover", async ({ open }) => {
 	await extensionPage(page, "src/ui/action-popup/index.html", ".sb-header")
 	await expect(page.getByText("streamBuddy doesn't work on Mubi yet")).toBeVisible()
 	await expect.soft(page).toHaveScreenshot("popup-unsupported-site.png", {
-		mask: [page.locator(".sb-scope select").first()],
+		mask: [page.locator(".sb-context select").first()],
 	})
 })
 

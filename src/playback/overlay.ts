@@ -37,7 +37,7 @@ button.quiet:hover { color: var(--sb-text); background: var(--sb-hairline); }
 .speed .presets { display: none; gap: 2px; }
 .speed.open .presets { display: flex; }
 .speed .presets button { padding: 6px 10px; background: transparent; }
-.speed .presets button[aria-pressed="true"] { background: var(--sb-text); color: var(--sb-bg); }
+.speed .presets button[aria-pressed="true"] { background: var(--sb-selected); color: var(--sb-text); }
 /* shown with the player's controls, like the speed pill */
 .time { position: relative; padding: 4px; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
 .time.show, .time.open, .time:hover, .time:focus-within { opacity: 1; pointer-events: auto; }

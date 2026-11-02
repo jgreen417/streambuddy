@@ -1,7 +1,8 @@
 # streamBuddy design system
 
-streamBuddy's look is called "Buddy": a warm couch-dark background, popcorn-white text, tangerine for the brand and
-for anything switched on, and a pastel colour scale that only ever means a score. Friends' ratings are what makes
+streamBuddy's look is called "Buddy": a warm couch-dark background, popcorn-white text, smoked glass for anything that
+floats over a site, tangerine for the logo, a calmer clay for the main action, and a dusty colour scale that only ever
+means a score. Friends' ratings are what makes
 streamBuddy different, so friends get faces and dots, never a separate panel.
 
 ## Where the tokens live
@@ -34,12 +35,13 @@ To add a colour: add it to `palette` if it's new, then give it a role in `color`
 | well      | `#2a2421` | wells and round buttons in the credits pill         |
 | button    | `#2b2724` | buttons streamBuddy adds to a site                  |
 | line      | `#3a3431` | solid lines in the credits pill                     |
-| popcorn   | `#fbf4ec` | text; the badge's sticker; most tints, as an alpha  |
+| popcorn   | `#fbf4ec` | text; switches that are on; most tints, as an alpha |
 | stone     | `#a39b93` | muted and quiet text                                |
 | sand      | `#cfc6bc` | soft text on dark glass                             |
-| tangerine | `#ff7a45` | the brand, primary actions, anything switched on    |
+| tangerine | `#ff7a45` | the logo only                                       |
+| clay      | `#e38056` | the accent: primary actions, links, stars           |
 | apricot   | `#ffb38f` | keyboard focus rings                                |
-| sky       | `#8ec5ff` | links; "you" on the badge                           |
+| sky       | `#8ec5ff` | "you" and "watchlist" on the badge                  |
 | mint      | `#7ad9a0` | good news: connected, faster playback               |
 | coral     | `#ff8a8a` | problems                                            |
 
@@ -48,12 +50,19 @@ warm whatever they sit on. Lines come in five steps: `hairline` 7% (group border
 (raised edges and fields), `lineField` 15% (selects), `lineHover` 18% and `lineActive` 28%. Text that must stay
 readable never goes darker than `stone` (darker greys failed WCAG AA on these surfaces).
 
+What's selected (the active tab, the picked option, the current settings page) is `selected`, popcorn at 12%: a
+lighter step, never a solid orange fill. A switch that's on is popcorn with a couch knob (`switchOn`, `switchKnobOn`).
+
+Smoked glass: `glassPanel` (couch at 78%) with `blur.panel` behind the credits card and the hover card, edged with
+`lineGlass` and with `wellGlass` for round buttons on it.
+
 ### Score scale
 
-`scoreScale`: red `#ff8a7a`, orange `#ffb168`, yellow `#f2c94c`, light green `#b5e07a`, green `#7ad9a0`.
+`scoreScale`, dusty so it sits on glass without shouting: red `#f1a99e`, orange `#e2b38b`, yellow `#d3bc7b`, light
+green `#aec88f`, green `#97ccaa`.
 `ratings.ts` picks the band so each colour covers a similar share of what's streaming. Colour on a badge always means
 score: nothing else on a badge uses these colours, and a score is always dark ink on its band colour, in both badge
-looks. Too few votes, or no score, is `badgeUnrated` grey.
+looks (`scoreInk`). Too few votes, or no score, is `badgeUnrated` grey.
 
 ### Friends
 
@@ -62,7 +71,8 @@ friend keeps their colour from card to credits. The first three are the fixed "t
 
 ### Services
 
-`serviceColors` holds each service's own brand colour, for the watch-time chart only.
+`serviceColors` holds each service's own brand colour, for the service chips on the hover card. The watch-time chart
+uses `chartSteps` (popcorn down to grey, most watched first) so it doesn't turn into a rainbow.
 
 ## Type
 
@@ -89,23 +99,24 @@ player overlay loads the same bundled file into its shadow root. Numbers in scor
   margins and gaps, and three named insets: `edge` 14px (the popup's and the credits pill's outer edge), `inset` 12px
   (from a group's border to its content) and `card` 18px (above the credits card's content). Sizes of things (toggles,
   icons, the badge's 3px inset) stay as plain values.
-- Shadow: the badge is a sticker, not glass: `shadow.sticker` is a hard 3px drop with no blur, which lifts it off any
-  artwork. Floating panels (`float`, `review`) use soft shadows. Liquid Glass (`glass`, `shadow.glass`) is a blurred
+- Shadow and blur: the badge is smoked glass (`badgeBg` couchDeep at 74% with `blur.badge`); `shadow.badge` is a
+  faint light edge and a soft drop that lifts it off any artwork. Glass panels use `shadow.panel`. Floating panels (`float`, `review`) use soft shadows. Liquid Glass (`glass`, `shadow.glass`) is a blurred
   tint with a hairline edge; its frost setting runs from clear to frosted.
 - Motion: `ease.settle` for things settling into place (tabs, the badge appearing, bars growing), `ease.unfold` for the
   credits pill opening, `ease.arrive` for it appearing. Everything respects `prefers-reduced-motion`.
 
 ## Components
 
-- **Card badge** (`shared-functions.ts`): popcorn chip 3px from the artwork's edges (top-right on Netflix, bottom-right
-  on Prime and Max), the score in its band colour, and beside it a labelled column: tangerine "friends", sky "you" or
-  "watchlist". IMDb and TMDb scores show their source name in that column. Two looks: Classic (sticker) and Liquid
+- **Card badge** (`badge.ts`): smoked glass chip 3px from the artwork's edges (top-right on Netflix, bottom-right
+  on Prime and Max), the score in its band colour, and beside it a labelled column: "friends", sky "you" or
+  "watchlist". IMDb and TMDb scores show their source name in that column. Two looks: Smoked and Liquid
   Glass, which swaps the `--sb-badge-*` variables to light-on-glass.
 - **Episode chip** (`page-feature-styles.ts`): the card badge in miniature, with the same two looks.
-- **Credits pill** (`credits-review.ts`): a collapsed pill at the end credits that opens into a card of friends'
-  ratings. Tangerine primary action, ghost secondary.
-- **Popup** (`popup.css`): groups of rows on a `surface` with `hairline` borders, tangerine toggles, a segmented
-  control with a popcorn indicator.
+- **Credits pill** (`credits-review.ts`): a collapsed pill at the end credits that opens into a compact glass card:
+  the title, one line with your friends' average, their faces, stars, a clay primary action and a quiet "Not now". The
+  × folds it back into the pill.
+- **Popup** (`popup.css`): one list of rows on a `surface` with `hairline` dividers, popcorn switches, and the
+  service the settings apply to picked in the header.
 - **Player overlay** (`overlay.ts`): dark glass pills for skip notices and speed.
 
 There is no rating panel on title or detail pages, by design.

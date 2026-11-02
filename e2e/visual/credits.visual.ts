@@ -42,13 +42,14 @@ test("after-credits pill: expanded", async ({ open }) => {
 	await root.getByRole("button", { name: "Show details" }).click()
 	const card = root.locator(".sb-review-card")
 	await expect(card).toBeVisible()
-	await expect(card).toContainText("You just finished Aftersun")
+	await expect(card.locator(".sb-review-heading")).toHaveText("Aftersun")
+	await expect(card).toContainText("You just finished it")
 	await expect(card.locator(".sb-review-friend")).toHaveCount(3)
 	await expect(card.getByRole("link", { name: "Rate on Letterboxd" })).toHaveAttribute(
 		"href",
 		"https://letterboxd.com/film/aftersun/",
 	)
-	await expect(card.getByRole("link", { name: /see all/ })).toHaveAttribute(
+	await expect(card.getByRole("link", { name: /See all/ })).toHaveAttribute(
 		"href",
 		"https://letterboxd.com/buddy/friends/film/aftersun/",
 	)
@@ -77,19 +78,18 @@ for (const width of [375, 1440, 3440]) {
 		const page = await open(CRAZY_STUPID_LOVE, { viewport: { width, height: 1440 } })
 		const root = await review(page)
 		await root.getByRole("button", { name: "Show details" }).click()
-		await expect(root.locator(".sb-review-card")).toContainText("You just finished Crazy, Stupid, Love.")
+		await expect(root.locator(".sb-review-heading")).toHaveText("Crazy, Stupid, Love.")
 		const shell = root.locator(".sb-review-shell")
 		// clipped content still has a box inside the shell, so its scroll width catches what the boxes below can't
 		expect(await shell.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1)
 		const edges = (await shell.boundingBox())!
 		for (const part of [
-			".sb-review-brand",
-			".sb-review-close",
+			".sb-review-heading",
+			".sb-review-collapse",
 			".sb-review-more",
 			".sb-review-stars",
 			".sb-review-primary",
-			".sb-review-secondary",
-			".sb-review-chevron",
+			".sb-review-later",
 		]) {
 			for (const item of await root.locator(part).all()) {
 				const box = (await item.boundingBox())!

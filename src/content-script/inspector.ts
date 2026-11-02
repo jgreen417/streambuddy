@@ -2,7 +2,7 @@
 // how many people voted, and where else it is streaming. It lives in a shadow root so the site's CSS can't reach it.
 import { sendMessage } from "webext-bridge/content-script"
 import { SERVICES, searchOn, streamingServices, type StreamingService } from "@/constants/streamingServices"
-import { color, cssDeclarations, friendColors, palette, serviceColors } from "@/design/tokens"
+import { color, cssDeclarations, friendColors, serviceColors } from "@/design/tokens"
 import { installPageFont } from "@/utils/page-feature-styles"
 import { RATING_SOURCES, getScoreColor } from "@/utils/rating-sources"
 import { getLetterboxdSlug } from "@/utils/ratings"
@@ -137,11 +137,9 @@ const providerColor = (name: string) => {
 
 function head() {
 	const bar = el("div", "head")
-	const logo = el("span", "logo")
-	logo.innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="${palette.tangerine}"/><circle cx="24" cy="32" r="14" fill="${palette.couch}"/><circle cx="40" cy="32" r="14" fill="${palette.popcorn}"/><path d="M32 20.51 A14 14 0 0 1 32 43.49 A14 14 0 0 1 32 20.51 Z" fill="${palette.tangerine}"/></svg>`
 	const close = el("button", "close", "×")
 	close.setAttribute("aria-label", "Close")
-	bar.append(logo, el("span", "brand", "streamBuddy"), close)
+	bar.append(close)
 	return bar
 }
 
@@ -393,16 +391,15 @@ export function renderFix(cardTitle: string, state: FixState, actions: FixAction
 
 const STYLE = `
 * { box-sizing: border-box; }
-.sb-inspector { width: 100%; max-height: min(640px, calc(100vh - 24px)); overflow-y: auto; padding: 16px; border: 1px solid var(--sb-line-solid); border-radius: 22px; background: var(--sb-bg); box-shadow: var(--sb-shadow-review); color: var(--sb-text); font: 500 13px/1.35 var(--sb-font-page); scrollbar-width: thin; scrollbar-color: var(--sb-scrollbar) transparent; }
-.sb-inspector .head { display: flex; align-items: center; gap: 7px; color: var(--sb-text-muted); font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
-.sb-inspector .logo { display: flex; flex: none; width: 16px; height: 16px; }
-.sb-inspector .logo svg { width: 100%; height: 100%; }
-.sb-inspector .close { all: unset; margin-left: auto; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--sb-text-muted); font-size: 20px; cursor: pointer; }
-.sb-inspector .close:hover { background: var(--sb-well); color: var(--sb-text); }
+.sb-inspector { position: relative; width: 100%; max-height: min(640px, calc(100vh - 24px)); overflow-y: auto; padding: 16px; border: 1px solid var(--sb-line-glass); border-radius: 22px; background: var(--sb-glass-panel); -webkit-backdrop-filter: var(--sb-blur-panel); backdrop-filter: var(--sb-blur-panel); box-shadow: var(--sb-shadow-panel); color: var(--sb-text); font: 500 13px/1.35 var(--sb-font-page); scrollbar-width: thin; scrollbar-color: var(--sb-scrollbar) transparent; }
+.sb-inspector .head { position: absolute; top: 12px; right: 12px; }
+.sb-inspector .head + * { padding-right: 32px; }
+.sb-inspector .close { all: unset; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--sb-text-muted); font-size: 20px; cursor: pointer; }
+.sb-inspector .close:hover { background: var(--sb-well-glass); color: var(--sb-text); }
 .sb-inspector .title { margin: 10px 0 2px; font-size: 21px; font-weight: 800; line-height: 1.08; letter-spacing: -.025em; }
 .sb-inspector .meta { color: var(--sb-text-muted); font-size: 12px; }
-.sb-inspector .score { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 10px; border-radius: 14px; background: var(--sb-well); }
-.sb-inspector .big { padding: 6px 10px; border-radius: 9px; background: var(--sb-badge-unrated); color: var(--sb-text-on-accent); font-size: 20px; font-weight: 800; letter-spacing: -.03em; }
+.sb-inspector .score { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.sb-inspector .big { padding: 5px 9px; border-radius: 9px; background: var(--sb-badge-unrated); color: var(--sb-text-on-accent); font-size: 17px; font-weight: 800; letter-spacing: -.03em; }
 .sb-inspector .copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .sb-inspector .copy b { font-size: 13px; font-weight: 700; }
 .sb-inspector .copy span { color: var(--sb-text-muted); font-size: 11px; }
@@ -415,7 +412,7 @@ const STYLE = `
 .sb-inspector .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sb-info); flex: none; }
 .sb-inspector .dot.watch { background: var(--sb-badge-watchlist); }
 .sb-inspector .personal .stars { margin-left: auto; }
-.sb-inspector .label { display: flex; align-items: center; margin: 14px 0 7px; color: var(--sb-text-muted); font-size: 10px; font-weight: 600; letter-spacing: .13em; text-transform: uppercase; }
+.sb-inspector .label { display: flex; align-items: center; margin: 14px 0 7px; color: var(--sb-text); font-size: 12px; font-weight: 600; }
 .sb-inspector .where-toggle { width: 100%; margin-bottom: 0; padding: 0; border: 0; background: none; font-family: inherit; cursor: pointer; }
 .sb-inspector .where-toggle:hover { color: var(--sb-text); }
 .sb-inspector .where-toggle .chevron { width: 14px; height: 14px; margin-left: auto; transition: transform .2s; }
@@ -429,8 +426,8 @@ const STYLE = `
 .sb-inspector .stars { margin-left: auto; color: var(--sb-accent); letter-spacing: .08em; font-size: 12px; white-space: nowrap; }
 .sb-inspector .stars s { color: var(--sb-star-empty); text-decoration: none; }
 .sb-inspector .half { font-style: normal; color: transparent; background: linear-gradient(90deg, var(--sb-accent) 50%, var(--sb-star-empty) 50%); -webkit-background-clip: text; background-clip: text; }
-.sb-inspector .rule { height: 1px; margin: 12px 0; background: var(--sb-line-solid); }
-.sb-inspector .providers { border: 1px solid var(--sb-hairline); border-radius: var(--sb-radius-xl); overflow: hidden; }
+.sb-inspector .rule { height: 1px; margin: 12px 0; background: var(--sb-line-glass); }
+.sb-inspector .providers { border: 1px solid var(--sb-line-glass); border-radius: var(--sb-radius-xl); overflow: hidden; }
 .sb-inspector .provider { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-top: 1px solid var(--sb-hairline); font-size: 12px; }
 .sb-inspector .provider:first-child { border-top: 0; }
 .sb-inspector a.provider { text-decoration: none; }
@@ -440,7 +437,7 @@ const STYLE = `
 .sb-inspector .provider .name { color: var(--sb-text); }
 .sb-inspector .provider .right { margin-left: auto; color: var(--sb-text-muted); font-size: 11px; }
 .sb-inspector .provider .right.included { color: var(--sb-up); }
-.sb-inspector .provider .here { margin-left: auto; color: var(--sb-accent); font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.sb-inspector .provider .here { margin-left: auto; color: var(--sb-text-muted); font-size: 11px; }
 .sb-inspector .providers-state { padding: 9px 10px; color: var(--sb-text-muted); font-size: 11px; }
 .sb-inspector .attrib { margin: 6px 0 0; color: var(--sb-text-muted); font-size: 9px; }
 .sb-inspector .actions { display: flex; gap: 8px; margin-top: 13px; }
@@ -461,7 +458,7 @@ const STYLE = `
 .sb-inspector .result .rt span { color: var(--sb-text-muted); font-size: 11px; }
 .sb-inspector .result .pick { margin-left: auto; color: var(--sb-accent); font-size: 11px; font-weight: 700; }
 .sb-inspector .foot { margin: 10px 0 0; color: var(--sb-text-muted); font-size: 10px; line-height: 1.4; }
-.sb-inspector .btn.secondary { border: 1px solid var(--sb-line-solid); background: transparent; color: var(--sb-text); font-weight: 500; }
+.sb-inspector .btn.secondary { border: 1px solid var(--sb-line-hover); background: transparent; color: var(--sb-text); font-weight: 500; }
 .sb-inspector .btn:disabled { opacity: .45; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .sb-inspector * { animation: none !important; transition: none !important; } }
 `

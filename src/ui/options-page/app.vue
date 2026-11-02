@@ -79,6 +79,7 @@ const hash = computed(() => router.currentRoute.value.path)
 					<div>{{ $t("changelog") }}</div>
 				</RouterLink>
 			</nav>
+			<ServiceRequestBanner />
 			<div class="mt-auto credit">
 				<a
 					class="support"
@@ -137,8 +138,6 @@ const hash = computed(() => router.currentRoute.value.path)
 		<div class="content flex flex-col overflow-y-auto w-full">
 			<div class="page">
 				<div class="p-4 prose">
-					<!-- only where someone is setting streamBuddy up, not on every page -->
-					<ServiceRequestBanner v-if="['Account', 'install', 'Experience'].some((page) => hash.endsWith(page))" />
 					<RouterView />
 				</div>
 			</div>
@@ -181,9 +180,9 @@ body {
 	font-weight: inherit;
 }
 .menuButton.is-active {
-	background-color: var(--sb-text);
-	color: var(--sb-bg);
-	font-weight: 700;
+	background-color: var(--sb-selected);
+	color: var(--sb-text);
+	font-weight: 600;
 }
 .IconBox {
 	@apply flex items-center gap-3 px-2 pt-6 pb-5;
@@ -197,9 +196,6 @@ body {
 	letter-spacing: -0.035em;
 	line-height: 1.1;
 	color: var(--sb-text);
-}
-.title span + span {
-	color: var(--sb-accent);
 }
 .version {
 	font-size: 12px;

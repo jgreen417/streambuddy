@@ -8,6 +8,7 @@ const RGB = {
 	couchDeep: [21, 19, 18],
 	popcorn: [251, 244, 236],
 	tangerine: [255, 122, 69],
+	clay: [227, 128, 86],
 	white: [255, 255, 255],
 	black: [0, 0, 0],
 	seaGlass: [196, 228, 220],
@@ -36,6 +37,8 @@ export const palette = {
 	sand: "#cfc6bc",
 	cocoa: "#7a716a",
 	tangerine: hex("tangerine"),
+	// the accent: a calmer tangerine, so the logo stays the brightest orange on screen
+	clay: hex("clay"),
 	apricot: "#ffb38f",
 	sky: "#8ec5ff",
 	denim: "#2f6fb5",
@@ -65,8 +68,14 @@ export const color = {
 	surfaceRaised: alpha("popcorn", 0.1),
 	surfaceHover: alpha("popcorn", 0.12),
 	scrim: alpha("couch", 0.502),
+	// what's selected (the active tab, the picked option): a soft lighter step, never a solid fill
+	selected: alpha("popcorn", 0.12),
 	glassDark: alpha("couch", 0.86),
 	panel: alpha("couch", 0.91),
+	// smoked glass: the credits card and the hover card, over the video or the artwork (with --sb-blur-panel)
+	glassPanel: alpha("couch", 0.78),
+	lineGlass: alpha("white", 0.1),
+	wellGlass: alpha("white", 0.06),
 	panelSolid: alpha("couch", 0.95),
 	// lines
 	hairline: alpha("popcorn", 0.07),
@@ -86,12 +95,15 @@ export const color = {
 	textOnAccent: palette.couch,
 	starEmpty: palette.starEmpty,
 	scrollbar: palette.scrollbar,
-	// the brand, and anything switched on
-	accent: palette.tangerine,
-	accentWash: alpha("tangerine", 0.1),
-	accentWashHover: alpha("tangerine", 0.16),
-	accentGlow: alpha("tangerine", 0.25),
-	accentLine: alpha("tangerine", 0.35),
+	// the main action on each screen, links and stars; the logo keeps the brighter tangerine
+	accent: palette.clay,
+	accentWash: alpha("clay", 0.1),
+	accentWashHover: alpha("clay", 0.16),
+	accentGlow: alpha("clay", 0.25),
+	accentLine: alpha("clay", 0.35),
+	// a switch that's on: popcorn with a dark knob, so a row of switches doesn't turn the popup orange
+	switchOn: palette.popcorn,
+	switchKnobOn: palette.couch,
 	focus: palette.apricot,
 	focusQuiet: alpha("popcorn", 0.4),
 	// signals
@@ -102,24 +114,30 @@ export const color = {
 	error: palette.red,
 	textOnError: palette.white,
 	warning: palette.yellow,
-	// the rating badge: a popcorn sticker with dark ink (Liquid Glass swaps these on the badge itself)
-	badgeBg: palette.popcorn,
-	badgeInk: palette.couch,
-	badgeLabel: palette.cocoa,
-	badgeWatchlist: palette.denim,
+	// the rating badge: smoked glass with popcorn text (with --sb-blur-badge; Liquid Glass swaps these on the badge itself)
+	badgeBg: alpha("couchDeep", 0.74),
+	badgeInk: palette.popcorn,
+	badgeLabel: alpha("popcorn", 0.85),
+	badgeWatchlist: palette.sky,
+	// a score is always dark on its band colour
+	scoreInk: palette.couch,
 	badgeUnrated: palette.pebble,
 	dimOverlay: "rgba(40, 40, 40, 0.7)",
 } as const
 
 // Rating colour bands, red to green (ratings.ts picks the band). Softened so a score reads as a pill of colour with
 // dark text on it, and still as coloured text on the dark panels. Colour on a badge always means score.
-export const scoreScale = ["#ff8a7a", "#ffb168", "#f2c94c", "#b5e07a", "#7ad9a0"] as const
+export const scoreScale = ["#f1a99e", "#e2b38b", "#d3bc7b", "#aec88f", "#97ccaa"] as const
 
 // Friends' faces and dots, picked by name so a friend keeps their colour from card to credits.
 // The first three are also the fixed trio.
 export const friendColors = [palette.tangerine, palette.sky, palette.sun, palette.mint, palette.lilac] as const
 
-// Each service's own brand colour, for the watch-time chart.
+// The watch-time chart's services, most watched first: popcorn down to grey, one step per service, each at least 3:1 on
+// the popup so a slice never disappears.
+export const chartSteps = [palette.popcorn, palette.sand, palette.stone, "#8a827b", "#776f69", "#655e59"] as const
+
+// Each service's own brand colour, for the service chips on the hover card.
 export const serviceColors: Record<string, string> = {
 	netflix: "#e50914",
 	amazon: "#1f9cf0",
@@ -143,9 +161,10 @@ export const glass = {
 } as const
 
 export const shadow = {
-	// a sticker, not glass: a hard drop shadow lifts the badge off any artwork
-	sticker: `0 3px 0 ${alpha("black", 0.35)}`,
-	stickerSmall: `0 2px 0 ${alpha("black", 0.35)}`,
+	// smoked glass: a faint light edge and a soft shadow lift the badge off any artwork
+	badge: `inset 0 0 0 0.5px ${alpha("white", 0.2)}, inset 0 1px 0 ${alpha("white", 0.12)}, 0 2px 10px ${alpha("black", 0.3)}`,
+	badgeSmall: `inset 0 0 0 0.5px ${alpha("white", 0.2)}, 0 1px 4px ${alpha("black", 0.3)}`,
+	panel: `inset 0 1px 0 ${alpha("white", 0.08)}, 0 20px 50px ${alpha("black", 0.45)}`,
 	glass: `${glass.edge}, 0 2px 8px ${alpha("black", 0.25)}`,
 	glassSmall: `${glass.edge}, 0 2px 6px ${alpha("black", 0.25)}`,
 	float: `0 8px 28px ${alpha("black", 0.45)}`,
@@ -195,6 +214,12 @@ export const space = {
 	card: "18px",
 } as const
 
+// backdrop-filter values for the smoked glass
+export const blur = {
+	badge: "blur(14px) saturate(1.5)",
+	panel: "blur(28px) saturate(1.4)",
+} as const
+
 export const ease = {
 	// the popup's tabs, the badge settling in, bars growing
 	settle: "cubic-bezier(0.3, 0.7, 0.2, 1)",
@@ -205,12 +230,13 @@ export const ease = {
 } as const
 
 export const kebab = (key: string) => key.replace(/[A-Z]/g, (c) => "-" + c.toLowerCase())
-// every token as CSS custom properties: --sb-text, --sb-radius-md, --sb-shadow-sticker, --sb-ease-settle, ...
+// every token as CSS custom properties: --sb-text, --sb-radius-md, --sb-shadow-badge, --sb-ease-settle, ...
 export function cssVariables(): Record<string, string> {
 	const groups: [string, Record<string, string>][] = [
 		["", color],
 		["glass-", glass],
 		["shadow-", shadow],
+		["blur-", blur],
 		["font-", font],
 		["radius-", radius],
 		["space-", space],
