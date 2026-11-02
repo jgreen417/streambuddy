@@ -11,12 +11,12 @@ export const CARD_ASK_FILMS = 3
 
 export type RateAsk = {
 	rateLinkOpened?: boolean
-	ratePopupDismissed?: boolean
+	ratePopupShown?: boolean
 	rateCardShown?: boolean
 	// films opened on Letterboxd from the credits card
 	filmsLogged?: number
 }
-const KEYS: (keyof RateAsk)[] = ["rateLinkOpened", "ratePopupDismissed", "rateCardShown", "filmsLogged"]
+const KEYS: (keyof RateAsk)[] = ["rateLinkOpened", "ratePopupShown", "rateCardShown", "filmsLogged"]
 
 export const loadRateAsk = () => browser.storage.local.get(KEYS) as Promise<RateAsk>
 export const saveRateAsk = (change: RateAsk) => browser.storage.local.set(change)
