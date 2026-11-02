@@ -79,9 +79,9 @@ test("popup on a service streamBuddy doesn't cover", async ({ open }) => {
 	})
 })
 
-// the changelog's entries change every release, so it's drawn with a fixed sample of them
+// the changelog's entries change every release, so they're drawn with a fixed sample under the page's own heading
 const CHANGELOG_SAMPLE =
-	"<h1>Changelog</h1><h2>1.0.1</h2><ul><li>Ratings on episode lists.</li><li>A shorter label on the credits card.</li></ul>" +
+	"<h2>1.0.1</h2><ul><li>Ratings on episode lists.</li><li>A shorter label on the credits card.</li></ul>" +
 	"<h2>1.0.0</h2><ul><li>First release on the Chrome Web Store and Firefox Add-ons.</li></ul>"
 const SETTINGS_PAGES: { name: string; route: string; options?: OpenOptions }[] = [
 	{ name: "experience", route: "Experience" },
