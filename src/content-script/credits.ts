@@ -10,10 +10,22 @@ import { locale, ratingSources } from "./settings"
 import type { RatingsSite } from "./sites/types"
 import { setFilmEnded } from "@/utils/film-over"
 import type { RatingSources } from "@/stores/storeTypes"
+import { CARD_ASK_FILMS, reviewsUrl, saveRateAsk, watchRateAsk, type RateAsk } from "@/utils/rate-ask"
 
-const creditsPrompt = new CreditsRatingPrompt(() => {
-	Promise.resolve(sendMessage("openAccountSetup", {}, "background")).catch(() => {})
-})
+const rateAsk: RateAsk = {}
+watchRateAsk(rateAsk)
+const creditsPrompt = new CreditsRatingPrompt(
+	() => {
+		Promise.resolve(sendMessage("openAccountSetup", {}, "background")).catch(() => {})
+	},
+	{
+		url: reviewsUrl,
+		due: () => !rateAsk.rateLinkOpened && !rateAsk.rateCardShown && (rateAsk.filmsLogged ?? 0) >= CARD_ASK_FILMS,
+		loggedFilm: () => saveRateAsk({ filmsLogged: (rateAsk.filmsLogged ?? 0) + 1 }),
+		shown: () => saveRateAsk({ rateCardShown: true }),
+		opened: () => saveRateAsk({ rateLinkOpened: true }),
+	},
+)
 let playerLookup: {
 	title: string
 	sources: RatingSources

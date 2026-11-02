@@ -746,12 +746,13 @@ body {
 	outline: 2px solid var(--sb-focus);
 	outline-offset: 2px;
 }
-/* after an update: the note is two buttons, open the changelog or dismiss */
+/* after an update, or asking for a rating: open it, or dismiss */
 .sb-whats-new {
 	padding: 0;
 	gap: 0;
 }
-.sb-whats-new button {
+.sb-whats-new button,
+.sb-whats-new a {
 	display: flex;
 	align-items: center;
 	gap: var(--sb-space-lg);
@@ -763,7 +764,7 @@ body {
 	text-align: left;
 	cursor: pointer;
 }
-.sb-whats-new button:first-child {
+.sb-whats-new > :first-child {
 	flex: 1;
 }
 .sb-whats-new .sb-request-go {
@@ -777,10 +778,12 @@ body {
 	padding-left: 0;
 	font-size: 13px;
 }
-.sb-whats-new button:hover {
+.sb-whats-new button:hover,
+.sb-whats-new a:hover {
 	color: var(--sb-text);
 }
-.sb-whats-new button:focus-visible {
+.sb-whats-new button:focus-visible,
+.sb-whats-new a:focus-visible {
 	outline: 2px solid var(--sb-focus);
 	outline-offset: -2px;
 	border-radius: var(--sb-radius-lg);

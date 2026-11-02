@@ -12,6 +12,7 @@ import {
 import { useAccount } from "@/components/popup/useAccount"
 import { SERVICE_REQUEST_URL } from "@/constants/links"
 import { releaseSummary } from "@/utils/changelog"
+import { POPUP_ASK_DAYS, loadRateAsk, reviewsUrl, saveRateAsk, storeName } from "@/utils/rate-ask"
 
 const SITES = streamingServices.map((service) => ({
 	service,
@@ -43,6 +44,17 @@ function closeWhatsNew(openChangelog: boolean) {
 	whatsNew.value = false
 	browser.storage.local.remove("whatsNew")
 	if (openChangelog) openSettings("/options-page/Changelog")
+}
+
+// after a few days of watching, once, and never alongside the update note
+const askForRating = ref(false)
+Promise.all([loadRateAsk(), browser.storage.local.get("watchLog")]).then(([ask, { watchLog }]) => {
+	const days = Object.keys(watchLog ?? {}).length
+	askForRating.value = !ask.rateLinkOpened && !ask.ratePopupDismissed && days >= POPUP_ASK_DAYS
+})
+function closeRatingAsk(opened: boolean) {
+	askForRating.value = false
+	saveRateAsk(opened ? { rateLinkOpened: true } : { ratePopupDismissed: true })
 }
 
 function openSettings(route = "/options-page/Experience") {
@@ -127,6 +139,32 @@ function navigateTabs(event: KeyboardEvent) {
 				aria-label="Dismiss"
 				title="Dismiss"
 				@click="closeWhatsNew(false)"
+			>
+				✕
+			</button>
+		</div>
+		<div
+			v-else-if="askForRating"
+			class="sb-setup-banner sb-whats-new"
+		>
+			<a
+				:href="reviewsUrl"
+				target="_blank"
+				rel="noopener"
+				@click="closeRatingAsk(true)"
+			>
+				<span>
+					<strong>Enjoying streamBuddy?</strong>
+					A quick rating on {{ storeName }} helps other Letterboxd fans find it.
+				</span>
+				<span class="sb-request-go">Rate →</span>
+			</a>
+			<button
+				type="button"
+				class="sb-whats-new-close"
+				aria-label="Not now"
+				title="Not now"
+				@click="closeRatingAsk(false)"
 			>
 				✕
 			</button>

@@ -104,6 +104,8 @@ export function installPageFeatureStyle() {
  .sb-review-primary { border:0; background:var(--sb-accent); color:var(--sb-text-on-accent) !important; }
  .sb-review-secondary { border:1px solid var(--sb-line-solid); background:transparent; color:var(--sb-text) !important; font-weight:500; }
  .sb-review-footnote { margin:var(--sb-space-lg) 0 0; color:var(--sb-text-muted); font-size:12px; text-align:center; }
+ .sb-review-rate { margin:var(--sb-space-md) 0 0; color:var(--sb-text-muted); font-size:12px; text-align:center; }
+ .sb-review-rate a { color:var(--sb-accent) !important; font-weight:700; }
  .sb-shortcut-notice { position:fixed; left:50%; bottom:48px; z-index:2147483647; transform:translateX(-50%); padding:10px 18px; border:1px solid var(--sb-line-solid); border-radius:var(--sb-radius-pill); background:var(--sb-panel); box-shadow:var(--sb-shadow-float); color:var(--sb-text); font:600 14px/1.3 var(--sb-font-page); white-space:nowrap; pointer-events:none; }
  @media (prefers-reduced-motion:reduce) { .sb-review, .sb-review *, .sb-feature-button,.sb-episode-rating,.sb-card-rating,.sb-hide-title { animation:none !important; transition:none !important; } }
  `

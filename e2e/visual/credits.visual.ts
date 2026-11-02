@@ -56,6 +56,20 @@ test("after-credits pill: expanded", async ({ open }) => {
 	await clearOfControls(page)
 })
 
+// after three films logged from the card, it asks once for a store rating
+test("after-credits card: asks for a rating", async ({ open }) => {
+	const page = await open(AFTERSUN, { local: { filmsLogged: 3 } })
+	const root = await review(page)
+	await root.getByRole("button", { name: "Show details" }).click()
+	const card = root.locator(".sb-review-card")
+	await expect(card.getByRole("link", { name: "Rate it" })).toHaveAttribute(
+		"href",
+		"https://chromewebstore.google.com/detail/lieihlkbpleoeoaiagnfcegegjgeeojc/reviews",
+	)
+	await expect.soft(page).toHaveScreenshot("credits-card-rate-ask.png")
+	await clearOfControls(page)
+})
+
 // a long title with friends' faces and a score beside it is wider than the pill: it's cut short there, and the card
 // keeps its width rather than spilling past its border, from a phone-sized window to an ultrawide one
 for (const width of [375, 1440, 3440]) {

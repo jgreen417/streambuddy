@@ -115,12 +115,24 @@ function link(className: string, href: string, text: string) {
 	return a
 }
 
+// The card's one-time ask for a store rating, due once a few films have been logged from it
+export type CardRateAsk = {
+	url: string
+	due(): boolean
+	loggedFilm(): void
+	shown(): void
+	opened(): void
+}
+
 // The end-of-film review: a pill over the player once a film's credits roll, which expands into a card with
 // what your friends thought and a link to log it on Letterboxd. It never logs anything itself.
 export class CreditsRatingPrompt {
 	private prompted = new Set<string>()
 	private current = ""
-	constructor(private openSetup: () => void = () => {}) {}
+	constructor(
+		private openSetup: () => void = () => {},
+		private rateAsk?: CardRateAsk,
+	) {}
 
 	get showing() {
 		return !!document.querySelector(".sb-review")
@@ -236,6 +248,12 @@ export class CreditsRatingPrompt {
 			buttons.append(later)
 		}
 		inner.append(buttons, el("p", "sb-review-footnote", "Opens the film on Letterboxd."))
+		const rateLink = this.rateAsk?.due() ? link("", this.rateAsk.url, "Rate it") : undefined
+		if (rateLink) {
+			const line = el("p", "sb-review-rate", "Liking streamBuddy? ")
+			line.append(rateLink)
+			inner.append(line)
+		}
 
 		// the pill
 		const pill = el("div", "sb-review-pill")
@@ -292,13 +310,18 @@ export class CreditsRatingPrompt {
 				button.setAttribute("aria-controls", card.id)
 			}
 			chevron.setAttribute("aria-label", open ? "Hide details" : "Show details")
+			if (open && rateLink) this.rateAsk?.shown()
 		}
 		setOpen(false)
 		toggle.addEventListener("click", () => setOpen(card.inert))
 		chevron.addEventListener("click", () => setOpen(card.inert))
 		// following a link to Letterboxd is the end of it
 		root.addEventListener("click", (event) => {
-			if ((event.target as Element).closest?.("a")) dismiss()
+			const anchor = (event.target as Element).closest?.("a")
+			if (!anchor) return
+			if (anchor === rateLink) this.rateAsk?.opened()
+			else if (anchor.href === filmUrl) this.rateAsk?.loggedFilm()
+			dismiss()
 		})
 		root.addEventListener("keydown", (event) => {
 			if (event.key !== "Escape") return
