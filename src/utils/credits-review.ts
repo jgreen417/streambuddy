@@ -171,37 +171,34 @@ export class CreditsRatingPrompt {
 		card.id = `sb-review-card-${data.id}`
 		const inner = el("div", "sb-review-card-inner")
 		card.append(inner)
+		// the open card takes the pill's place, so its title says what the pill did
 		const head = el("div", "sb-review-head")
-		head.append(el("span", "sb-review-brand", "streamBuddy"))
-		const close = el("button", "sb-review-close", "×")
-		close.type = "button"
-		close.setAttribute("aria-label", "Close")
-		close.addEventListener("click", dismiss)
-		head.append(close)
-		inner.append(head, el("div", "sb-review-heading", `You just finished ${data.title}`))
+		const heading = el("div", "sb-review-heading", data.title)
+		// folds the card back into the pill; "Not now" is what closes it
+		const collapse = el("button", "sb-review-collapse", "×")
+		collapse.type = "button"
+		collapse.setAttribute("aria-label", "Hide details")
+		head.append(heading, collapse)
+		const subhead = el("div", "sb-review-subhead", "You just finished it")
+		if (state === "friends" && data.friends_rating) {
+			subhead.append(" · your friends gave it ")
+			subhead.append(el("b", "", data.friends_rating.toFixed(1)))
+		}
+		inner.append(head, subhead)
 
 		const section = el("div", "sb-review-section")
 		if (state === "friends") {
-			section.append(el("div", "sb-review-label", "Your friends thought"))
 			for (const friend of friends.slice(0, FRIENDS_IN_CARD)) {
 				const row = el("div", "sb-review-friend")
 				row.append(face(friend.name), el("span", "sb-review-name", friend.name), stars(friend.rating))
 				section.append(row)
 			}
-			const average = el("div", "sb-review-average")
-			if (data.friends_rating) average.append(scorePill("letterboxd", data.friends_rating))
-			average.append(el("span", "", "Friends' average"))
 			const count = `${friendsCount} ${friendsCount == 1 ? "friend" : "friends"}`
-			average.append(
-				slug
-					? link(
-							"sb-review-more",
-							`https://letterboxd.com/${viewer.username}/friends/film/${slug}/`,
-							`${count} · see all`,
-						)
-					: el("span", "sb-review-more", count),
-			)
-			section.append(average)
+			if (slug)
+				section.append(
+					link("sb-review-more", `https://letterboxd.com/${viewer.username}/friends/film/${slug}/`, `See all ${count}`),
+				)
+			else if (friendsCount > FRIENDS_IN_CARD) section.append(el("span", "sb-review-more", `${count} rated it`))
 		} else {
 			const line = el("div", "sb-review-average")
 			if (score) line.append(scorePill(data.source, score))
@@ -227,15 +224,13 @@ export class CreditsRatingPrompt {
 				this.openSetup()
 				dismiss()
 			})
-			buttons.append(connect, link("sb-review-secondary", filmUrl, "Open on Letterboxd"))
-		} else {
-			buttons.append(link("sb-review-primary", filmUrl, state === "logged" ? "Log again" : "Rate on Letterboxd"))
-			const later = el("button", "sb-review-secondary", "Not now")
-			later.type = "button"
-			later.addEventListener("click", dismiss)
-			buttons.append(later)
-		}
-		inner.append(buttons, el("p", "sb-review-footnote", "Opens the film on Letterboxd."))
+			buttons.append(connect)
+		} else buttons.append(link("sb-review-primary", filmUrl, state === "logged" ? "Log again" : "Rate on Letterboxd"))
+		const later = el("button", "sb-review-later", "Not now")
+		later.type = "button"
+		later.addEventListener("click", dismiss)
+		buttons.append(later)
+		inner.append(buttons)
 
 		// the pill
 		const pill = el("div", "sb-review-pill")
@@ -291,11 +286,19 @@ export class CreditsRatingPrompt {
 				button.setAttribute("aria-expanded", String(open))
 				button.setAttribute("aria-controls", card.id)
 			}
-			chevron.setAttribute("aria-label", open ? "Hide details" : "Show details")
 		}
 		setOpen(false)
-		toggle.addEventListener("click", () => setOpen(card.inert))
-		chevron.addEventListener("click", () => setOpen(card.inert))
+		// the pill hides while the card is open, so focus moves to the card's own close button and back
+		const expand = () => {
+			setOpen(true)
+			collapse.focus()
+		}
+		toggle.addEventListener("click", expand)
+		chevron.addEventListener("click", expand)
+		collapse.addEventListener("click", () => {
+			setOpen(false)
+			toggle.focus()
+		})
 		// following a link to Letterboxd is the end of it
 		root.addEventListener("click", (event) => {
 			if ((event.target as Element).closest?.("a")) dismiss()

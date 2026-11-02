@@ -12,13 +12,22 @@ const props = defineProps<{
 	expanded?: boolean
 	fixedService?: boolean
 }>()
-const selection = ref<StreamingService | "">(props.service ?? "")
+// the popup keeps the service picker in its header and passes it in; the settings page leaves it here
+const headerScope = defineModel<StreamingService | "">("scope")
+const ownScope = ref<StreamingService | "">(props.service ?? "")
 watch(
 	() => props.service,
 	(value) => {
-		selection.value = value ?? ""
+		ownScope.value = value ?? ""
 	},
 )
+const selection = computed({
+	get: () => headerScope.value ?? ownScope.value,
+	set: (value) => {
+		if (headerScope.value === undefined) ownScope.value = value
+		else headerScope.value = value
+	},
+})
 const targets = computed(() => (selection.value ? [selection.value] : [...streamingServices]))
 const scope = computed(() => (selection.value ? SERVICES[selection.value].name : "All services"))
 const has = (key: string) =>
@@ -62,9 +71,10 @@ const sourceOptions: { value: RatingSources; label: string }[] = [
 	{ value: "tmdb", label: "TMDb only" },
 ]
 const badgeLooks = [
-	{ value: "classic", label: "Classic" },
+	{ value: "classic", label: "Smoked" },
 	{ value: "glass", label: "Liquid Glass" },
 ] as const
+const lookLabel = computed(() => badgeLooks.find((look) => look.value === settings.value.General.badgeStyle)?.label)
 const sourceLabel = computed(
 	() => sourceOptions.find((option) => option.value === settings.value.General.ratingSources)?.label ?? "",
 )
@@ -108,7 +118,7 @@ const updateMode = (event: Event) => {
 <template>
 	<div class="sb-preferences">
 		<label
-			v-if="!fixedService"
+			v-if="!fixedService && headerScope === undefined"
 			class="sb-scope"
 			:for="`${id}-scope`"
 		>
@@ -133,10 +143,12 @@ const updateMode = (event: Event) => {
 		>
 			Editing settings for {{ scope }}
 		</p>
-		<p class="sb-help sb-scope-note">
+		<p
+			v-if="headerScope === undefined"
+			class="sb-help sb-scope-note"
+		>
 			Playback and card settings can differ per service. Everything else applies everywhere.
 		</p>
-		<div class="sb-label">Quick controls</div>
 		<div class="sb-group">
 			<PopupToggle
 				:model-value="intros === true"
@@ -160,216 +172,146 @@ const updateMode = (event: Event) => {
 				@update:model-value="cards = $event"
 			/>
 		</div>
-		<div class="sb-label">Badge look</div>
-		<div class="sb-group sb-badge-look">
-			<p class="sb-help">Applies to card and episode ratings.</p>
-			<div
-				class="sb-mode sb-look-picker"
-				role="radiogroup"
-				aria-label="Badge look"
+		<div class="sb-list">
+			<details
+				class="sb-disclosure"
+				:open="expanded"
 			>
-				<label
-					v-for="look in badgeLooks"
-					:key="look.value"
-				>
-					<input
-						v-model="settings.General.badgeStyle"
-						type="radio"
-						:name="`${id}-look`"
-						:value="look.value"
-					/>
+				<summary>
 					<span>
-						<i
-							class="sb-look-sample"
-							:class="look.value"
-							aria-hidden="true"
-						>
-							<b>4.1</b>
-						</i>
-						{{ look.label }}
+						Badge look
+						<small>
+							{{ lookLabel }} · {{ settings.General.badgeDetail === "score" ? "Score only" : "Full detail" }}
+						</small>
 					</span>
-				</label>
-			</div>
-			<label
-				v-if="settings.General.badgeStyle === 'glass'"
-				class="sb-cutoff sb-frost"
-			>
-				Glass:
-				{{ settings.General.glassFrost < 34 ? "clear" : settings.General.glassFrost < 67 ? "soft frost" : "frosted" }}
-				<input
-					v-model.number="settings.General.glassFrost"
-					type="range"
-					min="0"
-					max="100"
-					step="5"
-					:aria-valuetext="`${settings.General.glassFrost}% frosted`"
-				/>
-			</label>
-			<label class="sb-cutoff">
-				Badge detail
-				<select v-model="settings.General.badgeDetail">
-					<option value="full">Full</option>
-					<option value="score">Score only</option>
-				</select>
-			</label>
-			<p class="sb-help">
-				Score only shows just the score and where it’s from. Hover the badge to see friends’ ratings.
-			</p>
-		</div>
-		<details
-			class="sb-disclosure"
-			:open="expanded"
-		>
-			<summary>
-				<span>
-					Browsing
-					<small>
-						{{
-							settings.General.stopPreviews
-								? "Previews stopped"
-								: settings.General.quietPreviews
-									? "Previews muted"
-									: "Preview sound on"
-						}}
-					</small>
-				</span>
-			</summary>
-			<div class="sb-disclosure-body">
-				<PopupToggle
-					v-model="settings.General.quietPreviews"
-					label="Quiet browsing"
-					description="Mutes autoplay previews and trailers while you browse."
-				/>
-				<PopupToggle
-					v-model="settings.General.stopPreviews"
-					label="Stop previews from playing"
-					description="Previews stay paused until you press play. Crunchyroll and Tubi have none."
-				/>
-				<template v-if="targets.includes('Netflix')">
-					<PopupToggle
-						v-model="settings.Netflix.hideTop10"
-						label="Hide Netflix’s Top 10 row"
-						description="The ranked row on the home page."
-					/>
-					<PopupToggle
-						v-model="settings.Netflix.hideGames"
-						label="Hide Netflix games rows"
-						description="Mobile games on the home page and in search."
-					/>
-				</template>
-				<template v-if="targets.includes('Amazon')">
-					<PopupToggle
-						v-model="settings.Amazon.hidePaid"
-						label="Hide Prime Video paid titles"
-						description="Titles that need a rental, purchase or add-on."
-					/>
-				</template>
-				<p class="sb-help">Page cleanups only run on the selected service; quiet browsing applies everywhere.</p>
-			</div>
-		</details>
-		<details
-			class="sb-disclosure"
-			:open="expanded"
-		>
-			<summary>
-				<span>
-					Ratings & discovery
-					<small>{{ cardsInactive ? "Card effects paused" : `${sourceLabel} · Low ratings: ${mode}` }}</small>
-				</span>
-			</summary>
-			<div class="sb-disclosure-body">
-				<p class="sb-help">
-					Title pages, episodes and search work on Netflix, HBO Max, Prime Video, Disney+, Crunchyroll and Tubi.
-				</p>
-				<label class="sb-cutoff">
-					Ratings from
-					<select v-model="settings.General.ratingSources">
-						<option
-							v-for="option in sourceOptions"
-							:key="option.value"
-							:value="option.value"
-						>
-							{{ option.label }}
-						</option>
-					</select>
-				</label>
-				<p class="sb-help">TMDb fills in when the chosen sites have no rating.</p>
-				<PopupToggle
-					v-model="settings.General.episodeRatings"
-					label="Episode ratings"
-					description="IMDb scores beside individual episodes."
-				/>
-				<PopupToggle
-					v-model="settings.General.searchSort"
-					label="Search sort button"
-					description="Choose rating order on a search page."
-				/>
-				<fieldset
-					class="sb-filter"
-					:disabled="cardsInactive"
-				>
-					<legend>Low-rated titles</legend>
-					<p
-						v-if="cardDependency"
-						class="sb-help"
+				</summary>
+				<div class="sb-disclosure-body sb-badge-look">
+					<div
+						class="sb-mode sb-look-picker"
+						role="radiogroup"
+						aria-label="Badge look"
 					>
-						{{ cardDependency }}
-					</p>
-					<div class="sb-mode">
 						<label
-							v-for="option in ['off', 'dim', 'hide']"
-							:key="option"
+							v-for="look in badgeLooks"
+							:key="look.value"
 						>
 							<input
+								v-model="settings.General.badgeStyle"
 								type="radio"
-								:name="`${id}-mode`"
-								:value="option"
-								:checked="mode === option"
-								@change="updateMode"
+								:name="`${id}-look`"
+								:value="look.value"
 							/>
-							<span>{{ option === "off" ? "Off" : option === "dim" ? "Dim" : "Hide" }}</span>
+							<span>
+								<i
+									class="sb-look-sample"
+									:class="look.value"
+									aria-hidden="true"
+								>
+									<b>4.1</b>
+								</i>
+								{{ look.label }}
+							</span>
 						</label>
 					</div>
 					<label
-						v-if="mode !== 'off'"
-						class="sb-cutoff"
+						v-if="settings.General.badgeStyle === 'glass'"
+						class="sb-cutoff sb-frost"
 					>
-						Below
-						<select v-model.number="settings.General.dimBelowBand">
-							<option
-								v-for="band in bands"
-								:key="band.value"
-								:value="band.value"
-							>
-								{{ band.label }}
-							</option>
+						Glass:
+						{{
+							settings.General.glassFrost < 34 ? "clear" : settings.General.glassFrost < 67 ? "soft frost" : "frosted"
+						}}
+						<input
+							v-model.number="settings.General.glassFrost"
+							type="range"
+							min="0"
+							max="100"
+							step="5"
+							:aria-valuetext="`${settings.General.glassFrost}% frosted`"
+						/>
+					</label>
+					<label class="sb-cutoff">
+						Badge detail
+						<select v-model="settings.General.badgeDetail">
+							<option value="full">Full</option>
+							<option value="score">Score only</option>
 						</select>
 					</label>
-					<p class="sb-help">Unrated titles stay visible.</p>
-				</fieldset>
-			</div>
-		</details>
-		<details
-			class="sb-disclosure"
-			:open="expanded"
-		>
-			<summary>
-				<span>
-					Letterboxd
-					<small>{{ username ? `Profile: ${username}` : "Personal ratings & watchlist" }}</small>
-				</span>
-			</summary>
-			<div class="sb-disclosure-body">
-				<slot name="profile" />
-				<template v-if="username">
+					<p class="sb-help">
+						Score only shows just the score and where it’s from. Hover the badge to see friends’ ratings.
+					</p>
+				</div>
+			</details>
+			<details
+				class="sb-disclosure"
+				:open="expanded"
+			>
+				<summary>
+					<span>
+						Browsing
+						<small>
+							{{
+								settings.General.stopPreviews
+									? "Previews stopped"
+									: settings.General.quietPreviews
+										? "Previews muted"
+										: "Preview sound on"
+							}}
+						</small>
+					</span>
+				</summary>
+				<div class="sb-disclosure-body">
+					<PopupToggle
+						v-model="settings.General.quietPreviews"
+						label="Quiet browsing"
+						description="Mutes autoplay previews and trailers while you browse."
+					/>
+					<PopupToggle
+						v-model="settings.General.stopPreviews"
+						label="Stop previews from playing"
+						description="Previews stay paused until you press play. Crunchyroll and Tubi have none."
+					/>
+					<template v-if="targets.includes('Netflix')">
+						<PopupToggle
+							v-model="settings.Netflix.hideTop10"
+							label="Hide Netflix’s Top 10 row"
+							description="The ranked row on the home page."
+						/>
+						<PopupToggle
+							v-model="settings.Netflix.hideGames"
+							label="Hide Netflix games rows"
+							description="Mobile games on the home page and in search."
+						/>
+					</template>
+					<template v-if="targets.includes('Amazon')">
+						<PopupToggle
+							v-model="settings.Amazon.hidePaid"
+							label="Hide Prime Video paid titles"
+							description="Titles that need a rental, purchase or add-on."
+						/>
+					</template>
+					<p class="sb-help">Page cleanups only run on the selected service; quiet browsing applies everywhere.</p>
+				</div>
+			</details>
+			<details
+				class="sb-disclosure"
+				:open="expanded"
+			>
+				<summary>
+					<span>
+						Ratings & discovery
+						<small>{{ cardsInactive ? "Card effects paused" : `${sourceLabel} · Low ratings: ${mode}` }}</small>
+					</span>
+				</summary>
+				<div class="sb-disclosure-body">
+					<p class="sb-help">
+						Title pages, episodes and search work on Netflix, HBO Max, Prime Video, Disney+, Crunchyroll and Tubi.
+					</p>
 					<label class="sb-cutoff">
-						Friends’ ratings
-						<select
-							v-model="friendsDisplay"
-							:disabled="letterboxdOff"
-						>
+						Ratings from
+						<select v-model="settings.General.ratingSources">
 							<option
-								v-for="option in friendsOptions"
+								v-for="option in sourceOptions"
 								:key="option.value"
 								:value="option.value"
 							>
@@ -377,135 +319,220 @@ const updateMode = (event: Event) => {
 							</option>
 						</select>
 					</label>
+					<p class="sb-help">TMDb fills in when the chosen sites have no rating.</p>
+					<PopupToggle
+						v-model="settings.General.episodeRatings"
+						label="Episode ratings"
+						description="IMDb scores beside individual episodes."
+					/>
+					<PopupToggle
+						v-model="settings.General.searchSort"
+						label="Search sort button"
+						description="Choose rating order on a search page."
+					/>
+					<fieldset
+						class="sb-filter"
+						:disabled="cardsInactive"
+					>
+						<legend>Low-rated titles</legend>
+						<p
+							v-if="cardDependency"
+							class="sb-help"
+						>
+							{{ cardDependency }}
+						</p>
+						<div class="sb-mode">
+							<label
+								v-for="option in ['off', 'dim', 'hide']"
+								:key="option"
+							>
+								<input
+									type="radio"
+									:name="`${id}-mode`"
+									:value="option"
+									:checked="mode === option"
+									@change="updateMode"
+								/>
+								<span>{{ option === "off" ? "Off" : option === "dim" ? "Dim" : "Hide" }}</span>
+							</label>
+						</div>
+						<label
+							v-if="mode !== 'off'"
+							class="sb-cutoff"
+						>
+							Below
+							<select v-model.number="settings.General.dimBelowBand">
+								<option
+									v-for="band in bands"
+									:key="band.value"
+									:value="band.value"
+								>
+									{{ band.label }}
+								</option>
+							</select>
+						</label>
+						<p class="sb-help">Unrated titles stay visible.</p>
+					</fieldset>
+				</div>
+			</details>
+			<details
+				class="sb-disclosure"
+				:open="expanded"
+			>
+				<summary>
+					<span>
+						Letterboxd
+						<small>{{ username ? `Profile: ${username}` : "Personal ratings & watchlist" }}</small>
+					</span>
+				</summary>
+				<div class="sb-disclosure-body">
+					<slot name="profile" />
+					<template v-if="username">
+						<label class="sb-cutoff">
+							Friends’ ratings
+							<select
+								v-model="friendsDisplay"
+								:disabled="letterboxdOff"
+							>
+								<option
+									v-for="option in friendsOptions"
+									:key="option.value"
+									:value="option.value"
+								>
+									{{ option.label }}
+								</option>
+							</select>
+						</label>
+						<p
+							v-if="letterboxdOff"
+							class="sb-help"
+						>
+							Friends’ ratings need Letterboxd in “Ratings from”.
+						</p>
+						<PopupToggle
+							v-model="settings.General.markWatched"
+							label="Seen & watchlist card marks"
+							:disabled="cardsInactive"
+							:description="cardDependency"
+						/>
+						<PopupToggle
+							v-model="settings.General.fadeWatched"
+							label="Fade watched films"
+							:disabled="cardsInactive"
+							:description="cardDependency"
+						/>
+						<PopupToggle
+							v-model="settings.General.rateOnCredits"
+							label="Rate on Letterboxd at the credits"
+							description="Shows a pill with friends’ ratings when a film’s credits start."
+						/>
+					</template>
 					<p
-						v-if="letterboxdOff"
+						v-else
 						class="sb-help"
 					>
-						Friends’ ratings need Letterboxd in “Ratings from”.
+						Add your Letterboxd username to see friends’ ratings and mark films you’ve seen.
+						<button
+							type="button"
+							class="sb-link"
+							@click="openAccount"
+						>
+							Add username
+						</button>
 					</p>
+				</div>
+			</details>
+			<details
+				class="sb-disclosure"
+				:open="expanded"
+			>
+				<summary>
+					<span>
+						Playback preferences
+						<small>
+							{{
+								credits === "mixed" ? "Credits skipped on some services" : credits ? "Credits skipped" : "Credits play"
+							}}
+						</small>
+					</span>
+				</summary>
+				<div class="sb-disclosure-body">
 					<PopupToggle
-						v-model="settings.General.markWatched"
-						label="Seen & watchlist card marks"
-						:disabled="cardsInactive"
-						:description="cardDependency"
+						:model-value="introOnly === true"
+						:mixed="introOnly === 'mixed'"
+						label="Skip intros"
+						@update:model-value="introOnly = $event"
 					/>
 					<PopupToggle
-						v-model="settings.General.fadeWatched"
-						label="Fade watched films"
-						:disabled="cardsInactive"
-						:description="cardDependency"
+						v-if="has('skipRecap')"
+						:model-value="recaps === true"
+						:mixed="recaps === 'mixed'"
+						label="Skip recaps"
+						@update:model-value="recaps = $event"
 					/>
 					<PopupToggle
-						v-model="settings.General.rateOnCredits"
-						label="Rate on Letterboxd at the credits"
-						description="Shows a pill with friends’ ratings when a film’s credits start."
+						v-if="has('skipCredits')"
+						:model-value="credits === true"
+						:mixed="credits === 'mixed'"
+						label="Skip credits"
+						description="Jumps to the next episode when the credits start."
+						@update:model-value="credits = $event"
 					/>
-				</template>
-				<p
-					v-else
-					class="sb-help"
-				>
-					Add your Letterboxd username to see friends’ ratings and mark films you’ve seen.
-					<button
-						type="button"
-						class="sb-link"
-						@click="openAccount"
-					>
-						Add username
-					</button>
-				</p>
-			</div>
-		</details>
-		<details
-			class="sb-disclosure"
-			:open="expanded"
-		>
-			<summary>
-				<span>
-					Playback preferences
-					<small>
-						{{
-							credits === "mixed" ? "Credits skipped on some services" : credits ? "Credits skipped" : "Credits play"
-						}}
-					</small>
-				</span>
-			</summary>
-			<div class="sb-disclosure-body">
-				<PopupToggle
-					:model-value="introOnly === true"
-					:mixed="introOnly === 'mixed'"
-					label="Skip intros"
-					@update:model-value="introOnly = $event"
-				/>
-				<PopupToggle
-					v-if="has('skipRecap')"
-					:model-value="recaps === true"
-					:mixed="recaps === 'mixed'"
-					label="Skip recaps"
-					@update:model-value="recaps = $event"
-				/>
-				<PopupToggle
-					v-if="has('skipCredits')"
-					:model-value="credits === true"
-					:mixed="credits === 'mixed'"
-					label="Skip credits"
-					description="Jumps to the next episode when the credits start."
-					@update:model-value="credits = $event"
-				/>
-				<PopupToggle
-					:model-value="stillWatching === true"
-					:mixed="stillWatching === 'mixed'"
-					label="Answer “Still watching?”"
-					@update:model-value="stillWatching = $event"
-				/>
-				<PopupToggle
-					:model-value="speed === true"
-					:mixed="speed === 'mixed'"
-					label="Speed control"
-					description="Remembers your speed per service. Shift + < or > to adjust; Prime Video, HBO Max, Disney+, Crunchyroll and Tubi also get a speed pill."
-					@update:model-value="speed = $event"
-				/>
-				<PopupToggle
-					v-model="settings.General.keepFirstIntro"
-					label="Keep intros on episode 1"
-					description="Watch the opening on episode 1 and skip it after that."
-				/>
-				<PopupToggle
-					v-if="has('skipRecap')"
-					v-model="settings.General.keepSeasonRecaps"
-					label="Keep recaps on episode 1"
-					description="Hear the “previously on” when a new season begins."
-				/>
-				<PopupToggle
-					v-model="settings.General.skipNotices"
-					label="Skip notices"
-					description="A short notice with Undo each time something is skipped."
-				/>
-				<label class="sb-cutoff sb-cutoff-divided">
-					Wait before skipping
-					<select v-model.number="settings.General.skipDelaySeconds">
-						<option
-							v-for="option in skipDelayOptions"
-							:key="option.value"
-							:value="option.value"
-						>
-							{{ option.label }}
-						</option>
-					</select>
-				</label>
-				<label class="sb-cutoff">
-					Pause autoplay after
-					<select v-model.number="settings.General.pauseAfter">
-						<option
-							v-for="option in pauseOptions"
-							:key="option.value"
-							:value="option.value"
-						>
-							{{ option.label }}
-						</option>
-					</select>
-				</label>
-			</div>
-		</details>
+					<PopupToggle
+						:model-value="stillWatching === true"
+						:mixed="stillWatching === 'mixed'"
+						label="Answer “Still watching?”"
+						@update:model-value="stillWatching = $event"
+					/>
+					<PopupToggle
+						:model-value="speed === true"
+						:mixed="speed === 'mixed'"
+						label="Speed control"
+						description="Remembers your speed per service. Shift + < or > to adjust; Prime Video, HBO Max, Disney+, Crunchyroll and Tubi also get a speed pill."
+						@update:model-value="speed = $event"
+					/>
+					<PopupToggle
+						v-model="settings.General.keepFirstIntro"
+						label="Keep intros on episode 1"
+						description="Watch the opening on episode 1 and skip it after that."
+					/>
+					<PopupToggle
+						v-if="has('skipRecap')"
+						v-model="settings.General.keepSeasonRecaps"
+						label="Keep recaps on episode 1"
+						description="Hear the “previously on” when a new season begins."
+					/>
+					<PopupToggle
+						v-model="settings.General.skipNotices"
+						label="Skip notices"
+						description="A short notice with Undo each time something is skipped."
+					/>
+					<label class="sb-cutoff sb-cutoff-divided">
+						Wait before skipping
+						<select v-model.number="settings.General.skipDelaySeconds">
+							<option
+								v-for="option in skipDelayOptions"
+								:key="option.value"
+								:value="option.value"
+							>
+								{{ option.label }}
+							</option>
+						</select>
+					</label>
+					<label class="sb-cutoff">
+						Pause autoplay after
+						<select v-model.number="settings.General.pauseAfter">
+							<option
+								v-for="option in pauseOptions"
+								:key="option.value"
+								:value="option.value"
+							>
+								{{ option.label }}
+							</option>
+						</select>
+					</label>
+				</div>
+			</details>
+		</div>
 	</div>
 </template>

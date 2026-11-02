@@ -1,4 +1,4 @@
-/* streamBuddy "Buddy" identity: warm couch-dark, popcorn text, tangerine for the brand and anything switched on.
+/* streamBuddy "Buddy" identity: warm couch-dark, popcorn text, a calm clay accent for the main action, the tangerine logo for the brand.
    Score colours stay reserved for the rating scale. The --sb-* tokens come from src/design/tokens.ts. */
 html,
 body {
@@ -71,10 +71,6 @@ body {
 	letter-spacing: -0.035em;
 	line-height: 1.1;
 }
-/* two spans so the template's line breaks don't put a space inside the name */
-.sb-wordmark span + span {
-	color: var(--sb-accent);
-}
 .sb-context {
 	display: flex;
 	align-items: center;
@@ -91,6 +87,32 @@ body {
 }
 .sb-context.is-active i {
 	background: var(--sb-up);
+}
+/* on the Settings tab the context line is the service picker: plain text with a caret */
+.sb .sb-context select {
+	field-sizing: content;
+	min-width: 0;
+	margin: -2px 0;
+	padding: 2px 0;
+	border: 0;
+	border-radius: var(--sb-radius-xs);
+	background: transparent;
+	color: var(--sb-text-muted);
+	font: inherit;
+	appearance: none;
+	cursor: pointer;
+}
+.sb .sb-context select:hover {
+	color: var(--sb-text);
+}
+.sb-context .sb-caret {
+	margin-left: -2px;
+	font-size: 10px;
+	pointer-events: none;
+}
+.sb-context select option {
+	background: var(--sb-field);
+	color: var(--sb-text);
 }
 .sb-icon-button {
 	display: flex;
@@ -131,7 +153,7 @@ body {
 	left: 2px;
 	width: calc(50% - 2px);
 	border-radius: var(--sb-radius-sm);
-	background: var(--sb-text);
+	background: var(--sb-selected);
 	transition: transform 0.22s var(--sb-ease-settle);
 }
 .sb-tabs[data-tab="stats"]::before {
@@ -151,8 +173,8 @@ body {
 	cursor: pointer;
 }
 .sb-tabs button.is-active {
-	color: var(--sb-bg);
-	font-weight: 700;
+	color: var(--sb-text);
+	font-weight: 600;
 }
 
 /* Groups and rows */
@@ -275,11 +297,11 @@ body {
 }
 .sb-toggle-input:checked + .sb-toggle,
 .sb-toggle-input:indeterminate + .sb-toggle {
-	background: var(--sb-accent);
+	background: var(--sb-switch-on);
 }
 .sb-toggle-input:checked + .sb-toggle::after {
 	left: 16px;
-	background: var(--sb-text);
+	background: var(--sb-switch-knob-on);
 }
 .sb-toggle-input:indeterminate + .sb-toggle::after {
 	top: 8px;
@@ -287,7 +309,7 @@ body {
 	width: 12px;
 	height: 2px;
 	border-radius: var(--sb-radius-pill);
-	background: var(--sb-text);
+	background: var(--sb-switch-knob-on);
 }
 .sb-toggle-input:disabled + .sb-toggle {
 	opacity: 0.4;
@@ -383,9 +405,9 @@ body {
 }
 /* the same popcorn indicator as the Settings/Stats tabs */
 .sb-mode input:checked + span {
-	background: var(--sb-text);
-	color: var(--sb-bg);
-	font-weight: 700;
+	background: var(--sb-selected);
+	color: var(--sb-text);
+	font-weight: 600;
 }
 .sb-mode input:focus-visible + span {
 	outline: 2px solid var(--sb-focus);
@@ -408,8 +430,8 @@ body {
 	width: 100%;
 }
 /* Badge look picker: each option shows a tiny badge drawn in that look */
-.sb-badge-look {
-	padding: var(--sb-space-md) var(--sb-space-inset) var(--sb-space-xxs);
+.sb-badge-look > .sb-look-picker {
+	margin: var(--sb-space-md) var(--sb-space-inset);
 }
 .sb-look-picker span {
 	display: flex;
@@ -422,7 +444,7 @@ body {
 	padding: 2px;
 	border-radius: var(--sb-radius-pill);
 	background: var(--sb-badge-bg);
-	box-shadow: var(--sb-shadow-sticker-small);
+	box-shadow: var(--sb-shadow-badge-small);
 	font-style: normal;
 }
 .sb-look-sample.glass {
@@ -468,6 +490,24 @@ body {
 }
 
 /* Disclosures: native details for preferences used less often */
+/* the sections, as one list */
+.sb-list {
+	overflow: hidden;
+	margin-top: var(--sb-space-md);
+	border: 1px solid var(--sb-hairline);
+	border-radius: var(--sb-radius-lg);
+	background: var(--sb-surface);
+}
+.sb-list > .sb-disclosure {
+	margin: 0;
+	border: 0;
+	border-top: 1px solid var(--sb-hairline);
+	border-radius: 0;
+	background: none;
+}
+.sb-list > .sb-disclosure:first-child {
+	border-top: 0;
+}
 .sb-disclosure {
 	overflow: hidden;
 	margin-top: var(--sb-space-md);
@@ -554,7 +594,7 @@ body {
 	animation: sb-grow 0.5s var(--sb-ease-settle) both;
 }
 .sb-bars span.is-today {
-	background: var(--sb-accent);
+	background: var(--sb-text);
 }
 .sb-days {
 	display: flex;
@@ -589,28 +629,16 @@ body {
 	margin-right: var(--sb-space-sm);
 	border-radius: 50%;
 }
-.sb-tiles {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	align-items: stretch;
-	gap: var(--sb-space-md);
-	margin-top: var(--sb-space-lg);
+/* the week's small facts, as one line */
+.sb-facts {
+	margin: var(--sb-space-lg) 0 0;
+	color: var(--sb-text-muted);
+	font-size: 12.5px;
+	line-height: 1.5;
 }
-.sb-tile {
-	padding: var(--sb-space-md) var(--sb-space-inset);
-	border: 1px solid var(--sb-hairline);
-	border-radius: var(--sb-radius-lg);
-	background: var(--sb-surface);
-}
-.sb-tile-value {
-	font-size: 18px;
-	font-weight: 750;
-	letter-spacing: -0.01em;
-}
-.sb-tile-label {
-	margin-top: var(--sb-space-xxs);
-	font-size: 12px;
-	color: var(--sb-text-quiet);
+.sb-facts b {
+	color: var(--sb-text);
+	font-weight: 600;
 }
 .sb-title-row {
 	display: flex;
@@ -638,9 +666,10 @@ body {
 .sb a.sb-title-watch {
 	position: relative;
 	z-index: 1;
-	color: var(--sb-accent);
+	color: var(--sb-text-muted);
 }
 .sb a.sb-title-watch:hover {
+	color: var(--sb-text);
 	text-decoration: underline;
 }
 .sb-title-name {
@@ -664,41 +693,6 @@ body {
 	font-weight: 750;
 	line-height: 1.4;
 	font-variant-numeric: tabular-nums;
-}
-
-/* Footer */
-.sb-footer {
-	display: flex;
-	flex-shrink: 0;
-	justify-content: space-between;
-	align-items: center;
-	margin-top: var(--sb-space-sm);
-	padding: var(--sb-space-md) 0;
-	border-top: 1px solid var(--sb-hairline);
-	font-size: 12px;
-	color: var(--sb-text-muted);
-}
-.sb-footer button,
-.sb-footer a {
-	display: inline-flex;
-	align-items: center;
-	min-height: 28px;
-}
-.sb-footer button {
-	padding: 0;
-	border: 0;
-	background: none;
-	color: inherit;
-	font: inherit;
-	cursor: pointer;
-}
-.sb-footer button:hover,
-.sb-footer a:hover {
-	color: var(--sb-text);
-}
-.sb-footer .is-primary {
-	font-weight: 500;
-	color: var(--sb-text);
 }
 
 /* shown until a TMDb key is added (ratings can't load without one), or on a service streamBuddy doesn't cover */
@@ -786,34 +780,19 @@ body {
 	border-radius: var(--sb-radius-lg);
 }
 
-/* after the last setting: where streamBuddy works, and a way to ask for more */
-.sb-ask-card {
-	margin-top: var(--sb-space-lg);
-	padding: var(--sb-space-inset);
-	border: 1px dashed var(--sb-accent-line);
-	border-radius: var(--sb-radius-lg);
-	background: var(--sb-surface);
-}
-.sb-ask-card strong {
+/* after the last setting or stat: one quiet line with a link (request a service, rate streamBuddy) */
+.sb-quiet-link {
 	display: block;
-	font-weight: 600;
-}
-.sb-ask-card p {
-	margin: var(--sb-space-xxs) 0 var(--sb-space-lg);
+	margin: var(--sb-space-lg) 2px var(--sb-space-xs);
 	color: var(--sb-text-muted);
 	font-size: 12px;
 }
-.sb-ask-card a {
-	display: block;
-	padding: 7px;
-	border-radius: var(--sb-radius-md);
-	background: var(--sb-accent);
-	color: var(--sb-text-on-accent);
-	font-weight: 700;
-	text-align: center;
+.sb-quiet-link b {
+	color: var(--sb-text);
+	font-weight: 500;
 }
-.sb-ask-card a:hover {
-	filter: brightness(1.08);
+.sb-quiet-link:hover b {
+	text-decoration: underline;
 }
 
 /* motion: bars grow in, numbers settle, tab content fades */
@@ -830,7 +809,7 @@ body {
 }
 .sb-big,
 .sb-sub,
-.sb-tiles,
+.sb-facts,
 .sb-label,
 .sb-group {
 	animation: sb-rise 0.28s ease-out both;
