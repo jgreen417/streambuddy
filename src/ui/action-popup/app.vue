@@ -8,6 +8,7 @@ import {
 	SUPPORTED_SERVICE_NAMES,
 	serviceForHost,
 	streamingServices,
+	type StreamingService,
 } from "@/constants/streamingServices"
 import { useAccount } from "@/components/popup/useAccount"
 import { SERVICE_REQUEST_URL } from "@/constants/links"
@@ -22,10 +23,13 @@ const tab = ref<"settings" | "stats">("settings")
 const { needsSetup, ratingsPaused } = useAccount()
 const current = ref<(typeof SITES)[number] | null>(null)
 const unsupported = ref<(typeof OTHER_SERVICES)[number] | null>(null)
+// which service the Settings tab edits: the tab's own service when it's on one, picked in the header
+const scope = ref<StreamingService | "">("")
 // the activeTab permission lets us read the URL of the tab the popup was opened on
 browser.tabs.query({ active: true, currentWindow: true }).then(([activeTab]) => {
 	const hostname = activeTab?.url ? new URL(activeTab.url).hostname : ""
 	current.value = SITES.find(({ service }) => service === serviceForHost(hostname)) ?? null
+	scope.value = current.value?.service ?? ""
 	unsupported.value = OTHER_SERVICES.find(({ host }) => host.test(hostname)) ?? null
 })
 const context = computed(() => {
@@ -70,7 +74,34 @@ function navigateTabs(event: KeyboardEvent) {
 					<span>stream</span>
 					<span>Buddy</span>
 				</div>
+				<label
+					v-if="tab === 'settings'"
+					class="sb-context"
+					:class="{ 'is-active': current }"
+				>
+					<i></i>
+					<select
+						v-model="scope"
+						aria-label="Settings for"
+					>
+						<option value="">All services</option>
+						<option
+							v-for="site in SITES"
+							:key="site.service"
+							:value="site.service"
+						>
+							{{ site.name }} settings
+						</option>
+					</select>
+					<span
+						class="sb-caret"
+						aria-hidden="true"
+					>
+						▾
+					</span>
+				</label>
 				<div
+					v-else
 					class="sb-context"
 					:class="{ 'is-active': current }"
 				>
@@ -201,21 +232,20 @@ function navigateTabs(event: KeyboardEvent) {
 				aria-labelledby="sb-settings-tab"
 				tabindex="0"
 			>
-				<PopupSettings :service="current?.service ?? null" />
-				<div
+				<PopupSettings
+					v-model:scope="scope"
+					:service="current?.service ?? null"
+				/>
+				<a
 					v-if="!unsupported"
-					class="sb-ask-card"
+					class="sb-quiet-link"
+					:href="SERVICE_REQUEST_URL"
+					target="_blank"
+					rel="noopener"
 				>
-					<strong>Watching somewhere else?</strong>
-					<p>Tell us which service to add next.</p>
-					<a
-						:href="SERVICE_REQUEST_URL"
-						target="_blank"
-						rel="noopener"
-					>
-						Request a service
-					</a>
-				</div>
+					Missing a service?
+					<b>Request it →</b>
+				</a>
 			</section>
 			<section
 				v-else
@@ -227,21 +257,6 @@ function navigateTabs(event: KeyboardEvent) {
 				<PopupStats />
 			</section>
 		</main>
-		<footer class="sb-footer">
-			<button
-				type="button"
-				@click="openSettings('/options-page/Playback')"
-			>
-				Playback
-			</button>
-			<button
-				type="button"
-				class="is-primary"
-				@click="openSettings()"
-			>
-				All settings →
-			</button>
-		</footer>
 	</div>
 </template>
 

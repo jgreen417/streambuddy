@@ -70,7 +70,8 @@ describe("credits review", () => {
 		toggle.click()
 		expect(card().inert).toBe(false)
 		expect(toggle.getAttribute("aria-expanded")).toBe("true")
-		expect(card().textContent).toContain("You just finished Past Lives")
+		expect(card().querySelector(".sb-review-heading")!.textContent).toBe("Past Lives")
+		expect(card().textContent).toContain("You just finished it · your friends gave it 4.2")
 		// three friends in the card, the rest behind "see all"
 		expect(card().querySelectorAll(".sb-review-friend")).toHaveLength(3)
 		expect(card().querySelector<HTMLAnchorElement>(".sb-review-more")!.href).toBe(
@@ -98,6 +99,15 @@ describe("credits review", () => {
 		expect(openSetup).toHaveBeenCalledOnce()
 		expect(review()).toBeNull()
 	})
+	it("the card's × folds it back into the pill", () => {
+		document.body.innerHTML = ""
+		new CreditsRatingPrompt().tick(video(), film, true, signedIn)
+		document.querySelector<HTMLButtonElement>(".sb-review-chevron")!.click()
+		expect(card().inert).toBe(false)
+		document.querySelector<HTMLButtonElement>(".sb-review-collapse")!.click()
+		expect(card().inert).toBe(true)
+		expect(review()).not.toBeNull()
+	})
 	it("Escape closes the card first, then the pill", () => {
 		document.body.innerHTML = ""
 		new CreditsRatingPrompt().tick(video(), film, true, signedIn)
@@ -124,7 +134,7 @@ describe("credits review", () => {
 		expect(review()).toBeNull()
 		prompt.tick(video(3400), film, true, signedIn)
 		expect(review()).not.toBeNull()
-		document.querySelector<HTMLButtonElement>(".sb-review-close")!.click()
+		document.querySelector<HTMLButtonElement>(".sb-review-later")!.click()
 		prompt.tick(video(3400), film, true, signedIn)
 		expect(review()).toBeNull()
 	})
@@ -138,8 +148,8 @@ describe("credits review", () => {
 			rating_url: "https://letterboxd.com/film/chernobyl/",
 		}
 		prompt.tick(video(3400), series, true, signedIn)
-		expect(review()?.textContent).toContain("You just finished Chernobyl")
-		document.querySelector<HTMLButtonElement>(".sb-review-close")!.click()
+		expect(review()?.querySelector(".sb-review-heading")?.textContent).toBe("Chernobyl")
+		document.querySelector<HTMLButtonElement>(".sb-review-later")!.click()
 		prompt.tick(video(3400), film, true, signedIn)
 		expect(review()?.textContent).toContain("Past Lives")
 	})

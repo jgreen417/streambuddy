@@ -8,6 +8,8 @@ import ExperiencePreferences from "./ExperiencePreferences.vue"
 import { useLetterboxdProfile } from "./useLetterboxdProfile"
 import { useAccount } from "./useAccount"
 const props = defineProps<{ service: StreamingService | null; expanded?: boolean; fixedService?: boolean }>()
+// set by the popup, which shows the service picker in its header
+const scope = defineModel<StreamingService | "">("scope")
 const { settings } = storeToRefs(useOptionsStore())
 const loaded = ref(false)
 const loadError = ref(false)
@@ -32,6 +34,7 @@ const { username } = useAccount()
 	<ExperiencePreferences
 		v-else
 		v-model:settings="settings"
+		v-model:scope="scope"
 		:service="props.service"
 		:expanded="expanded"
 		:fixed-service="fixedService"

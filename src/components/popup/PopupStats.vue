@@ -8,7 +8,7 @@ import {
 import { computed, ref } from "vue"
 import { settingsReady } from "@/stores/settings"
 import { getRatingPercentile, getScoreColor } from "@/utils/rating-sources"
-import { color, serviceColors } from "@/design/tokens"
+import { chartSteps } from "@/design/tokens"
 import { useLetterboxdProfile } from "./useLetterboxdProfile"
 import { CHROME_REVIEWS_URL, FIREFOX_REVIEWS_URL } from "@/constants/links"
 import {
@@ -96,6 +96,8 @@ function watchUrl(title: SeenTitle) {
 	const service = streamingServices.find((key) => SERVICES[key].statsKey === title.platform)
 	return service && searchOn(service, title.title)
 }
+// most watched first: popcorn, then greys
+const step = (index: number) => chartSteps[Math.min(index, chartSteps.length - 1)]
 const formatRating = (title: { source: string; rating: number }) =>
 	title.source === "letterboxd" ? `Letterboxd ${title.rating.toFixed(1)}/5` : `IMDb ${title.rating.toFixed(1)}/10`
 </script>
@@ -167,41 +169,32 @@ const formatRating = (title: { source: string; rating: number }) =>
 		<template v-if="summary.byService.length">
 			<div class="sb-split">
 				<span
-					v-for="service in summary.byService"
+					v-for="(service, index) in summary.byService"
 					:key="service.platform"
-					:style="{ flex: service.seconds, background: serviceColors[service.platform] ?? color.textMuted }"
+					:style="{ flex: service.seconds, background: step(index) }"
 				></span>
 			</div>
 			<div class="sb-legend">
 				<span
-					v-for="service in summary.byService"
+					v-for="(service, index) in summary.byService"
 					:key="service.platform"
 				>
-					<i :style="{ background: serviceColors[service.platform] ?? color.textMuted }"></i>
+					<i :style="{ background: step(index) }"></i>
 					{{ PLATFORM_NAMES[service.platform] ?? service.platform }}
 					{{ Math.round((service.seconds / servicesTotal) * 100) }}%
 				</span>
 			</div>
 		</template>
 
-		<div class="sb-tiles">
-			<div class="sb-tile">
-				<div class="sb-tile-value">{{ formatDuration(timeSaved) }}</div>
-				<div class="sb-tile-label">saved by skipping in the last 7 days</div>
-			</div>
-			<div class="sb-tile">
-				<template v-if="summary.biggestNight">
-					<div class="sb-tile-value">{{ summary.biggestNight.weekday }}</div>
-					<div class="sb-tile-label">
-						your biggest night · {{ formatDuration(summary.biggestNight.averageSeconds) }} on average
-					</div>
-				</template>
-				<template v-else>
-					<div class="sb-tile-value">–</div>
-					<div class="sb-tile-label">Not enough viewing data yet</div>
-				</template>
-			</div>
-		</div>
+		<p class="sb-facts">
+			<b>{{ formatDuration(timeSaved) }}</b>
+			saved by skipping
+			<template v-if="summary.biggestNight">
+				·
+				<b>{{ summary.biggestNight.weekday }}</b>
+				is your biggest night ({{ formatDuration(summary.biggestNight.averageSeconds) }} on average)
+			</template>
+		</p>
 
 		<template v-if="watchlistTitles.length">
 			<div class="sb-label">From your watchlist, spotted recently</div>
@@ -235,9 +228,10 @@ const formatRating = (title: { source: string; rating: number }) =>
 					</div>
 					<span
 						class="sb-pill"
+						:title="formatRating(title)"
 						:style="{ background: getScoreColor(title.source, title.rating) }"
 					>
-						{{ formatRating(title) }}
+						{{ title.rating.toFixed(1) }}
 					</span>
 				</div>
 			</div>
@@ -277,9 +271,10 @@ const formatRating = (title: { source: string; rating: number }) =>
 				</div>
 				<span
 					class="sb-pill"
+					:title="formatRating(title)"
 					:style="{ background: getScoreColor(title.source, title.rating) }"
 				>
-					{{ formatRating(title) }}
+					{{ title.rating.toFixed(1) }}
 				</span>
 			</div>
 			<div
@@ -289,20 +284,16 @@ const formatRating = (title: { source: string; rating: number }) =>
 				Browse a streaming homepage and the best-rated titles you scroll past will show up here.
 			</div>
 		</div>
-		<div
+		<a
 			v-if="askForRating"
-			class="sb-ask-card"
+			class="sb-quiet-link"
+			:href="reviewsUrl"
+			target="_blank"
+			rel="noopener"
+			@click="openedRateLink"
 		>
-			<strong>Enjoying streamBuddy?</strong>
-			<p>It's new, and a quick rating on {{ storeName }} helps other Letterboxd fans find it.</p>
-			<a
-				:href="reviewsUrl"
-				target="_blank"
-				rel="noopener"
-				@click="openedRateLink"
-			>
-				Rate streamBuddy
-			</a>
-		</div>
+			Enjoying streamBuddy?
+			<b>Rate it on {{ storeName }} →</b>
+		</a>
 	</template>
 </template>

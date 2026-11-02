@@ -1,6 +1,6 @@
 // The rating badge on a card: drawn from a looked-up rating and the badge settings, then fitted into a corner of
 // the card's artwork
-import { color, ease, font, friendColors as FRIEND_DOT_COLORS, shadow } from "@/design/tokens"
+import { blur, color, ease, font, friendColors as FRIEND_DOT_COLORS, shadow } from "@/design/tokens"
 import { installPageFeatureStyle, type BadgeLook } from "@/utils/page-feature-styles"
 import { getScoreBand, getScoreColor, normalizeScore } from "@/utils/rating-sources"
 import type { MovieInfo } from "./cache"
@@ -149,7 +149,7 @@ function fillBadge(div: HTMLElement, data: MovieInfo, general: settingsType["Gen
 		letterSpacing: "-0.02em",
 		whiteSpace: "nowrap",
 		// dark on the band colour in both badge looks
-		color: color.badgeInk,
+		color: color.scoreInk,
 		textShadow: "none",
 	})
 	const tooltip: string[] = []
@@ -329,7 +329,7 @@ export function renderBadge(data: MovieInfo, { general, look, personal, position
 	div.classList.add("sb-card-rating")
 	// which streamBuddy build drew this badge (handy for checking that a rebuild was picked up)
 	div.dataset.sbBuild = __BUILD_ID__
-	// popcorn chip: score pill first, friends and your status beside it; wraps on narrow cards
+	// smoked glass chip: score pill first, friends and your status beside it; wraps on narrow cards
 	Object.assign(div.style, {
 		position: "absolute",
 		[position.corner]: `${BADGE_INSET_PX}px`,
@@ -344,7 +344,9 @@ export function renderBadge(data: MovieInfo, { general, look, personal, position
 		color: BADGE_TEXT,
 		textDecoration: "none",
 		background: BADGE_CHIP,
-		boxShadow: shadow.sticker,
+		boxShadow: shadow.badge,
+		backdropFilter: blur.badge,
+		webkitBackdropFilter: blur.badge,
 		borderRadius: "1.1em",
 		opacity: "0",
 		transform: "translateY(2px)",
