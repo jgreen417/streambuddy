@@ -141,7 +141,7 @@ test("episode chips", async ({ open }) => {
 	await expect.soft(page.locator('[data-shot="episodes"]')).toHaveScreenshot("netflix-episodes.png")
 })
 
-// the chip starts where the episode's length does, unless that would push it past the card's edge, at any width
+// the chip ends where the episode's length does, whatever that length's width, at any width
 for (const width of [900, 1440, 3440]) {
 	test(`episode chips line up with the duration at ${width}px`, async ({ open }) => {
 		const page = await open("https://www.netflix.com/title/80057281", { viewport: { width, height: 1000 } })
@@ -153,9 +153,8 @@ for (const width of [900, 1440, 3440]) {
 				const edges = (await card.boundingBox())!
 				const duration = (await card.locator(".duration").boundingBox())!
 				const box = (await chip.boundingBox())!
-				const right = box.x + box.width
-				expect(right).toBeLessThanOrEqual(edges.x + edges.width)
-				if (Math.abs(box.x - duration.x) > 1) expect(right).toBeGreaterThan(edges.x + edges.width - 6)
+				expect(box.x + box.width).toBeLessThanOrEqual(edges.x + edges.width)
+				expect(Math.abs(box.x + box.width - (duration.x + duration.width))).toBeLessThanOrEqual(1)
 			}
 		}).toPass()
 	})
