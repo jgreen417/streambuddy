@@ -212,22 +212,19 @@ function progressBarHeight(target: HTMLElement) {
 	return bar ? Math.max(target.getBoundingClientRect().bottom - bar.getBoundingClientRect().top, 0) : 0
 }
 
-// Netflix lists an episode's length at the right of its title row: the chip lines its left edge up with that text,
+// Netflix lists an episode's length at the right of its title row: the chip lines its right edge up with that text,
 // kept inside the card. The rects are scaled while Netflix's modal animates, so the offset is converted back.
 function alignWithDuration(chip: HTMLElement, target: HTMLElement) {
 	const duration = target.querySelector(".titleCard-duration .duration")?.getBoundingClientRect()
 	const card = target.getBoundingClientRect()
 	if (!duration?.width || !target.offsetWidth) {
-		chip.style.removeProperty("left")
 		chip.style.removeProperty("right")
 		return
 	}
-	const offset = (duration.left - card.left) / (card.width / target.offsetWidth) - target.clientLeft
-	const left = `${Math.max(3, Math.min(offset, target.clientWidth - chip.offsetWidth - 3))}px`
-	if (chip.style.left !== left) {
-		chip.style.left = left
-		chip.style.right = "auto"
-	}
+	const border = target.offsetWidth - target.clientWidth - target.clientLeft
+	const offset = (card.right - duration.right) / (card.width / target.offsetWidth) - border
+	const right = `${Math.max(3, Math.min(offset, target.clientWidth - chip.offsetWidth - 3))}px`
+	if (chip.style.right !== right) chip.style.right = right
 }
 
 // IMDb scores beside each episode on a series' title page
