@@ -9,6 +9,7 @@ A quieter look: smoked glass badges and calmer colours.
 - The popup is one simple list with the service picker at the top. Stats is a single sentence and a grey chart.
 - The credits card is shorter: title, one line, friends' faces, stars and "Not now". The × folds it back into the pill.
 - The hover card drops its logo header, and the settings "Early days" banner is now a small note in the sidebar.
+- HBO Max: the review pill lines up with the end screen's "Watch Now" button.
 - If you enjoy streamBuddy, a one-time note asks for a store rating (in the popup after a few days of watching, or on the credits card). There's also a Rate link in settings.
 
 # streamBuddy 1.1.1

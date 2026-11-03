@@ -42,5 +42,15 @@ export const maxSite: RatingsSite = {
 	// the player can be missing its show title
 	playingEpisode: () => episodeFromPlayer(text('[data-testid="player-ux-season-episode"]'), max.showTitle()),
 	endScreenShowing: () => false,
-	placeReview: () => {},
+	// the end screen's "Watch Now" row sits bottom left, so the pill lines up with its bottom edge and mirrors its inset
+	placeReview(review) {
+		const watch = document.querySelector('[data-testid="play_button"]')?.getBoundingClientRect()
+		if (!watch?.height) {
+			review.style.removeProperty("--sb-review-bottom")
+			review.style.removeProperty("--sb-review-right")
+			return
+		}
+		review.style.setProperty("--sb-review-bottom", `${Math.round(innerHeight - watch.bottom)}px`)
+		review.style.setProperty("--sb-review-right", `${Math.round(watch.left)}px`)
+	},
 }
