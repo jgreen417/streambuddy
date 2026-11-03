@@ -38,7 +38,7 @@ export function installPageFeatureStyle() {
  .sb-hide-title { position:absolute; top:4px; right:4px; display:flex; align-items:center; justify-content:center; width:32px; height:32px; border:1px solid var(--sb-line-control); border-radius:var(--sb-radius-md); background:var(--sb-panel); color:var(--sb-text); font:22px/1 var(--sb-font-system); cursor:pointer; z-index:10; }
  .sb-hide-title:hover { background:var(--sb-button-hover); }
  .sb-search-sort { margin:12px 0; } .sb-search-sort[aria-pressed="true"] { border-color:var(--sb-focus); }
- .sb-review { position:fixed; right:16px; bottom:90px; z-index:2147483647; display:flex; flex-direction:column; gap:var(--sb-space-md); width:400px; max-width:calc(100vw - 32px); box-sizing:border-box; font-family:var(--sb-font-page); }
+ .sb-review { position:fixed; right:var(--sb-review-right,16px); bottom:var(--sb-review-bottom,90px); z-index:2147483647; display:flex; flex-direction:column; gap:var(--sb-space-md); width:400px; max-width:calc(100vw - 32px); box-sizing:border-box; font-family:var(--sb-font-page); }
  .sb-review { animation:sb-review-in .32s var(--sb-ease-arrive) both; }
  @keyframes sb-review-in { from { opacity:0; transform:translateY(10px) scale(.98); } }
  @keyframes sb-review-in-down { from { opacity:0; transform:translateY(-10px) scale(.98); } }
